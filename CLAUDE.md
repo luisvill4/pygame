@@ -5,7 +5,7 @@ Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge moneda
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~140 tests, unos 14 s, sin ventana
+python -m pytest        # ~175 tests, unos 12 s, sin ventana
 ```
 - Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
 - **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json` y `__pycache__`.
@@ -22,9 +22,9 @@ juego/
   reloj.py              # LimitadorFPS: limite de FPS preciso (sleep + espera activa final)
   partida.py            # Partida: todo el estado de una partida y sus reglas
   progresion.py         # Director: presupuesto de enemigos, sectores y oleadas
-  nave.py  moneda.py  proyectiles.py (Bala, Misil, Mina)
-  enemigos/  base.py (Enemigo + registro) · perseguidor · rebotador · embestidor · divisor · enjambre
-  jefes/     base.py (Jefe + registro) · partes.py (Parte) · ojo.py (JefeOjo) · fortaleza.py (Fortaleza, Canon)
+  nave.py  moneda.py  proyectiles.py (Bala, Obus, Misil, Mina, Escombro, Onda, Veneno)
+  enemigos/  base.py (Enemigo + registro) · perseguidor · rebotador · embestidor · divisor · enjambre · abeja
+  jefes/     base.py (Jefe + registro + pulso) · partes.py (Parte) · ojo · fortaleza · serpiente · colmena · singularidad
   powerups/  base.py (PowerUp, Capsula, registro) · tipos.py (los 7 power-ups, en orden)
   escenas/   base.py · inicio · dificultad · opciones · listo · juego · pausa · explosion · iniciales · fin
   entrada.py  sonido.py  ventana.py  guardado.py  recursos.py
@@ -62,7 +62,7 @@ Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
 - Dependencias sin ciclos: `config` ← `recursos`/`dibujo` ← entidades ← `partida` ← escenas ← `app`. Las entidades reciben `partida` como parámetro (no la importan).
 
 ## Estilo visual: arcade retro (el usuario lo aprecia mucho, no romperlo)
-- Fuente Press Start 2P, siempre con `antialias=False`, en tamaños múltiplos de 8: `dibujo.CHICA/MEDIA/GRANDE/TITULO` = 16/24/40/56.
+- Fuente Press Start 2P, siempre con `antialias=False`, en tamaños múltiplos de 8: `dibujo.MINI/CHICA/MEDIA/GRANDE/TITULO` = 8/16/24/40/56 (MINI solo para textos de apoyo, como la ficha de enemigo nuevo).
   - `dibujo.texto(pantalla, mensaje, tamaño, color, x, y, sombra, alinear)` recibe el tamaño como número; `recursos.fuente(tamaño)` guarda las fuentes en caché.
 - Colores neón definidos como constantes en `config.py` (`AMARILLO`, `CIAN`, `MAGENTA`, `ROJO`…). Números con 6 dígitos (`dibujo.numero_arcade`).
 - Partículas (`efectos.Efectos`): cuadrados alineados a una cuadrícula de 2 px. Pueden tener `gravedad`; `pedazos()` la usa para trozos que saltan y caen. No se desvanecen con transparencia: cambian de color por etapas según una **paleta**, una lista que va de oscuro a brillante (`FUEGO`, `ORO`, `ESCARCHA`…).
@@ -97,10 +97,26 @@ El usuario dibuja los sprites; Claude los integra. Todos están en `sprites/`.
 | `escudo.png` | 152x76 | 2 de 76x76 | burbuja en `Nave.dibujar()`. Tiene píxeles semitransparentes (el brillo); está bien así | círculo cian |
 | `nebulosa.png`, `planeta_chico.png`, `planeta_grande.png` | 256x192 / 32x32 / 96x96 | 1 | `Fondo` (paralaje) | no se dibujan |
 | `jefe.png` | 720x120 | 6 de 120x120, de a pares: flotar, atacar, cansado | `JefeOjo.cargar_animaciones()`; `Jefe.animaciones()` arma las variantes congelada y blanca. Con 2 cuadros se usan para todo | `jefe_respaldo(color_nucleo)` |
-| `fortaleza.png` (opcional, aún no existe) | 1536x128 | 6 de 256x128, de a pares: coraza, furia, cansado | `Fortaleza.cargar_animaciones()` | `fortaleza_respaldo(con_coraza, color_nucleo, luces)` |
-| `fortaleza_canon.png` (opcional, aún no existe) | 64x32 | 2 de 32x32: sano, dañado (caño hacia abajo) | `cuadros_canon()`: variantes brasa (recalentado), hielo y blanco con `tenir`/`blanquear`; la luz de color se dibuja encima | `canon_respaldo(danado)` |
 
-La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere que siga así: no proponer un sprite de propulsor. Los enemigos congelados se generan con `tenir(..., HIELO)`. Los sprites de la Fortaleza son opcionales (tiene respaldo); fuera de los jefes, no proponer sprites nuevos.
+### Sprites opcionales que todavía no existen (todos tienen dibujo de respaldo)
+El usuario pidió la lista para dibujarlos. Variantes (congelado, golpe, recalentado, brillo) se generan solas con `tenir`/`blanquear`: no hace falta dibujarlas.
+
+| Archivo | Tamaño | Cuadros | Dónde se usa |
+|---|---|---|---|
+| `divisor.png` / `divisor_mediano.png` / `divisor_chico.png` | 96x48 / 64x32 / 40x20 | 2 cada uno | `Enemigo.cuadros()` |
+| `enjambre.png` | 40x20 | 2 de 20x20 | `Dron` |
+| `abeja.png` | 40x20 | 2 de 20x20 (alas arriba, abajo) | `Abeja` |
+| `fortaleza.png` | 1536x128 | 6 de 256x128, de a pares: coraza, furia, cansado | `Fortaleza.cargar_animaciones()`; las 4 lamparitas del compás se dibujan encima (x+106..154, y+88) |
+| `fortaleza_canon.png` | 64x32 | 2 de 32x32: sano, dañado (caño hacia abajo) | `cuadros_canon()`; la luz de color va encima en (14, 4) |
+| `serpiente_cabeza.png` | 96x48 | 2 de 48x48: boca cerrada, abierta (mirando hacia arriba, SIN ojos) | `cuadros("cabeza", ...)`; ojos y lengua se dibujan aparte |
+| `serpiente_cuerpo.png` | 64x32 | 2 de 32x32 (dos dibujos de escamas, se alternan) | segmentos (no giran) |
+| `serpiente_cola.png` | 32x32 | 1 (el cascabel, punta hacia arriba) | gira y se sacude cuando brilla |
+| `colmena.png` | 960x160 | 6 de 160x160, de a pares: calma, furia, aturdida | `Colmena.cargar_animaciones()` (el ojo de la reina va dibujado en el sprite) |
+| `colmena_compuerta.png` | 64x32 | 2 de 32x32: cerrada, abierta | `cuadros_compuerta()` |
+| `singularidad.png` | 768x128 | 6 de 128x128, de a pares: girar, inhalar, expuesta | se escala al nacer y al colapsar |
+| `singularidad_asteroide.png` | 64x32 | 2 de 32x32 (dos rocas) | el anillo |
+
+La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere que siga así: no proponer un sprite de propulsor. Los enemigos congelados se generan con `tenir(..., HIELO)`. Fuera de esta lista, no proponer sprites nuevos.
 
 - **Trampa:** en Press Start 2P la "É" mayúscula se dibuja como "é" pequeña. Por eso se escribe "RECORD" sin tilde. "¡" y los números funcionan bien.
 - **Trampa:** en este Windows `SysFont("Arial")` carga **Arial Narrow**.
@@ -171,6 +187,8 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
     - **Todo enemigo que sale del juego pasa por `Partida.quitar_enemigo()`**, que llama al hook `al_quitar()`; el dron lo usa para dejar su bandada.
     - Congelados y destruibles se rompen enteros (sin partirse).
     - Los de siempre (perseguidor, rebotador, embestidor) siguen siendo atravesados por el dash.
+  - `esbirro = True` (las abejas): es de un jefe; `Partida.jefe_vencido()` los saca a todos. `hace_danio()` (por defecto True) deja que un enemigo no lastime por un rato (abeja volviendo a casa).
+  - `abeja` (20x20, sin costo ni desbloqueo: solo la crea la Colmena): `salir_de()` una compuerta → rondar a 130 px → aviso (blanco y "!", 400 ms) → picar (`ABEJA_PICADA`). `enojarse()` la hace picar ya; `volver_a_casa()` la lleva a la Colmena sin hacer daño (`llego`).
   - Atributos de clase de `Enemigo`:
     - `tamano` y `radio`: el tamaño varía por tipo, y el daño usa `enemigo.radio`.
     - `destruible`, `puntos_dash` y `muere_al_chocar` (si te pega, se destruye en vez de reaparecer).
@@ -195,10 +213,12 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
       - El tipo recién desbloqueado se presenta primero.
       - Se llama al empezar, al subir de nivel y al volver del jefe. La cantidad se cuenta con `cantidad_actual()` (un enjambre cuenta como uno).
       - **Refuerzos:** cada `REFUERZO_ESPERA`, si sobra presupuesto (porque destruiste enemigos), llega uno nuevo.
-      - Cuando se desbloquea un tipo después del nivel 1, el HUD muestra "NUEVO ENEMIGO" (`nuevo_tipo`, `tiempo_cartel_nuevo`).
-    - **Sectores** (`SECTORES`, cada `SECTOR_CADA_NIVELES` niveles): el primero es siempre el Cinturón y después se sortean sin repetir el mismo seguido.
-      - Al cambiar, se va `RECAMBIO_SECTOR` de los enemigos y aparece el cartel (`tiempo_cartel_sector`).
-      - El fondo pasa a sus colores con `Fondo.ir_a_sector(tinte, color)`, que lo hace en 4 etapas durante `TRANSICION_SECTOR` pasos (lo llama `Escena.mover_fondo(partida)`). Los tintes no pasan de ~110 por canal.
+      - Cuando se desbloquea un tipo después del nivel 1, el HUD muestra una **ficha chica** debajo del puntaje (entra desde la izquierda, `DURACION_CARTEL_NUEVO`): dibujo, "NUEVO ENEMIGO", nombre y pista en MINI. Antes era un cartel al centro y el usuario se quejó de que tapaba la pantalla.
+    - **Sectores = biomas, uno por jefe** (`SECTORES`, en orden fijo): Cinturón → Ojo, Carmesí → Fortaleza, Esmeralda → Serpiente, Ámbar → Colmena, Abismo → Singularidad, y vuelve al primero. `iniciar_jefe()` usa `director.jefe_del_sector()`.
+      - Cada sector: `nombre`, `lema` (debajo del nombre en el cartel), `color`, `jefe`, `tinte`, `fondo`, `ambiente`, `estrellas` (factor RGB) y `favorito`.
+      - Se cambia en `jefe_vencido()` → `director.al_vencer_al_jefe()`; el cartel del sector sale cuando se va "¡JEFE VENCIDO!" (`tiempo_cartel_sector` en el futuro; el HUD lo muestra si `0 <= t < 2500`).
+      - Al cambiar se va `RECAMBIO_SECTOR` de los **grupos** de enemigos (un enjambre es un grupo); si estaban guardados por la pelea, no vuelven.
+      - El fondo cambia con `Fondo.ir_a_sector(sector)` en 4 etapas durante `TRANSICION_SECTOR` pasos (lo llama `Escena.mover_fondo(partida)`). Los tintes no pasan de ~110 por canal.
     - **Oleadas:** cada `OLEADA_ESPERA` (desde `OLEADA_DESDE_NIVEL`, sin jefe) llegan enemigos extra con `de_oleada=True` por `OLEADA_DURACION`, y después se van.
       - Si no perdiste vidas: `OLEADA_PUNTOS * nivel` y un power-up enseguida.
       - El jefe corta la oleada (`al_empezar_jefe`).
@@ -206,26 +226,43 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - **Dificultad:** `Partida(…, dificultad)` guarda `reglas = DIFICULTADES[dificultad]`, `vidas_max` y `vidas`.
     - `factor_velocidad()` multiplica por `reglas["velocidad"]` (también las balas del Ojo), y `espera_powerup()` por `reglas["espera_powerup"]`.
     - El HUD dibuja `vidas_max` íconos.
-- **Jefes** (`jefes/`), registro `TIPOS_JEFE`; el que sale lo decide `ORDEN_JEFES[jefes_vencidos % len]` (hoy `["ojo", "fortaleza"]`):
-  - La base resuelve las fases `entrar` (baja hasta `y_final` con "¡CUIDADO!") y `morir` (2 s, después llama a `partida.jefe_vencido()`). También: la vida (`JEFE_VIDA + jefes_vencidos`), el congelado (solo en `fases_congelables`; corre `fase_hasta` y llama a `al_congelarse()`), `recibir_golpe()`, `explotar()`, las variantes de sprite, "¡DASH!" cuando `puede_recibir_golpe()` y las cajas `caja_cuerpo()` y `caja_nucleo()`.
+- **Jefes** (`jefes/`), registro `TIPOS_JEFE`; el que sale es el `"jefe"` del sector actual.
+  - **Filosofía (pedido explícito del usuario):** las peleas son un **baile con ritmo, estilo Cuphead/Dark Souls**, no una lluvia de balas. Un ataque por vez, cada uno con **anticipación (aviso) → ataque a ritmo → ventana para pegarle**. Pocas balas (el bot mide ~0-10 en pantalla de promedio). Cada jefe con personalidad (nombre, apodo, gestos, textos) y su propio estilo de combate. Si se agrega uno, seguir esto.
+  - **Pulso:** `ms_pulso` (por defecto `JEFE_PULSO`). `cambiar_fase(fase, ms, t)` y `cambiar_fase_pulsos(fase, n, t)` guardan `fase_desde`/`fase_hasta`; en cada paso la base calcula `self.pulso` (pulsos desde que empezó la fase, el 0 empieza el paso siguiente) y `self.nuevo_pulso`. `fin_de_fase(t)`. **Trampa:** el paso en que termina una fase también es el comienzo de un pulso: revisar `fin_de_fase` ANTES de `nuevo_pulso` (si no, sale un disparo de más; lo detectó un test).
+  - La base resuelve `entrar` (`actualizar_entrada()`, por defecto baja hasta `y_final`) con la **presentación**: "¡CUIDADO!", `nombre` letra por letra y `apodo` (`color`, `y_presentacion`). Y `morir` (2 s de explosiones en `punto_de_explosion()`, después `partida.jefe_vencido()`).
+  - También: la vida (`JEFE_VIDA + jefes_vencidos // 2`), el congelado (solo en `fases_congelables`; corre `fase_desde`/`fase_hasta` y llama a `al_congelarse()`), `recibir_golpe()` → `empezar_a_morir()`, `explotar()`, `al_vencerlo()`, las variantes de sprite (`imagen_actual()`), "¡DASH!" en `punto_cartel_dash()`, las cajas `caja_cuerpo()`/`caja_nucleo()`/`cajas_danio()`, `zonas_sin_monedas()` y `objetos_que_se_mueven()` (para interpolar piezas sueltas).
+  - Dibujo: `dibujar()` = `dibujar_cuerpo()` (sprite en `posicion_dibujo()` + partes) + `dibujar_extra()` + avisos. Los jefes que no son un sprite fijo (Serpiente, Singularidad) reescriben `dibujar_cuerpo()`.
   - Tamaño por clase: `ancho`, `alto` (120 por defecto) e `y_final`. `temblando()` dice cuándo se dibuja temblando (por defecto, al morir).
   - **Partes** (`partes.py`, `Parte(dx, dy, ancho, alto, vida)`): piezas con posición relativa al jefe, guardadas en `jefe.partes`.
     - `Partida._choques_jefe`: en dash, primero `jefe.parte_golpeable(caja)` → `jefe.golpear_parte()` (efectos, hit-stop y `al_golpear_parte`/`al_romper_parte`); después el núcleo. Las dos rebotan la nave con `_rebotar_en()`.
     - El daño al tocar usa `jefe.cajas_danio()` (cuerpo + partes vivas; la Fortaleza suma los láseres prendidos). `lugar_para_moneda` también las esquiva.
     - `vida_barra()` da (vida, máximo) para el HUD; los jefes con partes suman las de ellas.
     - La base dibuja las partes (con el mismo flotar y temblor del cuerpo) y, debajo de cada parte golpeable, una flechita cian con un solo "¡DASH!" entre todas (con un cartel por parte se pisaban).
+    - Las partes con posición propia (segmentos, asteroides) no son `Parte`: son objetos con `x`/`y` que el jefe devuelve en `objetos_que_se_mueven()`.
     - Congelado, una parte golpeable se puede seguir golpeando: el hielo alarga la ventana, igual que con el núcleo del Ojo.
-  - `JefeOjo` (`ojo.py`): `flotar` (`JEFE_FLOTAR`) → `atacar` (carga 0.7 s y `JEFE_RAFAGAS` ráfagas, turnando abanico y anillo) → `cansado` (`JEFE_CANSADO`) → `flotar`.
+  - `JefeOjo` ("EL OJO", Cinturón): `flotar` (`JEFE_FLOTAR`) → `atacar` (carga 0.7 s y `JEFE_RAFAGAS` ráfagas, turnando abanico y anillo de 12 balas) → `cansado` (`JEFE_CANSADO`) → `flotar`.
     - `direcciones_ataque()` la usan tanto el disparo como el **aviso** (`dibujar_aviso_ataque`, apagable con `opciones.aviso_jefe`).
-  - `Fortaleza` (`fortaleza.py`, 256x128, `y_final = 56`): `pelear` → `descubrirse` (1.8 s, tiembla) → `furia` (`FORTALEZA_FURIA`, espiral de `FORTALEZA_BRAZOS`) ⇄ `cansado` (`FORTALEZA_CANSADO`, núcleo golpeable).
-    - 4 `Canon` (partes de 32x32 en `CANONES`): misiles, ráfaga, láser y minas, cada uno con una luz de su color.
-    - Cada cañón pasa por `listo → cargando (FORTALEZA_CARGA) → disparando (FORTALEZA_DISPAROS) → recalentado (FORTALEZA_RECALENTADO, golpeable) → listo`. Se turnan cada `FORTALEZA_ESPERA[cañones vivos]`, así que con menos cañones atacan más seguido.
-    - Un golpe que no lo rompe lo enfría (vuelve a `listo`). Romperlo da `FORTALEZA_PUNTOS_CANON` y pedazos; sin cañones se rompen las balas y empieza `descubrirse`, y al final `caer_coraza()`.
-    - Avisos durante la carga: el láser siempre muestra una línea fina; ráfaga (`direcciones_rafaga`, que comparte con el disparo), minas (X en `objetivos`, que se eligen al cargar) y misiles solo con `opciones.aviso_jefe`.
-    - La barra del HUD suma los cañones y el núcleo.
-    - Con un bot que acierta todo, la pelea dura ~31 s; acertando la mitad, entre 1 y 1:45 min.
-  - **Proyectiles** (`proyectiles.py`): todos en `partida.balas`, con `mover(partida)` (False = borrar), `dibujar(pantalla, encendido)` y `radio`. `Misil` te sigue `FORTALEZA_MISIL_GUIADO` ms girando de a poco; `Mina` frena, parpadea y a los `FORTALEZA_MINA_ESPERA` ms estalla en 8 `Bala`.
+  - `Fortaleza` ("ACORAZADO IMPERIAL", Carmesí, 256x128, `y_final = 56`): una marcha militar; 4 lamparitas del casco marcan el pulso.
+    - Con coraza, cada compás: `reubicarse` (2) → `cargar` (2) → `disparar` (`PULSOS_ATAQUE`) → `recalentado` (`FORTALEZA_RECALENTADO`; los cañones del compás quedan `caliente` = golpeables). Si los golpean a todos, el compás termina antes.
+    - 4 `Canon` (32x32, luz de su color): ráfaga (3 `Obus`, uno por pulso), misiles (2 `Misil`, el dash los destruye y da puntos), láser (barre hacia la nave a `FORTALEZA_LASER_VELOCIDAD`; hay que cruzarlo con el dash) y minas (2 `Mina` a las X de `objetivos`, estallan en "+" y "x" a 3 pulsos).
+    - `FORTALEZA_PULSOS[cañones rotos]`: el pulso se acelera. Con 2 cañones el compás trae a los dos; con 1, ataca dos veces.
+    - Sin cañones: `descubrirse` (4) → `caer_coraza()` → `cortinas` (6: aviso, cae, aviso, cae, 2 de respiro; `Escombro` con un hueco de 180 px) → `apuntar` (2, se pone encima) → `fijar` (1, quieta y temblando: tiempo para salir de abajo) → `caer` (`Onda` a los costados al tocar el piso) → `aturdida` (`FORTALEZA_ATURDIDA`, núcleo golpeable) → `subir` (3).
+    - Cajas del casco en dos (`cajas_danio`): abajo es más angosto, así no pega con una esquina que no se ve.
+  - `Serpiente` ("DEVORADORA DE ESTRELLAS", Esmeralda): jefe de movimiento, casi sin balas. Cabeza 48x48 + `Segmento`s (centro x/y) que siguen como cuerda (`arrastrar_cuerpo`, `SERPIENTE_ESPACIO`).
+    - `nadar` (6, orbita la nave) → `acechar` (2; en el pulso 1 la `mordida` queda fija) → `morder` (`SERPIENTE_MORDIDA`) → si choca un borde `aturdida` (`SERPIENTE_VENTANA`) / si no `mareada`.
+    - La vida son los cortes (`vida_max + SERPIENTE_CORTES_EXTRA`); el "núcleo" es la cola (`caja_nucleo`). Cada corte la acorta, la acelera (`factor()`) y acelera el pulso (`SERPIENTE_PULSOS`).
+    - Desde el 2º corte alterna con `enroscarse` (6; círculo de aviso, cierra de 220 a 30 px alrededor de donde estabas). Desde la mitad escupe `Veneno` en los pulsos 2 y 4 de `nadar`.
+    - Ojos que siguen a la nave, lengua cada 1.6 s, boca abierta al acechar/morder, ojos en cruz mareada.
+  - `Colmena` ("MADRE DEL ENJAMBRE", Ámbar, 160x160): 4 `Compuerta`s (vida 1).
+    - `flotar` (4) → `abrir` (2, tiembla y "BZZZ") → `soltar` (`COLMENA_ABEJAS`, una por pulso, tope `COLMENA_ABEJAS_MAX`) → `expuesta` (`COLMENA_EXPUESTA`, compuerta abierta = golpeable). Con ≤2 compuertas abre todas.
+    - Romper una compuerta enoja a las abejas. Sin compuertas: llama a las abejas a casa ("¡A CASA, HIJAS!"; en la embestida no hay abejas: una sola amenaza), `enfurecerse` (3) → `temblar` (3; en el pulso 2 queda fija) → `embestir` (rebota `COLMENA_REBOTES` + golpes recibidos) → `aturdida` (ojo golpeable) → `volver` (3).
+    - El aviso (`camino()`) dibuja centro y bordes del pasillo con los rebotes usando `paso_embestida()`, la misma cuenta que el movimiento (hay un test que lo compara).
+  - `Singularidad` ("EL FIN DE LA LUZ", Abismo, 128x128 en el centro, `y_presentacion = 500`): gravedad (`atraer`, el dash no la siente) y un anillo de `Asteroide`s (20 `LUGARES`, entre dos vecinos no pasa la nave) con `huecos()`.
+    - `girar` (6; `tic()`: el anillo avanza un lugar por pulso; brazos de 2-3 balas por pulso) → `inhalar` (3; atrae `SINGULARIDAD_INHALAR`; marca los bordes del hueco de la nova) → `exhalar` (nova de 15 balas con un hueco de 90° y empujón) → `colapsar` (2) → `expuesta` (`SINGULARIDAD_EXPUESTA`; anillo quieto y flechitas en los huecos) → `estallido` si le pegaste (te empuja afuera, el anillo se abre y cambia de sentido).
+    - Cada 2 golpes, un hueco menos (`armar_anillo`) y un brazo más; desde el 3º, el anillo avanza de a 2. Se come la moneda (`comer_moneda`); `zonas_sin_monedas` incluye todo el disco del anillo. Mientras nace (`entrar`) no lastima.
+  - **Proyectiles** (`proyectiles.py`): todos en `partida.balas`, con `mover(partida)` (False = borrar), `dibujar(pantalla, encendido)`, `radio`, `destruible` y `puntos` (los destruibles los rompe el dash en `Partida._destruir_proyectiles`). `Obus` (grande), `Misil` (te sigue `guiado` ms), `Mina` (frena y estalla en cruz "+"/"x"), `Escombro`, `Onda` (a ras del piso) y `Veneno`.
   - Daño al jefe: dash contra `caja_nucleo()` mientras puede recibir golpe, o contra una parte golpeable (`Partida._choques_jefe`). La nave rebota y queda 0.8 s invulnerable.
+  - **Balance medido con un bot** (script del scratchpad que esquiva balas/cuerpos, lee los avisos y pega en las ventanas; cada jefe con su `jefes_vencidos` real): Ojo ~24 s, Fortaleza ~60 s, Serpiente ~33 s, Colmena ~45 s, Singularidad ~43 s; balas en pantalla de promedio: 7.6 / 3.7 / 0.6 / 0 / 9.5. Cuando el bot recibía muchos golpes en una fase, casi siempre era un aviso que no daba tiempo (se agregaron `fijar`, un pulso más en `temblar` y las flechitas de los huecos).
   - Daño a la nave: las balas (círculo de `bala.radio`) y `cajas_danio()` (`toca_rect`).
   - Durante la pelea las monedas no suben de nivel. Al vencerlo: bonus `JEFE_PUNTOS * jefes_vencidos` y el cartel "¡JEFE VENCIDO!" (`CARTEL_JEFE`). Los enemigos guardados vuelven recién cuando se va el cartel.
 - **Power-ups** (`powerups/`), registro `TIPOS_POWERUP`; el orden de `tipos.py` es el del HUD y del panel de inicio:
@@ -250,7 +287,8 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - **Ventana:** el lienzo es `app.pantalla` y `Ventana.mostrar()` lo escala sin suavizar, centrado y con barras negras.
   - `resoluciones` (propiedad) son las de `RESOLUCIONES[lienzo.formato]` que caben en el monitor; "COMPLETA" siempre está. `aplicar(nombre)` abre la ventana por nombre.
   - **Trampa:** al salir de FULLSCREEN, el primer `set_mode` deja el tamaño anterior; `aplicar()` lo repite.
-- **Fondo** (`Fondo.mover(empuje_x, empuje_y)` en la lógica, mediante `Escena.mover_fondo(partida=None)`, y `Fondo.dibujar(pantalla, fraccion)` interpolado, mediante `Escena.dibujar_fondo`): objetos (`PROFUNDIDAD`) y estrellas (90 cada 800 px de ancho). Caen a `0.6 * profundidad` y, solo en Juego, se corren con el paralaje (`-v * REACCION_PARALAJE`). Paleta: ningún canal por encima de ~110.
+- **Fondo** (`Fondo.mover(empuje_x, empuje_y)` en la lógica, mediante `Escena.mover_fondo(partida=None)`, y `Fondo.dibujar(pantalla, fraccion)` interpolado, mediante `Escena.dibujar_fondo`): objetos (`PROFUNDIDAD`) y estrellas (90 cada 800 px de ancho, teñidas con `sector["estrellas"]`). Caen a `0.6 * profundidad` y, solo en Juego, se corren con el paralaje (`-v * REACCION_PARALAJE`). Paleta: ningún canal por encima de ~110.
+  - **Ambiente del bioma** (`sector["ambiente"]`, `Mota`s con tope `MAXIMO_MOTAS`): asteroides + estrellas fugaces, brasas que suben + relámpagos (`relampago`), luciérnagas + esporas, panal de fondo (`panal()`, baldosa que se desplaza) + polen, polvo que gira hacia el centro + ondas de gravedad. Al cambiar de sector, las motas viejas se van apagando de a poco.
 
 ## Tests (`tests/`)
 - `conftest.py`:
@@ -262,6 +300,8 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - Para inspeccionar algo visual, sacar una captura de `app.pantalla` con `pygame.image.save` desde un script en el scratchpad que use `App(carpeta_datos=<scratchpad>)`. Filtrar la salida con `grep -a`, porque "¡" hace que grep la trate como binaria.
 
 ## Ideas pendientes (propuestas, aún sin hacer)
+- **Elegidas por el usuario y todavía sin hacer** (del plan de dificultad): anomalías de sector (tormenta solar, niebla, lluvia de asteroides, fiebre del oro), desafíos opcionales ("SIN DASH", "SIN CORTAR EL COMBO"…) y rango S/A/B/C al cerrar cada sector.
+- Propuestas no elegidas: Torreta + Mina, Ladrón + Escudero, Fantasma + Barrera + Élites, taller de cartas, Los Gemelos, fase 2 del Ojo.
 - Estadísticas al final de la partida (monedas, enemigos destruidos, tiempo); por ahora solo se muestra el mejor combo.
 - Logros, tecla M para silenciar, música más intensa según el nivel, transiciones retro entre pantallas y F11 para pantalla completa.
 - Del análisis de gameplay (no elegidas todavía):

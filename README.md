@@ -18,11 +18,20 @@ python main.py
 | Opciones (en pausa) | O | Vista (⧉) |
 | Volver | Esc | B |
 
-Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. Cada 2 niveles cambia el **sector**: otro color de fondo y otros enemigos frecuentes. Cada tanto llega una **oleada**: muchos enemigos durante unos segundos; si la pasás sin perder una vida, ganás puntos y un power-up. Los enemigos de cada nivel se eligen al azar según un "presupuesto", así que cada partida es distinta.
+Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. Cada tanto llega una **oleada**: muchos enemigos durante unos segundos; si la pasás sin perder una vida, ganás puntos y un power-up. Los enemigos de cada nivel se eligen al azar según un "presupuesto", así que cada partida es distinta.
 
-Cada 5 niveles llega un **jefe**, y se turnan:
-- **El Ojo:** dispara abanicos y anillos de balas. Cuando queda cansado, se le pega con el dash en el núcleo.
-- **La Fortaleza:** un acorazado con 4 cañones, cada uno con su ataque: ráfaga (luz roja), misiles que te siguen (amarilla), láser (cian) y minas (magenta). Después de disparar, cada cañón se recalienta y brilla: ahí se le pega con el dash (una flechita lo señala). Sin cañones se le cae la coraza y el núcleo dispara en espiral; cuando se cansa, es tu momento.
+### Sectores y jefes
+El viaje pasa por 5 **sectores**, cada uno con su ambiente (asteroides, brasas, luciérnagas, un panal gigante, polvo que cae en un agujero negro), sus enemigos favoritos y **su jefe**, que llega cada 5 niveles. Al vencerlo se pasa al sector siguiente; después del último se vuelve a empezar, más difícil.
+
+Las peleas son un **baile**: cada jefe avisa antes de atacar, ataca al ritmo de su "pulso" y después deja un hueco para pegarle con el dash.
+
+| Sector | Jefe | Cómo se le gana |
+|---|---|---|
+| Cinturón exterior | **El Ojo** | Esquivá sus abanicos y anillos; cuando queda cansado, dash al núcleo. |
+| Nebulosa carmesí | **La Fortaleza** | Sus 4 cañones atacan de a uno (ráfaga, misiles, láser y minas) y quedan recalentados: dash al que brilla. Sin cañones se le cae la coraza y cae sobre vos: salí de la columna roja y pegale cuando queda aturdida en el piso. |
+| Campo esmeralda | **La Serpiente** | Te rodea y muerde en línea recta (marca la línea antes). Si se estrella contra un borde, queda mareada y su cascabel brilla: dash a la cola. Después también se enrosca: salí del círculo. |
+| Mar de ámbar | **La Colmena** | Abre una compuerta, suelta abejas y la deja abierta: rompela con el dash. Sin compuertas embiste rebotando (el aviso muestra el camino): cuando queda aturdida, dash al ojo. |
+| Abismo azul | **La Singularidad** | Te atrae (el dash te libera). El anillo de asteroides gira a ritmo; cuando colapsa, entrá por un hueco y dash al núcleo. |
 
 En **Opciones → FORMATO** se elige entre 4:3 (800x600) y 16:9 (1066x600, un campo de juego más ancho). Se cambia desde el menú de inicio, no en medio de una partida.
 
@@ -96,9 +105,11 @@ Otras opciones (atributos de la clase): `tamano` y `radio` (tamaño y radio de d
 ### Un jefe
 1. Creá `juego/jefes/mi_jefe.py` con una clase que herede de `Jefe`, con `@registrar_jefe` y un `tipo`.
 2. Escribí `cargar_animaciones()`, `al_terminar_de_entrar()`, `actualizar_fase()` (sus fases y ataques) y `animacion()`.
-3. Importalo en `juego/jefes/__init__.py` y agregalo a `ORDEN_JEFES` en `config.py` (por ejemplo, `["ojo", "mi_jefe"]` para que se turnen).
+3. Importalo en `juego/jefes/__init__.py` y ponelo como `"jefe"` de un sector en `SECTORES` (`config.py`).
 
-Entrar, morir, la vida, el congelado y el destello al recibir un golpe ya los resuelve la clase base. `ojo.py` es el ejemplo simple. Si es más grande que 120x120, dale `ancho`, `alto` y `y_final`.
+Entrar (con la presentación de su `nombre` y `apodo`), morir, la vida, el congelado y el destello al recibir un golpe ya los resuelve la clase base. `ojo.py` es el ejemplo simple. Si es más grande que 120x120, dale `ancho`, `alto` y `y_final`.
+
+**El ritmo:** cada jefe tiene un pulso (`ms_pulso`). Usá `cambiar_fase_pulsos("atacar", 3, partida.tiempo)` para que una fase dure 3 pulsos, y en `actualizar_fase()` preguntá `self.nuevo_pulso` (empezó un pulso) y `self.pulso` (cuál). Así los ataques caen a tiempo, como en una canción. Armá cada ataque en tres tiempos: **aviso → ataque → ventana para pegarle**.
 
 **Jefes con partes** (cañones, compuertas, segmentos…): cada pieza es una `Parte` (`jefes/partes.py`) con su caja, su vida y su dibujo, y se guarda en `self.partes`. La base ya resuelve el golpe con el dash, el daño al tocarlas, la flechita de "¡DASH!" y la barra del HUD. Vos decidís cuándo se le puede pegar (`golpeable()`) y qué pasa al golpearla o romperla (`al_golpear_parte()` y `al_romper_parte()`). `fortaleza.py` es el ejemplo completo.
 
