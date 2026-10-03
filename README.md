@@ -87,6 +87,8 @@ tests/                  # pytest
 
 Si necesita algo al aparecer, usá `al_aparecer()`; para dibujarse distinto, `dibujar_cuerpo()`. Mirá `embestidor.py` como ejemplo completo.
 
+Otras opciones (atributos de la clase): `tamano` y `radio` (tamaño y radio de daño), `destruible = True` (el dash lo destruye; ver `divisor.py`), `muere_al_chocar = True`, y `crear()` si un "enemigo" son varios a la vez (ver `enjambre.py`). Con `nombre` y `pista` se presenta solo la primera vez que aparece.
+
 ### Un jefe
 1. Creá `juego/jefes/mi_jefe.py` con una clase que herede de `Jefe`, con `@registrar_jefe` y un `tipo`.
 2. Escribí `cargar_animaciones()`, `al_terminar_de_entrar()`, `actualizar_fase()` (sus fases y ataques) y `animacion()`.

@@ -18,6 +18,7 @@ def recoger(partida, tipo):
     partida.capsula = Capsula(TIPOS_POWERUP[tipo], partida.nave.x + 25)
     partida.capsula.y = partida.nave.y + 25
     jugar(partida)
+    partida.proximo_powerup = float("inf")      # que no caiga otro (podria renovar el mismo)
 
 
 def test_la_capsula_cae_derecho_y_se_va_por_abajo(partida):

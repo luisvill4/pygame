@@ -55,6 +55,8 @@ def dibujar(pantalla, partida):
         sector = director.sector
         texto(pantalla, "SECTOR " + str(director.numero_sector), CHICA, GRIS, lienzo.centro_x(), 300)
         dibujo.texto_3d(pantalla, sector["nombre"], MEDIA, sector["color"], (30, 30, 50), 330, 3)
+    if director.nuevo_tipo is not None and partida.tiempo - director.tiempo_cartel_nuevo < 3500:
+        _cartel_nuevo_enemigo(pantalla, director.nuevo_tipo, partida.tiempo - director.tiempo_cartel_nuevo)
     if director.en_oleada and director.restante_oleada() > OLEADA_DURACION - 2000 and dibujo.parpadeo(150):
         dibujo.texto_3d(pantalla, "¡OLEADA!", GRANDE, ROJO, (110, 0, 30), 200, 4)
     if partida.tiempo - partida.tiempo_cartel_jefe < CARTEL_JEFE:
@@ -122,6 +124,18 @@ def _activos(pantalla, partida):
             mensaje = powerup.nombre + " " + str(segundos)
         texto(pantalla, mensaje, CHICA, powerup.color, 20, fila_y, alinear="izquierda")
         fila_y -= 26
+
+
+def _cartel_nuevo_enemigo(pantalla, tipo, transcurrido):
+    # "NUEVO ENEMIGO: DIVISOR" con su dibujo y un consejo (parpadea el primer segundo)
+    centro = lienzo.centro_x()
+    titulo = "NUEVO ENEMIGO: " + tipo.nombre
+    if transcurrido > 1000 or dibujo.parpadeo(150):
+        texto(pantalla, titulo, CHICA, tipo.color, centro + 16, 420)
+        imagen = tipo.cuadros()[0]
+        ancho_titulo = len(titulo) * CHICA
+        pantalla.blit(imagen, imagen.get_rect(midright=(centro + 16 - ancho_titulo // 2 - 10, 420)))
+    texto(pantalla, tipo.pista, CHICA, BLANCO, centro, 448)
 
 
 def _barra_oleada(pantalla, director):

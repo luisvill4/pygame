@@ -19,7 +19,7 @@ import random
 
 from juego import hud, lienzo
 from juego.config import (COMBO_TIEMPO, COMBO_MAXIMO, MONEDAS_POR_NIVEL, MS_POR_FRAME,
-                          PUNTOS_ENEMIGO_CONGELADO, RADIO_ENEMIGO, RADIO_BALA, NAVE_VELOCIDAD,
+                          PUNTOS_ENEMIGO_CONGELADO, RADIO_BALA, NAVE_VELOCIDAD, RECARGA_POR_DESTRUIR,
                           TURBO_VELOCIDAD, DASH_RECARGA, RECARGA_RAPIDA, PRIMER_POWERUP, ESPERA_POWERUP,
                           INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, JEFE_CADA_NIVELES, ORDEN_JEFES, JEFE_PUNTOS,
                           CARTEL_JEFE, DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
@@ -326,20 +326,16 @@ class Partida:
         for enemigo in self.enemigos:
             enemigo.actualizar(self, congelados)
 
-        caja_nave = self.nave.caja_recoger()
-        for enemigo in self.enemigos:
-            if not enemigo.activo(ahora):
+        nave = self.nave
+        caja_nave = nave.caja_recoger()
+        for enemigo in list(self.enemigos):         # (una copia: se pueden quitar o agregar enemigos)
+            if enemigo not in self.enemigos or not enemigo.activo(ahora):
                 continue
             golpe_x, golpe_y = enemigo.centro()        # donde estaba al chocar
-            # Congelado se "recoge" con la caja grande; si no, el daño usa los circulos
-            if congelados:
-                toca = caja_nave.colliderect(enemigo.caja())
-            else:
-                toca = self.nave.toca_circulo(golpe_x, golpe_y, RADIO_ENEMIGO)
-            if not toca:
-                continue
-            if congelados:
-                # Enemigo congelado: lo destruyes y ganas puntos (el hielo sigue)
+            # Recoger (congelado) y destruir con el dash usan la caja grande, mas facil de acertar;
+            # el daño a la nave usa los circulos, mas justos
+            if congelados and caja_nave.colliderect(enemigo.caja()):
+                # Enemigo congelado: lo rompes y ganas puntos (el hielo sigue)
                 ganados = self.sumar_puntos(PUNTOS_ENEMIGO_CONGELADO)
                 self.sonidos.reproducir("moneda")
                 self.tiempo_moneda = ahora
@@ -347,14 +343,47 @@ class Partida:
                 self.efectos.texto_flotante("+" + str(ganados), golpe_x, golpe_y - 20, HIELO)
                 self.efectos.sacudir(6)
                 self.congelar_frames = 3
-                enemigo.reaparecer(self)
-            elif self.nave.atraviesa(ahora):
-                continue    # el dash y la invulnerabilidad atraviesan enemigos
-            else:
+                if enemigo.destruible:
+                    self.destruir_enemigo(enemigo, con_dash=False)
+                else:
+                    enemigo.reaparecer(self)
+            elif congelados:
+                continue
+            elif enemigo.destruible and nave.en_dash(ahora) and caja_nave.colliderect(enemigo.caja()):
+                self.destruir_con_dash(enemigo)
+            elif nave.toca_circulo(golpe_x, golpe_y, enemigo.radio) and not nave.atraviesa(ahora):
                 self.danar_jugador(golpe_x, golpe_y)
                 if self.termino:
                     break
-                enemigo.reaparecer(self)
+                if enemigo.muere_al_chocar:
+                    self.efectos.explosion(golpe_x, golpe_y, [(40, 40, 60), enemigo.color], 16, 4, 3)
+                    self.destruir_enemigo(enemigo, con_dash=False)
+                else:
+                    enemigo.reaparecer(self)
+
+    def destruir_con_dash(self, enemigo):
+        # El dash destruye a los enemigos 'destruibles': puntos, chispas, y el dash se recarga un poco
+        centro_x, centro_y = enemigo.centro()
+        ganados = self.sumar_puntos(enemigo.puntos_dash)
+        self.sonidos.reproducir("golpe")
+        self.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color, BLANCO], 24, 6, 4)
+        self.efectos.texto_flotante("+" + str(ganados), centro_x, centro_y - 20, enemigo.color)
+        self.efectos.sacudir(4)
+        self.entrada.vibrar(0.3, 0.5, 80)
+        self.congelar_frames = 2
+        self.nave.dash_listo = max(self.tiempo, self.nave.dash_listo - RECARGA_POR_DESTRUIR)
+        self.destruir_enemigo(enemigo, con_dash=True)
+
+    def destruir_enemigo(self, enemigo, con_dash):
+        # Lo saca del juego (si es un divisor, antes se parte)
+        enemigo.al_destruirse(self, con_dash)
+        self.quitar_enemigo(enemigo)
+
+    def quitar_enemigo(self, enemigo):
+        # Todo enemigo que sale del juego pasa por aca (destruido, fin de oleada, cambio de sector)
+        if enemigo in self.enemigos:
+            self.enemigos.remove(enemigo)
+        enemigo.al_quitar(self)
 
     def _actualizar_jefe(self):
         mover_balas(self.balas, self.efectos)

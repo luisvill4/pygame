@@ -9,6 +9,8 @@ from juego.enemigos.base import Enemigo, registrar_enemigo
 @registrar_enemigo
 class Rebotador(Enemigo):
     tipo = "rebotador"
+    nombre = "REBOTADOR"
+    pista = "REBOTA EN LOS BORDES"
     color = AMARILLO
     rebota_en_bordes = True
 

@@ -17,6 +17,8 @@ _blanco = []        # primer cuadro en blanco (respaldo si falta el sprite de ca
 @registrar_enemigo
 class Embestidor(Enemigo):
     tipo = "embestidor"
+    nombre = "EMBESTIDOR"
+    pista = "CUANDO APUNTA, CORRETE"
     color = MAGENTA
 
     def al_aparecer(self, partida):

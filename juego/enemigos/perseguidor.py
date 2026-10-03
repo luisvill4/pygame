@@ -6,6 +6,8 @@ from juego.enemigos.base import Enemigo, registrar_enemigo
 @registrar_enemigo
 class Perseguidor(Enemigo):
     tipo = "perseguidor"
+    nombre = "PERSEGUIDOR"
+    pista = "TE SIGUE: ESQUIVALO"
     color = ROJO
 
     def mover(self, partida):

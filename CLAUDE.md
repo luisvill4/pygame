@@ -23,7 +23,7 @@ juego/
   partida.py            # Partida: todo el estado de una partida y sus reglas
   progresion.py         # Director: presupuesto de enemigos, sectores y oleadas
   nave.py  moneda.py  proyectiles.py (Bala)
-  enemigos/  base.py (Enemigo + registro) · perseguidor.py · rebotador.py · embestidor.py
+  enemigos/  base.py (Enemigo + registro) · perseguidor · rebotador · embestidor · divisor · enjambre
   jefes/     base.py (Jefe + registro) · ojo.py (JefeOjo)
   powerups/  base.py (PowerUp, Capsula, registro) · tipos.py (los 7 power-ups, en orden)
   escenas/   base.py · inicio · dificultad · opciones · listo · juego · pausa · explosion · iniciales · fin
@@ -163,13 +163,37 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - Las subclases escriben `mover()`, y si hace falta `al_aparecer()`, `paso()` y `dibujar_cuerpo()`.
   - `perseguidor`: inercia y se separa de los demás.
   - `rebotador`: diagonal y rebota; se acelera con `factor_velocidad()`.
+  - **Enemigos destruibles con el dash** (`destruible = True`): `Partida._actualizar_enemigos` los destruye si la nave está en dash y su `caja_recoger()` toca `enemigo.caja()`.
+    - `destruir_con_dash()` da `puntos_dash`, chispas y 2 frames de hit-stop, y adelanta la recarga del dash `RECARGA_POR_DESTRUIR` ms.
+    - Después pasa por `destruir_enemigo()`, que llama a `al_destruirse(partida, con_dash)` y a `quitar_enemigo()`.
+    - **Todo enemigo que sale del juego pasa por `Partida.quitar_enemigo()`**, que llama al hook `al_quitar()`; el dron lo usa para dejar su bandada.
+    - Congelados y destruibles se rompen enteros (sin partirse).
+    - Los de siempre (perseguidor, rebotador, embestidor) siguen siendo atravesados por el dash.
+  - Atributos de clase de `Enemigo`:
+    - `tamano` y `radio`: el tamaño varía por tipo, y el daño usa `enemigo.radio`.
+    - `destruible`, `puntos_dash` y `muere_al_chocar` (si te pega, se destruye en vez de reaparecer).
+    - `nombre` y `pista`: el cartel "NUEVO ENEMIGO" en `hud.py`.
+    - `crear()`: el enjambre crea varios enemigos a la vez; se usa vía `crear_enemigos(tipo, partida)`, que devuelve una lista.
+    - Cada instancia tiene su `costo`: los hijos del divisor cuestan 0 y cada dron cuesta una parte del enjambre.
+    - `nacer_en(partida, x, y, espera)`: aparecer en un punto, parpadeando (`naciendo`) en vez de con la X.
+  - `divisor` (48x48) → 2 `divisor_mediano` (32x32) → 2 `divisor_chico` (20x20), cada uno con su clase.
+    - Los hijos nacen al costado del dash con `DIVISOR_NACIMIENTO` ms sin hacer daño.
+    - Su velocidad está en `DIVISOR_VELOCIDAD` y sus puntos en `DIVISOR_PUNTOS`.
+    - El respaldo es `slime()`, dibujado a la mitad del tamaño y escalado x2.
+  - `enjambre` (`Dron`, 20x20): son `ENJAMBRE_CANTIDAD` drones que comparten una `Bandada`.
+    - La bandada es el centro del grupo: sigue a la nave y gira, y la formación se abre y se cierra. Sus fases son volar → aviso (destello blanco, `AVISO_PICADA`) → picada (`ENJAMBRE_PICADA`).
+    - Cada dron va hacia `bandada.lugar(dron)` como un resorte.
+    - Si un dron te choca, explota (`muere_al_chocar`). Destruirlos a todos con el dash da `ENJAMBRE_BONUS` (`todos_con_dash`).
+    - Al volver del jefe, la bandada se reubica una sola vez (`ubicar`).
   - `embestidor`: `acercarse → apuntar (0.6 s, línea roja) → cargar (0.5 s)`. Solo te sigue y embiste dentro de `RANGO_EMBESTIDOR`; si no, deambula con `rumbo`.
   - **Separación:** los que persiguen se alejan entre sí a menos de `SEPARACION_ENEMIGOS`, con fuerza `FUERZA_SEPARACION`. Sin esto, se fusionaban a los ~10 s.
   - Progresión: la decide `Partida.director` (`progresion.Director`).
     - **Presupuesto:** cada tipo cuesta `COSTO_ENEMIGO` y se desbloquea en `DESBLOQUEO_ENEMIGO`. Cada nivel tiene `presupuesto()` (`PRESUPUESTO_INICIAL + (nivel-1) * PRESUPUESTO_POR_NIVEL`, con tope `PRESUPUESTO_MAXIMO`, por `reglas["presupuesto"]`).
       - `completar_presupuesto()` agrega enemigos al azar con `random.choices`; el favorito del sector pesa `PESO_FAVORITO`. Como mucho hay `ENEMIGOS_MAX` fijos.
       - El tipo recién desbloqueado se presenta primero.
-      - Se llama al empezar, al subir de nivel y al volver del jefe.
+      - Se llama al empezar, al subir de nivel y al volver del jefe. La cantidad se cuenta con `cantidad_actual()` (un enjambre cuenta como uno).
+      - **Refuerzos:** cada `REFUERZO_ESPERA`, si sobra presupuesto (porque destruiste enemigos), llega uno nuevo.
+      - Cuando se desbloquea un tipo después del nivel 1, el HUD muestra "NUEVO ENEMIGO" (`nuevo_tipo`, `tiempo_cartel_nuevo`).
     - **Sectores** (`SECTORES`, cada `SECTOR_CADA_NIVELES` niveles): el primero es siempre el Cinturón y después se sortean sin repetir el mismo seguido.
       - Al cambiar, se va `RECAMBIO_SECTOR` de los enemigos y aparece el cartel (`tiempo_cartel_sector`).
       - El fondo pasa a sus colores con `Fondo.ir_a_sector(tinte, color)`, que lo hace en 4 etapas durante `TRANSICION_SECTOR` pasos (lo llama `Escena.mover_fondo(partida)`). Los tintes no pasan de ~110 por canal.

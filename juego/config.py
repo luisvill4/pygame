@@ -126,8 +126,24 @@ DISTANCIA_APARICION = 300       # los enemigos aparecen a mas de esta distancia 
 # Presupuesto de amenaza: cada enemigo "cuesta" puntos y cada nivel tiene un presupuesto.
 # El juego elige al azar que enemigos poner hasta gastarlo (entre los ya desbloqueados),
 # asi cada partida es distinta pero la dificultad sigue controlada (ver progresion.py)
-COSTO_ENEMIGO = {"rebotador": 1, "perseguidor": 2, "embestidor": 3}
-DESBLOQUEO_ENEMIGO = {"perseguidor": 1, "rebotador": 2, "embestidor": 3}   # nivel desde el que aparece
+COSTO_ENEMIGO = {"rebotador": 1, "perseguidor": 2, "embestidor": 3, "divisor": 4, "enjambre": 3}
+DESBLOQUEO_ENEMIGO = {"perseguidor": 1, "rebotador": 2, "embestidor": 3,   # nivel desde el que aparece
+                      "divisor": 4, "enjambre": 7}
+REFUERZO_ESPERA = 5000          # ms: si destruiste enemigos, cada tanto llega otro hasta llenar el presupuesto
+RECARGA_POR_DESTRUIR = 400      # ms que se adelanta la recarga del dash por cada enemigo que destruye
+
+# Divisor: masa verde que el dash parte en dos (grande -> 2 medianos -> 2 chicos cada uno)
+DIVISOR_VELOCIDAD = {"divisor": 0.9, "divisor_mediano": 1.6, "divisor_chico": 2.4}
+DIVISOR_PUNTOS = {"divisor": 2, "divisor_mediano": 3, "divisor_chico": 5}
+DIVISOR_NACIMIENTO = 450        # ms que parpadean los hijos al nacer (sin hacer daño)
+
+# Enjambre: drones que vuelan en formacion; el dash los destruye de a uno
+ENJAMBRE_CANTIDAD = 5
+ENJAMBRE_VELOCIDAD = 1.4        # velocidad del grupo
+ENJAMBRE_PICADA = 3.8           # velocidad cuando se lanza en picada contra la nave
+ENJAMBRE_ESPERA_PICADA = (3500, 5500)   # ms entre picadas (al azar)
+ENJAMBRE_PUNTOS = 2             # por dron
+ENJAMBRE_BONUS = 10             # por destruir el enjambre entero con el dash
 PRESUPUESTO_INICIAL = 2
 PRESUPUESTO_POR_NIVEL = 1.8
 PRESUPUESTO_MAXIMO = 24
@@ -193,9 +209,9 @@ SECTORES = [
     {"nombre": "NEBULOSA CARMESI", "color": ROJO, "tinte": (110, 35, 50), "fondo": (16, 4, 8),
      "favorito": "embestidor"},
     {"nombre": "CAMPO ESMERALDA", "color": VERDE, "tinte": (35, 105, 70), "fondo": (4, 14, 10),
-     "favorito": "rebotador"},
+     "favorito": "divisor"},
     {"nombre": "MAR DE AMBAR", "color": AMARILLO, "tinte": (110, 80, 30), "fondo": (14, 10, 4),
-     "favorito": "perseguidor"},
+     "favorito": "enjambre"},
     {"nombre": "ABISMO AZUL", "color": HIELO, "tinte": (35, 65, 110), "fondo": (4, 6, 20),
      "favorito": "embestidor"},
 ]

@@ -19,8 +19,8 @@ import random
 from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, PRESUPUESTO_INICIAL, PRESUPUESTO_POR_NIVEL,
                           PRESUPUESTO_MAXIMO, ENEMIGOS_MAX, SECTORES, SECTOR_CADA_NIVELES, PESO_FAVORITO,
                           RECAMBIO_SECTOR, OLEADA_DESDE_NIVEL, OLEADA_ESPERA, OLEADA_DURACION,
-                          OLEADA_PRESUPUESTO, OLEADA_PUNTOS, AMARILLO, ROJO)
-from juego.enemigos import crear_enemigo
+                          OLEADA_PRESUPUESTO, OLEADA_PUNTOS, REFUERZO_ESPERA, AMARILLO, ROJO)
+from juego.enemigos import crear_enemigos, TIPOS_ENEMIGO
 
 
 class Director:
@@ -34,6 +34,11 @@ class Director:
         self.oleada_hasta = 0
         self.vidas_al_empezar_oleada = 0
         self.proxima_oleada = random.randint(*OLEADA_ESPERA)
+        # Refuerzos: si destruis enemigos, cada tanto llega otro hasta llenar el presupuesto
+        self.proximo_refuerzo = REFUERZO_ESPERA
+        # Cartel "NUEVO ENEMIGO" la primera vez que aparece un tipo
+        self.nuevo_tipo = None
+        self.tiempo_cartel_nuevo = -10000
 
     # ---------- Presupuesto ----------
 
@@ -42,9 +47,24 @@ class Director:
         base = min(PRESUPUESTO_INICIAL + (nivel - 1) * PRESUPUESTO_POR_NIVEL, PRESUPUESTO_MAXIMO)
         return base * self.partida.reglas["presupuesto"]
 
+    def fijos(self):
+        # Los enemigos que se quedan (los de las oleadas se van)
+        return [e for e in self.partida.enemigos if not e.de_oleada]
+
     def costo_actual(self):
-        # Lo que "cuestan" los enemigos fijos (las oleadas no cuentan)
-        return sum(COSTO_ENEMIGO.get(e.tipo, 1) for e in self.partida.enemigos if not e.de_oleada)
+        # Lo que "cuestan" los enemigos fijos (cada uno sabe su costo: los hijos del
+        # divisor no cuestan nada y cada dron cuesta una parte del enjambre)
+        return sum(e.costo for e in self.fijos())
+
+    def cantidad_actual(self):
+        # Cuantos "enemigos" hay (un enjambre cuenta como uno)
+        return sum(e.costo / COSTO_ENEMIGO[e.tipo] for e in self.fijos() if e.costo)
+
+    def agregar(self, tipo, de_oleada=False):
+        nuevos = crear_enemigos(tipo, self.partida)
+        for enemigo in nuevos:
+            enemigo.de_oleada = de_oleada
+        self.partida.enemigos.extend(nuevos)
 
     def desbloqueados(self):
         return [tipo for tipo, nivel in DESBLOQUEO_ENEMIGO.items() if self.partida.nivel >= nivel]
@@ -60,19 +80,19 @@ class Director:
     def completar_presupuesto(self):
         # Agrega enemigos hasta gastar el presupuesto del nivel
         partida = self.partida
-        fijos = [e for e in partida.enemigos if not e.de_oleada]
-        # Si recien se desbloqueo un tipo, se presenta primero (para conocerlo)
+        # Si recien se desbloqueo un tipo, se presenta primero (para conocerlo), con su cartel
         for tipo, nivel in DESBLOQUEO_ENEMIGO.items():
-            if partida.nivel == nivel and not any(e.tipo == tipo for e in fijos):
-                partida.enemigos.append(crear_enemigo(tipo, partida))
-                fijos.append(partida.enemigos[-1])
+            if partida.nivel == nivel and not any(e.tipo == tipo for e in self.fijos()):
+                self.agregar(tipo)
+                if nivel > 1:
+                    self.nuevo_tipo = TIPOS_ENEMIGO[tipo]
+                    self.tiempo_cartel_nuevo = partida.tiempo
         disponible = self.presupuesto() - self.costo_actual()
-        while len(fijos) < ENEMIGOS_MAX:
+        while self.cantidad_actual() < ENEMIGOS_MAX:
             tipo = self.elegir_tipo(disponible)
             if tipo is None:
                 break
-            partida.enemigos.append(crear_enemigo(tipo, partida))
-            fijos.append(partida.enemigos[-1])
+            self.agregar(tipo)
             disponible -= COSTO_ENEMIGO[tipo]
 
     # ---------- Avisos de la Partida ----------
@@ -101,11 +121,11 @@ class Director:
         self.numero_sector += 1
         self.tiempo_cartel_sector = partida.tiempo
         # Parte de los enemigos se va (desaparecen en una nube) y despues llegan otros
-        fijos = [e for e in partida.enemigos if not e.de_oleada]
+        fijos = self.fijos()
         for enemigo in random.sample(fijos, int(len(fijos) * RECAMBIO_SECTOR)):
             centro_x, centro_y = enemigo.centro()
             partida.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color], 14, 3, 3)
-            partida.enemigos.remove(enemigo)
+            partida.quitar_enemigo(enemigo)
 
     # ---------- Oleadas ----------
 
@@ -117,6 +137,21 @@ class Director:
         elif (partida.tiempo >= self.proxima_oleada and partida.nivel >= OLEADA_DESDE_NIVEL
               and partida.jefe is None and not partida.enemigos_guardados):
             self.empezar_oleada()
+        self._refuerzos()
+
+    def _refuerzos(self):
+        # Si destruiste enemigos y sobra presupuesto, cada REFUERZO_ESPERA llega uno
+        partida = self.partida
+        if partida.tiempo < self.proximo_refuerzo:
+            return
+        self.proximo_refuerzo = partida.tiempo + REFUERZO_ESPERA
+        if self.en_oleada or partida.jefe is not None or partida.enemigos_guardados:
+            return
+        if self.cantidad_actual() >= ENEMIGOS_MAX:
+            return
+        tipo = self.elegir_tipo(self.presupuesto() - self.costo_actual())
+        if tipo is not None:
+            self.agregar(tipo)
 
     def empezar_oleada(self):
         partida = self.partida
@@ -130,9 +165,7 @@ class Director:
             tipo = self.elegir_tipo(disponible)
             if tipo is None:
                 break
-            enemigo = crear_enemigo(tipo, partida)
-            enemigo.de_oleada = True
-            partida.enemigos.append(enemigo)
+            self.agregar(tipo, de_oleada=True)
             disponible -= COSTO_ENEMIGO[tipo]
 
     def terminar_oleada(self, superada):
@@ -145,7 +178,7 @@ class Director:
         for enemigo in [e for e in partida.enemigos if e.de_oleada]:
             centro_x, centro_y = enemigo.centro()
             partida.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color], 14, 3, 3)
-            partida.enemigos.remove(enemigo)
+            partida.quitar_enemigo(enemigo)
         if superada:
             # Premio: puntos y un power-up que cae enseguida
             ganados = partida.sumar_puntos(OLEADA_PUNTOS * partida.nivel)

@@ -40,7 +40,7 @@ def test_los_enemigos_respetan_el_presupuesto_y_el_desbloqueo(partida):
             partida.enemigos_guardados.clear()
         director = partida.director
         fijos = [e for e in partida.enemigos if not e.de_oleada]
-        assert len(fijos) <= ENEMIGOS_MAX
+        assert director.cantidad_actual() <= ENEMIGOS_MAX + 1     # un enjambre cuenta como uno
         # No se pasa del presupuesto (salvo por el enemigo nuevo que se presenta)
         assert director.costo_actual() <= director.presupuesto() + max(COSTO_ENEMIGO.values())
         for enemigo in fijos:
