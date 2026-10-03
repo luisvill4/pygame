@@ -1,0 +1,5 @@
+# Para jugar (se necesita >= 2.1.4 por pygame.transform.grayscale)
+pygame>=2.1.4,<3
+
+# Para los tests
+pytest>=8
