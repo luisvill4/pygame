@@ -26,6 +26,7 @@ class Inicio(Escena):
         self.opcion = 0         # 0 = JUGAR, 1 = OPCIONES
 
     def actualizar(self, entrada):
+        self.mover_fondo()
         self.app.efectos.estela(400, altura_nave(), 0)
         self.app.efectos.actualizar()
 
@@ -40,7 +41,7 @@ class Inicio(Escena):
 
     def dibujar(self, pantalla_completa):
         # Fondo en todo el ancho; el menu en la zona central de 800x600
-        self.app.fondo.mover_y_dibujar(pantalla_completa)
+        self.dibujar_fondo(pantalla_completa)
         pantalla = dibujo.zona_central(pantalla_completa)
 
         # Record arriba, como en las maquinas

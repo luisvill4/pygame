@@ -5,6 +5,8 @@ Todo cae despacio; lo lejano mas lento que lo cercano. Mientras se juega, ademas
 el fondo se corre al reves de la nave (lo maneja quien llama a mover()).
 Paleta del fondo: ningun canal por encima de ~110, para que no se confunda con
 enemigos, monedas o power-ups.
+
+mover() va en la logica (60 veces por segundo) y dibujar() en cada cuadro, interpolado.
 """
 import random
 
@@ -12,6 +14,7 @@ import pygame
 
 from juego import recursos, lienzo
 from juego.config import ALTO, ANCHO_MENU, FONDO, PROFUNDIDAD
+from juego.interpolacion import Interpolador
 
 
 class ObjetoFondo:
@@ -19,15 +22,22 @@ class ObjetoFondo:
         self.imagen, self.x, self.y, self.profundidad = imagen, x, y, profundidad
 
 
+class Estrella:
+    __slots__ = ("x", "y", "velocidad")
+
+    def __init__(self, x, y, velocidad):
+        # Las rapidas (velocidad 1 a 3) son mas grandes, brillantes y cercanas
+        self.x, self.y, self.velocidad = x, y, velocidad
+
+
 class Fondo:
     def __init__(self):
         # El fondo se arma para el ancho actual (al cambiar el formato se crea uno nuevo)
         escala = lienzo.ancho / ANCHO_MENU
-        # Estrellas: [x, y, velocidad]; las rapidas son mas grandes, brillantes y cercanas
         self.estrellas = []
         for _ in range(round(90 * escala)):
-            self.estrellas.append([random.randint(0, lienzo.ancho), random.randint(0, ALTO),
-                                   random.choice([1, 1, 1, 2, 2, 3])])
+            self.estrellas.append(Estrella(random.randint(0, lienzo.ancho), random.randint(0, ALTO),
+                                           random.choice([1, 1, 1, 2, 2, 3])))
         # Nebulosas y planetas, en orden de dibujo: primero lo mas lejano
         self.objetos = []
         self.agregar("nebulosa", 40 * escala, 60)
@@ -35,6 +45,7 @@ class Fondo:
         self.agregar("planeta_chico", 660 * escala, 140)
         self.agregar("planeta_chico", 150 * escala, 470)
         self.agregar("planeta_grande", 520 * escala, 250)
+        self.interpolador = Interpolador()
 
     def agregar(self, nombre, x, y, voltear=False):
         # Si falta el sprite, simplemente no se agrega
@@ -46,7 +57,8 @@ class Fondo:
         self.objetos.append(ObjetoFondo(imagen, x, y, PROFUNDIDAD[nombre]))
 
     def mover(self, empuje_x=0, empuje_y=0):
-        # Cada capa cae a 0.6 * profundidad px por frame, mas el empuje (paralaje de la nave)
+        # Un paso de logica: cada capa cae a 0.6 * profundidad px, mas el empuje (paralaje)
+        self.interpolador.guardar(self.objetos + self.estrellas)
         for objeto in self.objetos:
             ancho, alto = objeto.imagen.get_size()
             objeto.x += empuje_x * objeto.profundidad
@@ -65,28 +77,25 @@ class Fondo:
                 objeto.y = ALTO
 
         for estrella in self.estrellas:
-            estrella[0] += empuje_x * estrella[2]
-            estrella[1] += (0.6 + empuje_y) * estrella[2]
-            if estrella[0] < 0:
-                estrella[0] += lienzo.ancho
-            elif estrella[0] > lienzo.ancho:
-                estrella[0] -= lienzo.ancho
-            if estrella[1] > ALTO:
-                estrella[0] = random.randint(0, lienzo.ancho)
-                estrella[1] = 0
-            elif estrella[1] < 0:
-                estrella[0] = random.randint(0, lienzo.ancho)
-                estrella[1] = ALTO
+            estrella.x += empuje_x * estrella.velocidad
+            estrella.y += (0.6 + empuje_y) * estrella.velocidad
+            if estrella.x < 0:
+                estrella.x += lienzo.ancho
+            elif estrella.x > lienzo.ancho:
+                estrella.x -= lienzo.ancho
+            if estrella.y > ALTO:
+                estrella.x = random.randint(0, lienzo.ancho)
+                estrella.y = 0
+            elif estrella.y < 0:
+                estrella.x = random.randint(0, lienzo.ancho)
+                estrella.y = ALTO
 
-    def dibujar(self, pantalla):
+    def dibujar(self, pantalla, fraccion=1):
         pantalla.fill(FONDO)
-        for objeto in self.objetos:
-            pantalla.blit(objeto.imagen, (int(objeto.x), int(objeto.y)))
-        for estrella in self.estrellas:
-            brillo = 60 + estrella[2] * 60
-            tamano = 1 if estrella[2] < 3 else 2
-            pantalla.fill((brillo, brillo, brillo), (int(estrella[0]), int(estrella[1]), tamano, tamano))
-
-    def mover_y_dibujar(self, pantalla, empuje_x=0, empuje_y=0):
-        self.mover(empuje_x, empuje_y)
-        self.dibujar(pantalla)
+        with self.interpolador.aplicar(self.objetos + self.estrellas, fraccion):
+            for objeto in self.objetos:
+                pantalla.blit(objeto.imagen, (int(objeto.x), int(objeto.y)))
+            for estrella in self.estrellas:
+                brillo = 60 + estrella.velocidad * 60
+                tamano = 1 if estrella.velocidad < 3 else 2
+                pantalla.fill((brillo, brillo, brillo), (int(estrella.x), int(estrella.y), tamano, tamano))

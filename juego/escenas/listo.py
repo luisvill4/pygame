@@ -12,6 +12,7 @@ class Listo(Escena):
         self.partida = partida
 
     def actualizar(self, entrada):
+        self.mover_fondo()
         # Si se pierde el foco durante el READY, se pausa apenas empieza el juego
         if entrada.foco_perdido or entrada.mando_desconectado:
             self.partida.pausa_pendiente = True

@@ -5,7 +5,8 @@ El resto del juego nunca pregunta por teclas ni botones: pregunta por acciones
 ("¿se apreto ACEPTAR?", "¿se apreto DASH?"). Asi se puede cambiar una tecla, o
 agregar otro control, tocando solo este archivo.
 
-- Acciones de un toque: se juntan en la lista 'acciones' con los eventos del frame.
+- Acciones de un toque: se juntan en la lista 'acciones' hasta que un paso de logica
+  las usa (consumir()).
 - Movimiento: direccion() lee las flechas mantenidas o, si no hay, el mando
   (cruceta en 8 direcciones, stick izquierdo en cualquier angulo).
 """
@@ -73,11 +74,9 @@ class Entrada:
         self.teclas_mantenidas = pygame.key.get_pressed
 
     def procesar(self, eventos):
-        # Lee los eventos del frame y deja listas las acciones
-        self.acciones = []
-        self.cerrar = False
-        self.foco_perdido = False
-        self.mando_desconectado = False
+        # Lee los eventos y SUMA sus acciones a las pendientes. Se juntan hasta que un paso
+        # de logica las usa y llama a consumir(): asi, dibujando a mas de 60 FPS (cuadros
+        # sin paso de logica) o a menos (varios pasos por cuadro), no se pierde ninguna
         for evento in eventos:
             if evento.type == pygame.QUIT:
                 self.cerrar = True
@@ -125,8 +124,14 @@ class Entrada:
                     self.acciones.append(ABAJO)
             self.stick_antes[evento.axis] = direccion
 
+    def consumir(self):
+        # Un paso de logica ya uso las acciones pendientes: se borran
+        self.acciones = []
+        self.foco_perdido = False
+        self.mando_desconectado = False
+
     def pulso(self, accion):
-        # ¿Se apreto esta accion en este frame?
+        # ¿Se apreto esta accion (desde el ultimo paso de logica)?
         return accion in self.acciones
 
     def direccion(self):

@@ -12,11 +12,11 @@ import pygame
 
 from juego import dibujo
 from juego.dibujo import texto, CHICA, MEDIA, TITULO
-from juego.config import CIAN, AMARILLO, BLANCO, GRIS, VOLUMEN_MAX, FORMATOS
+from juego.config import CIAN, AMARILLO, BLANCO, GRIS, VOLUMEN_MAX, FORMATOS, FRECUENCIAS
 from juego.entrada import ACEPTAR, VOLVER, ARRIBA, ABAJO, IZQUIERDA, DERECHA
 from juego.escenas.base import Escena
 
-FILAS = ["RESOLUCION", "FORMATO", "VOLUMEN", "MUSICA", "EFECTOS", "AVISO JEFE", "VOLVER"]
+FILAS = ["RESOLUCION", "FORMATO", "FPS", "VOLUMEN", "MUSICA", "EFECTOS", "AVISO JEFE", "VOLVER"]
 INTERRUPTORES = ("MUSICA", "EFECTOS", "AVISO JEFE")     # opciones de SI / NO (ENTER tambien las cambia)
 
 
@@ -28,6 +28,7 @@ class Opciones(Escena):
         self.fila = 0                   # fila elegida
 
     def actualizar(self, entrada):
+        self.mover_fondo()
         # Cada accion se procesa en orden
         for accion in entrada.acciones:
             if self.app.escena is not self:
@@ -61,6 +62,10 @@ class Opciones(Escena):
             formatos = list(FORMATOS)
             opciones.formato = formatos[(formatos.index(opciones.formato) + direccion) % len(formatos)]
             self.app.aplicar_formato()
+        elif fila == "FPS":
+            # Solo cambia cada cuanto se dibuja: la logica sigue a 60 pasos por segundo
+            posicion = FRECUENCIAS.index(opciones.fps)
+            opciones.fps = FRECUENCIAS[(posicion + direccion) % len(FRECUENCIAS)]
         elif fila == "VOLUMEN":
             opciones.volumen = min(max(opciones.volumen + direccion, 0), VOLUMEN_MAX)
         elif fila == "MUSICA":
@@ -75,13 +80,13 @@ class Opciones(Escena):
 
     def dibujar(self, pantalla_completa):
         # Fondo en todo el ancho; el menu en la zona central de 800x600
-        self.app.fondo.mover_y_dibujar(pantalla_completa)
+        self.dibujar_fondo(pantalla_completa)
         pantalla = dibujo.zona_central(pantalla_completa)
         dibujo.texto_3d(pantalla, "OPCIONES", TITULO, CIAN, (0, 70, 110), 130)
 
         dibujo.marco(pantalla, pygame.Rect(80, 180, 640, 310), CIAN)
         for i, fila in enumerate(FILAS):
-            fila_y = 220 + i * 40
+            fila_y = 210 + i * 36
             elegida = i == self.fila
             dibujo.opcion(pantalla, fila, MEDIA, 120, fila_y, elegida, alinear="izquierda")
             self._dibujar_valor(pantalla, fila, fila_y, AMARILLO if elegida else BLANCO)
@@ -101,6 +106,9 @@ class Opciones(Escena):
         elif fila == "FORMATO":
             color_formato = GRIS if self.en_partida else color
             texto(pantalla, "< " + opciones.formato + " >", MEDIA, color_formato, 700, fila_y, alinear="derecha")
+        elif fila == "FPS":
+            valor = str(opciones.fps) if opciones.fps else "SIN LIMITE"
+            texto(pantalla, "< " + valor + " >", MEDIA, color, 700, fila_y, alinear="derecha")
         elif fila == "VOLUMEN":
             # Barra de cuadritos: llenos hasta el volumen actual, el resto solo el borde
             inicio_barra = 660 - VOLUMEN_MAX * 16

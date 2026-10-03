@@ -102,6 +102,12 @@ class Efectos:
             flotante.vida -= 1
             if flotante.vida <= 0:
                 self.textos.remove(flotante)
+        # El temblor y el destello duran pasos de logica (no cuadros dibujados),
+        # asi duran lo mismo a cualquier FPS
+        if self.destello > 0:
+            self.destello -= 1
+        if self.temblor > 0:
+            self.temblor -= 1
 
     def dibujar(self, pantalla):
         for particula in self.particulas:
@@ -117,13 +123,11 @@ class Efectos:
             if flotante.vida > 12 or flotante.vida // 3 % 2 == 0:
                 dibujo.texto(pantalla, flotante.texto, dibujo.CHICA, flotante.color, flotante.x, flotante.y)
 
-    def aplicar_temblor_y_destello(self, pantalla):
+    def dibujar_temblor_y_destello(self, pantalla):
         if self.destello > 0:
             dibujo.oscurecer(pantalla, self.color_destello, 70)
-            self.destello -= 1
         if self.temblor > 0:
             # Mueve toda la imagen unos pixeles (siempre en pasos de 2, estilo retro)
             copia = pantalla.copy()
             pantalla.fill(FONDO)
             pantalla.blit(copia, (random.randint(-3, 3) * 2, random.randint(-3, 3) * 2))
-            self.temblor -= 1

@@ -20,6 +20,8 @@ python main.py
 
 En **Opciones → FORMATO** se elige entre 4:3 (800x600) y 16:9 (1066x600, un campo de juego más ancho). Se cambia desde el menú de inicio, no en medio de una partida.
 
+En **Opciones → FPS** se elige cuántas veces por segundo se dibuja: 30, 60, 90, 120, 144 o SIN LIMITE. El juego va siempre a la misma velocidad: la lógica avanza 60 veces por segundo y, por encima de 60 FPS, el movimiento se dibuja interpolado (más suave en monitores de alta frecuencia).
+
 ## Cómo correr los tests
 
 ```
@@ -56,6 +58,7 @@ tests/                  # pytest
 - **Clases base (patrón *Template Method*).** `Enemigo`, `Jefe` y `PowerUp` resuelven todo lo común: aparecer con aviso, congelarse con el hielo, el sprite de respaldo, el HUD… Cada tipo escribe solo lo que lo hace distinto.
 - **`Partida` en vez de variables globales.** Todo el estado de una partida vive en un objeto. Empezar otra partida es crear una nueva, así no queda nada "sucio" de la anterior.
 - **Entrada por acciones.** El juego pregunta "¿se apretó DASH?", no "¿se apretó la barra espaciadora?". Así teclado y mando funcionan igual.
+- **Paso fijo + interpolación.** La lógica (`actualizar`) corre siempre 60 veces por segundo y el dibujo (`dibujar`) a la frecuencia elegida. Regla de oro: en `actualizar` se cambia el estado, en `dibujar` solo se dibuja.
 - **Estable.** El juego no se cae si falta un sprite (usa uno dibujado), si no hay placa de sonido, o si `records.json` / `config.json` están dañados o no se pueden escribir.
 
 ## Cómo agregar cosas nuevas

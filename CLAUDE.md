@@ -5,7 +5,7 @@ Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge moneda
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~75 tests, unos 4 s, sin ventana
+python -m pytest        # ~90 tests, unos 7 s, sin ventana
 ```
 - Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
 - **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json` y `__pycache__`.
@@ -17,7 +17,9 @@ main.py                 # App().ejecutar()
 juego/
   config.py             # SOLO valores: colores, paletas, "Reglas del juego", DURACION, mando
   lienzo.py             # formato actual (4:3 / 16:9) y ancho del lienzo: lienzo.ancho
-  app.py                # App: crea los servicios, cambia de escena, bucle (paso() + ejecutar())
+  app.py                # App: servicios, escenas y bucle de paso fijo (paso(), cuadro(ms), ejecutar())
+  interpolacion.py      # Interpolador: dibujar en posiciones intermedias entre pasos de logica
+  reloj.py              # LimitadorFPS: limite de FPS preciso (sleep + espera activa final)
   partida.py            # Partida: todo el estado de una partida y sus reglas
   nave.py  moneda.py  proyectiles.py (Bala)
   enemigos/  base.py (Enemigo + registro) · perseguidor.py · rebotador.py · embestidor.py
@@ -29,8 +31,18 @@ juego/
 tests/                  # conftest.py (fixtures app/partida), ayudas.py, test_*.py
 sprites/ efectos/ fuentes/   # recursos (ver "Sprites"); efectos/ son los sonidos
 records.json            # top 5 {"nombre", "puntos"}; se crea vacío si no existe
-config.json             # {"formato", "resolucion", "volumen" (0-10), "musica", "efectos", "aviso_jefe"}
+config.json             # {"formato", "resolucion", "fps", "volumen" (0-10), "musica", "efectos", "aviso_jefe"}
 ```
+
+**Frecuencia: paso fijo (fixed timestep) + interpolación.**
+- **La lógica avanza siempre en pasos de 1/60 s** (`PASOS_POR_SEGUNDO`, `MS_POR_FRAME`). Todo lo que en `config.py` dice "por frame" es por paso.
+- **Se dibuja a `opciones.fps`** (`FRECUENCIAS` = 30, 60, 90, 120, 144 y 0 = SIN LIMITE). El juego va a la misma velocidad a cualquier FPS, y hay un test que lo comprueba.
+- `App.ejecutar()`: `LimitadorFPS.esperar(fps)` → `cuadro(ms)`. Este suma `ms` a `acumulado` (como mucho `ATRASO_MAXIMO`), corre los pasos que tocan, calcula `fraccion = acumulado / MS_POR_FRAME` y dibuja. `paso()` hace exactamente un paso y un cuadro (lo usan los tests).
+- **Reglas para no romperlo:**
+  - En `actualizar()` va **todo** lo que cambia el estado, incluido `mover_fondo()` y el descuento del temblor y el destello (que va en `Efectos.actualizar`).
+  - `dibujar()` solo dibuja, porque puede correr varias veces o ninguna por paso.
+  - La entrada se acumula (`procesar`) hasta que un paso la usa (`consumir`); así no se pierden teclas.
+  - Lo que se mueve tiene `x`/`y` y está en `Partida.objetos_que_se_mueven()` (o en el `Fondo`). Así se dibuja interpolado con `Interpolador`, que no interpola saltos de más de 80 px (reapariciones).
 Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
 
 **Formato (4:3 / 16:9):** el juego se dibuja a 60 FPS en un lienzo de `ALTO = 600` y un ancho que depende del formato (`FORMATOS`: 800 o 1066).
@@ -54,7 +66,7 @@ Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
 - Partículas (`efectos.Efectos`): cuadrados alineados a una cuadrícula de 2 px. No se desvanecen con transparencia: cambian de color por etapas según una **paleta**, una lista que va de oscuro a brillante (`FUEGO`, `ORO`, `ESCARCHA`…).
 - Efectos disponibles:
   - en `dibujo`: líneas CRT (`efecto_crt`), parpadeos duros (`parpadeo`), texto con relieve (`texto_3d`), marcos de doble línea (`marco`), arcoíris (`color_arcoiris`) y `oscurecer`;
-  - en `Efectos`: temblor en pasos de 2 px y destello de color (`sacudir`, `aplicar_temblor_y_destello`).
+  - en `Efectos`: temblor en pasos de 2 px y destello de color (`sacudir`, `dibujar_temblor_y_destello`; se descuentan en `actualizar`).
 - Variantes de sprites sin archivos nuevos: `recursos.tenir()` (escala de grises + multiplicar color) y `recursos.blanquear()` (`BLEND_RGB_MAX`).
 
 ## Sprites
@@ -93,7 +105,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 
 ### App y escenas (patrón State)
 - `App` crea una sola vez los servicios: `ventana`, `opciones`, `sonidos`, `records`, `entrada`, `fondo`, `efectos`, más `pantalla` (el lienzo de 800x600).
-- `paso()` es un frame: `entrada.procesar(eventos)` → `escena.actualizar(entrada)` → `escena.dibujar(pantalla)` → `ventana.mostrar(pantalla)`. `ejecutar()` repite `paso()` + `tick(60)`.
+- Un paso de lógica es `escena.actualizar(entrada)` + `entrada.consumir()`. Un cuadro es `escena.dibujar(pantalla)` + `ventana.mostrar(pantalla)`. `cuadro(ms)` corre los pasos que tocan y un cuadro; `ejecutar()` lo repite con `LimitadorFPS` (ver "Frecuencia").
 - `App.ahora()` es el reloj real; los tests lo reemplazan. `App(carpeta_datos=..., usar_mandos=...)` también se usa en los tests.
 - Cada escena hereda de `escenas/base.Escena`:
   - `actualizar` cambia el estado o pasa a otra escena con `self.app.cambiar_escena(...)`; `dibujar` solo dibuja.
@@ -161,7 +173,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 
 ### Servicios
 - **Opciones** (`escenas/opciones.py` + `guardado.Opciones(archivo)`):
-  - `FILAS` = RESOLUCION, FORMATO, VOLUMEN, MUSICA, EFECTOS, AVISO JEFE y VOLVER, cada 40 px (`220 + i * 40`) dentro del marco de 180 a 490. Con una fila más ya no entran.
+  - `FILAS` = RESOLUCION, FORMATO, FPS, VOLUMEN, MUSICA, EFECTOS, AVISO JEFE y VOLVER, cada 36 px (`210 + i * 36`) dentro del marco de 180 a 490. Con una fila más ya no entran: habría que hacer páginas o achicar el título.
   - `opciones.resolucion` es un nombre ("800x600", `None` = la primera) y `opciones.formato` es "4:3" o "16:9".
   - IZQ/DER cambian el valor con `_cambiar()`, que lo aplica al instante y lo guarda. ENTER cambia los `INTERRUPTORES`.
   - Para agregar una opción: sumarla a `FILAS`, dibujarla en `_dibujar_valor`, manejarla en `_cambiar` y guardarla en `guardado.Opciones`.
@@ -174,7 +186,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - **Ventana:** el lienzo es `app.pantalla` y `Ventana.mostrar()` lo escala sin suavizar, centrado y con barras negras.
   - `resoluciones` (propiedad) son las de `RESOLUCIONES[lienzo.formato]` que caben en el monitor; "COMPLETA" siempre está. `aplicar(nombre)` abre la ventana por nombre.
   - **Trampa:** al salir de FULLSCREEN, el primer `set_mode` deja el tamaño anterior; `aplicar()` lo repite.
-- **Fondo** (`Fondo.mover_y_dibujar(pantalla, empuje_x, empuje_y)`): objetos (`PROFUNDIDAD`) y estrellas (90 cada 800 px de ancho). Caen a `0.6 * profundidad` y, solo en Juego, se corren con el paralaje (`-v * REACCION_PARALAJE`). Paleta: ningún canal por encima de ~110.
+- **Fondo** (`Fondo.mover(empuje_x, empuje_y)` en la lógica, mediante `Escena.mover_fondo(partida=None)`, y `Fondo.dibujar(pantalla, fraccion)` interpolado, mediante `Escena.dibujar_fondo`): objetos (`PROFUNDIDAD`) y estrellas (90 cada 800 px de ancho). Caen a `0.6 * profundidad` y, solo en Juego, se corren con el paralaje (`-v * REACCION_PARALAJE`). Paleta: ningún canal por encima de ~110.
 
 ## Tests (`tests/`)
 - `conftest.py`:
@@ -188,7 +200,6 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 ## Ideas pendientes (propuestas, aún sin hacer)
 - Estadísticas al final de la partida (monedas, enemigos destruidos, tiempo); por ahora solo se muestra el mejor combo.
 - Logros, tecla M para silenciar, música más intensa según el nivel, transiciones retro entre pantallas y F11 para pantalla completa.
-- Delta time (hoy todo va por frame a 60 FPS fijos).
 - Del análisis de gameplay (no elegidas todavía):
   - tope de velocidad de los enemigos por debajo de la nave (el perseguidor la supera desde el nivel 11);
   - frenar más rápido al cambiar de dirección;

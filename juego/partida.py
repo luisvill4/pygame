@@ -31,6 +31,7 @@ from juego.enemigos import crear_enemigo
 from juego.jefes import crear_jefe
 from juego.powerups import TIPOS_POWERUP, Capsula, HASTA_PERDER_VIDA
 from juego.proyectiles import mover_balas, dibujar_balas
+from juego.interpolacion import Interpolador
 
 
 class Partida:
@@ -47,6 +48,7 @@ class Partida:
         self.congelar_frames = 0        # frames de "hit-stop" (el juego se detiene un instante)
         self.pausa_pendiente = False    # pausar apenas se pueda (se perdio el foco, se desconecto el mando)
         self.termino = False            # la nave exploto: hay que pasar a la escena Explosion
+        self.interpolador = Interpolador()  # movimiento suave al dibujar a mas de 60 FPS
 
         # Jugador y puntaje
         self.nave = Nave()
@@ -215,8 +217,22 @@ class Partida:
     # =========== CADA FRAME =========== #
     # ================================== #
 
+    def objetos_que_se_mueven(self):
+        # Todo lo que se dibuja interpolado (ver interpolacion.py)
+        objetos = [self.nave, self.moneda] + self.enemigos + self.balas + self.efectos.particulas
+        if self.capsula is not None:
+            objetos.append(self.capsula)
+        if self.jefe is not None:
+            objetos.append(self.jefe)
+        return objetos
+
+    def guardar_posiciones(self):
+        # Al empezar cada paso: donde estaba todo (para dibujar los puntos intermedios)
+        self.interpolador.guardar(self.objetos_que_se_mueven())
+
     def actualizar(self, dx, dy, pidio_dash):
-        # Un frame de juego: (dx, dy) es hacia donde se quiere mover la nave
+        # Un paso de juego (1/60 s): (dx, dy) es hacia donde se quiere mover la nave
+        self.guardar_posiciones()
         self.tiempo += MS_POR_FRAME
         vel_max = self.vel_max()
         self.nave.actualizar(self.tiempo, dx, dy, pidio_dash, vel_max, self.recarga_dash(), self.efectos)
@@ -367,8 +383,13 @@ class Partida:
     # ============= DIBUJO ============= #
     # ================================== #
 
-    def dibujar(self, pantalla, con_nave=True):
-        # Todo lo que se ve mientras se juega (el fondo lo dibuja la escena antes)
+    def dibujar(self, pantalla, con_nave=True, fraccion=1):
+        # Todo lo que se ve mientras se juega (el fondo lo dibuja la escena antes).
+        # 'fraccion': cuanto del paso actual ya paso (0 a 1), para dibujar interpolado
+        with self.interpolador.aplicar(self.objetos_que_se_mueven(), fraccion):
+            self._dibujar_todo(pantalla, con_nave)
+
+    def _dibujar_todo(self, pantalla, con_nave):
         self.moneda.dibujar(pantalla)
         if self.capsula is not None:
             self.capsula.dibujar(pantalla)

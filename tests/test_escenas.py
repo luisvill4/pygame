@@ -36,7 +36,7 @@ def test_inicio_opciones_y_volver(app):
 
 def test_opcion_aviso_jefe_se_cambia_y_se_guarda(app):
     app.cambiar_escena(Opciones(app, volver_a=app.escena))
-    for _ in range(5):              # hasta la fila AVISO JEFE
+    for _ in range(6):              # hasta la fila AVISO JEFE
         tecla(pygame.K_DOWN)
     tecla(pygame.K_RETURN)
     avanzar(app)

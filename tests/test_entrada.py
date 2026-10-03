@@ -35,11 +35,22 @@ def test_el_stick_cuenta_un_toque_por_inclinacion():
     entrada = Entrada(usar_mandos=False)
     entrada.procesar([evento(pygame.JOYAXISMOTION, axis=0, value=-0.9, instance_id=0, joy=0)])
     assert entrada.acciones == [IZQUIERDA]
+    entrada.consumir()
     entrada.procesar([evento(pygame.JOYAXISMOTION, axis=0, value=-0.95, instance_id=0, joy=0)])
     assert entrada.acciones == []
     entrada.procesar([evento(pygame.JOYAXISMOTION, axis=0, value=0.0, instance_id=0, joy=0),
                       evento(pygame.JOYAXISMOTION, axis=0, value=0.9, instance_id=0, joy=0)])
     assert entrada.acciones == [DERECHA]
+
+
+def test_las_acciones_se_juntan_hasta_que_un_paso_las_usa():
+    # A mas de 60 FPS hay cuadros sin paso de logica: las teclas no se pueden perder
+    entrada = Entrada(usar_mandos=False)
+    entrada.procesar([evento(pygame.KEYDOWN, key=pygame.K_SPACE)])
+    entrada.procesar([])
+    assert entrada.pulso(DASH)
+    entrada.consumir()
+    assert not entrada.pulso(DASH)
 
 
 def test_cruceta():

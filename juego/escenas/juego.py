@@ -40,6 +40,7 @@ class Juego(Escena):
 
         dx, dy = entrada.direccion()
         partida.actualizar(dx, dy, entrada.pulso(DASH))
+        self.mover_fondo(partida)       # con paralaje: el fondo se corre al reves de la nave
 
         if partida.termino:
             self.app.cambiar_escena(Explosion(self.app, partida))
@@ -47,6 +48,6 @@ class Juego(Escena):
     def dibujar(self, pantalla):
         if self.saltar_dibujo:
             return
-        self.dibujar_partida(pantalla, self.partida, con_nave=True, paralaje=True)
-        self.app.efectos.aplicar_temblor_y_destello(pantalla)
+        self.dibujar_partida(pantalla, self.partida, con_nave=True)
+        self.app.efectos.dibujar_temblor_y_destello(pantalla)
         dibujo.efecto_crt(pantalla)

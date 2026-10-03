@@ -8,7 +8,7 @@ Nunca hacen caer el juego:
 """
 import json
 
-from juego.config import VOLUMEN_MAX, FILAS_RECORDS, FORMATOS
+from juego.config import VOLUMEN_MAX, FILAS_RECORDS, FORMATOS, FRECUENCIAS
 
 
 def _escribir_json(archivo, datos):
@@ -69,6 +69,7 @@ class Opciones:
         # Valores de fabrica
         self.formato = "4:3"
         self.resolucion = None      # None = la primera del formato
+        self.fps = 60               # cuadros por segundo al dibujar (0 = sin limite)
         self.volumen = VOLUMEN_MAX
         self.musica = True
         self.efectos = True
@@ -84,6 +85,8 @@ class Opciones:
                 self.formato = datos["formato"]
             if isinstance(datos.get("resolucion"), str):
                 self.resolucion = datos["resolucion"]
+            if type(datos.get("fps")) is int and datos["fps"] in FRECUENCIAS:
+                self.fps = datos["fps"]
             self.volumen = min(max(int(datos.get("volumen", VOLUMEN_MAX)), 0), VOLUMEN_MAX)
             self.musica = bool(datos.get("musica", True))
             self.efectos = bool(datos.get("efectos", True))
@@ -97,6 +100,7 @@ class Opciones:
         _escribir_json(self.archivo, {
             "formato": self.formato,
             "resolucion": self.resolucion,
+            "fps": self.fps,
             "volumen": self.volumen,
             "musica": self.musica,
             "efectos": self.efectos,

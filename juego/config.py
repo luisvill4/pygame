@@ -24,8 +24,14 @@ def ruta(archivo):
 ALTO = 600
 FORMATOS = {"4:3": 800, "16:9": 1066}      # formato -> ancho del lienzo
 ANCHO_MENU = 800                # los menus se dibujan en una zona central de este ancho
-FPS = 60
-MS_POR_FRAME = 1000 / FPS       # cuanto avanza el reloj del juego en cada frame
+
+# Frecuencia: la LOGICA del juego avanza siempre a 60 pasos por segundo (asi se siente igual
+# a cualquier FPS) y se DIBUJA a la frecuencia elegida en Opciones (0 = sin limite).
+# Todo lo que dice "por frame" en este archivo es por paso de logica (1/60 s)
+PASOS_POR_SEGUNDO = 60
+MS_POR_FRAME = 1000 / PASOS_POR_SEGUNDO     # cuanto avanza el reloj del juego en cada paso
+FRECUENCIAS = [30, 60, 90, 120, 144, 0]     # opciones de FPS (0 = sin limite)
+ATRASO_MAXIMO = 250             # ms: si la ventana se trabo mas que esto, no se intenta alcanzar
 
 # Tamaños de ventana de cada formato (nombre, ancho, alto)
 RESOLUCIONES = {

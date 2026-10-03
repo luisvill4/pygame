@@ -17,6 +17,7 @@ class Iniciales(Escena):
         self.actual = 0             # casilla elegida
 
     def actualizar(self, entrada):
+        self.mover_fondo()
         # Cada accion se procesa en orden
         for accion in entrada.acciones:
             if self.app.escena is not self:
@@ -41,7 +42,7 @@ class Iniciales(Escena):
 
     def dibujar(self, pantalla_completa):
         # Fondo en todo el ancho; el resto en la zona central de 800x600
-        self.app.fondo.mover_y_dibujar(pantalla_completa)
+        self.dibujar_fondo(pantalla_completa)
         pantalla = dibujo.zona_central(pantalla_completa)
         filas = self.app.records.filas
         if not filas or self.partida.puntaje > filas[0]["puntos"]:

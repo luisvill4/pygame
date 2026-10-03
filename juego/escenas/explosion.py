@@ -19,7 +19,9 @@ class Explosion(Escena):
             self.saltar_dibujo = True
             return
 
+        self.partida.guardar_posiciones()   # las particulas de la explosion se dibujan interpoladas
         self.app.efectos.actualizar()
+        self.mover_fondo()
         if self.tiempo_en_escena() > 1500:
             self.app.efectos.reiniciar()
             self.app.sonidos.reproducir("game_over")
@@ -32,5 +34,5 @@ class Explosion(Escena):
         if self.saltar_dibujo:
             return
         self.dibujar_partida(pantalla, self.partida, con_nave=False)
-        self.app.efectos.aplicar_temblor_y_destello(pantalla)
+        self.app.efectos.dibujar_temblor_y_destello(pantalla)
         dibujo.efecto_crt(pantalla)
