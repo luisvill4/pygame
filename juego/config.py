@@ -87,6 +87,8 @@ PUNTOS_ENEMIGO_CONGELADO = 5
 NAVE_VELOCIDAD = 5              # velocidad maxima
 NAVE_ACELERACION = 0.15         # que tan rapido llega a la velocidad maxima (0 a 1)
 NAVE_FRICCION = 0.88            # al soltar: 1 = patina sin parar, 0 = frena en seco
+NAVE_FRENADO = 0.3              # al cambiar de direccion: que tan rapido se corrige la velocidad que
+                                # va "para otro lado" (mas que NAVE_ACELERACION: dobla y frena enseguida)
 NAVE_VELOCIDAD_GIRO = 15        # maximo de grados que gira en cada frame
 INVULNERABLE_GOLPE = 1500       # ms sin recibir daño despues de perder una vida
 INVULNERABLE_ESCUDO = 500       # ms sin recibir daño despues de que se rompe el escudo
@@ -122,6 +124,8 @@ DURACION = {                    # milisegundos que dura cada power-up temporal
 # Enemigos
 AVISO_APARICION = 800           # ms que se ve la "X" antes de que aparezca un enemigo
 DISTANCIA_APARICION = 300       # los enemigos aparecen a mas de esta distancia de la nave
+ENEMIGO_VELOCIDAD_MAX = 4.2     # los que te persiguen nunca van mas rapido que esto (la nave va a 5):
+                                # asi siempre se puede escapar. Los ataques con aviso (embestidas, picadas) si
 
 # Presupuesto de amenaza: cada enemigo "cuesta" puntos y cada nivel tiene un presupuesto.
 # El juego elige al azar que enemigos poner hasta gastarlo (entre los ya desbloqueados),
@@ -222,6 +226,40 @@ ABEJA_VELOCIDAD = 2.6           # rondando a tu alrededor
 ABEJA_PICADA = 6.5              # al picar
 ABEJA_PUNTOS = 2
 
+# Anomalias: una vez por sector el espacio se pone raro un rato (ver anomalias.py).
+# Cada sector tiene la suya ("anomalia" en SECTORES); desde la segunda vuelta, al azar
+ANOMALIA_NIVEL = 3              # llega en el 3er nivel de cada sector (niveles 3, 8, 13...)
+ANOMALIA_ESPERA = 4000          # ms desde que empieza ese nivel
+ANOMALIA_DURACION = 20000       # ms que dura
+RESPIRO_ANOMALIA = 10000        # ms sin oleadas despues de una anomalia
+ASTEROIDES_ESPERA = 1000        # ms entre un asteroide y el siguiente
+ASTEROIDES_AVISO = 900          # ms que se ve la columna de aviso antes de que caiga
+ASTEROIDES_VELOCIDAD = 5        # px por paso al caer
+ASTEROIDES_PUNTOS = 3           # por romperlo con el dash
+TORMENTA_AVISO = 1200           # ms que parpadea la franja antes de quemar
+TORMENTA_LLAMARADA = 450        # ms que quema
+TORMENTA_CALMA = 2000           # ms de calma entre una llamarada y la siguiente
+TORMENTA_ANCHO = 90             # ancho de la franja
+NIEBLA_RADIO = 170              # lo que se ve alrededor de la nave
+ORO_MULTIPLICADOR = 2           # en la fiebre del oro las monedas valen el doble...
+ORO_COMBO = 1.5                 # ...y el combo tarda 1.5 veces mas en cortarse
+
+# Desafios: un reto opcional por sector (ver desafios.py). Si lo cumplis: puntos y un power-up
+DESAFIO_DESDE_NIVEL = 2         # el primero se propone en el nivel 2; despues, al llegar a cada sector
+DESAFIO_ESPERA = 3000           # ms despues de eso (para que no se pise con los otros carteles)
+DESAFIO_PUNTOS = 50             # premio por el numero de sector (el sector 3 da 150)
+DESAFIO_COMBO = 12              # "SIN CORTAR EL COMBO": monedas seguidas
+DESAFIO_CAZADOR = 6             # "CAZADOR": enemigos destruidos con el dash
+
+# Rango: al vencer al jefe, una nota de S a C para el sector (ver rango.py)
+CARTEL_RANGO = 4500             # ms que se ve el cartel del rango (despues de "¡JEFE VENCIDO!")
+RANGO_SELLO = 2100              # ms del cartel en que cae la letra (antes van saliendo las filas)
+RANGO_COMBO = 12                # monedas seguidas que dan la estrella del combo (x5)
+RANGO_TIEMPO_JEFE = {           # ms para la estrella de "jefe rapido" (20% mas en cada vuelta)
+    "ojo": 40000, "fortaleza": 90000, "serpiente": 55000, "colmena": 70000, "singularidad": 70000,
+}
+RANGO_PUNTOS = {"S": 150, "A": 100, "B": 50, "C": 0}
+
 # ================================== #
 # ===== DIFICULTAD Y SECTORES ====== #
 # ================================== #
@@ -254,25 +292,26 @@ DIFICULTADES = {
 #   ambiente:  las particulas del fondo (ver fondo.py): asteroides, brasas, esporas, panal o abismo
 #   estrellas: cuanto de rojo, verde y azul tienen las estrellas (1 = blancas)
 #   favorito:  el enemigo que mas aparece; lema: la frase del cartel al llegar
+#   anomalia:  la que llega a mitad del sector (None = una al azar)
 # Ningun color del fondo pasa de ~110 por canal, para que no se confunda con enemigos
 PESO_FAVORITO = 3               # el enemigo favorito del sector sale 3 veces mas seguido
 RECAMBIO_SECTOR = 0.34          # al cambiar de sector se va esta parte de los enemigos (vienen otros)
 SECTORES = [
     {"nombre": "CINTURON EXTERIOR", "lema": "DONDE EMPIEZA TODO", "color": CIAN, "jefe": "ojo",
      "tinte": None, "fondo": FONDO, "ambiente": "asteroides", "estrellas": (1, 1, 1),
-     "favorito": "perseguidor"},
+     "favorito": "perseguidor", "anomalia": "asteroides"},
     {"nombre": "NEBULOSA CARMESI", "lema": "EL AIRE ARDE", "color": ROJO, "jefe": "fortaleza",
      "tinte": (110, 35, 50), "fondo": (16, 4, 8), "ambiente": "brasas", "estrellas": (1, 0.7, 0.7),
-     "favorito": "embestidor"},
+     "favorito": "embestidor", "anomalia": "tormenta"},
     {"nombre": "CAMPO ESMERALDA", "lema": "ALGO SE MUEVE ENTRE LAS ESPORAS", "color": VERDE, "jefe": "serpiente",
      "tinte": (35, 105, 70), "fondo": (4, 14, 10), "ambiente": "esporas", "estrellas": (0.75, 1, 0.8),
-     "favorito": "divisor"},
+     "favorito": "divisor", "anomalia": "niebla"},
     {"nombre": "MAR DE AMBAR", "lema": "LA COLMENA TE OBSERVA", "color": AMARILLO, "jefe": "colmena",
      "tinte": (110, 80, 30), "fondo": (14, 10, 4), "ambiente": "panal", "estrellas": (1, 0.85, 0.6),
-     "favorito": "enjambre"},
+     "favorito": "enjambre", "anomalia": "oro"},
     {"nombre": "ABISMO AZUL", "lema": "NI LA LUZ ESCAPA", "color": HIELO, "jefe": "singularidad",
      "tinte": (35, 65, 110), "fondo": (4, 6, 20), "ambiente": "abismo", "estrellas": (0.7, 0.8, 1),
-     "favorito": "rebotador"},
+     "favorito": "rebotador", "anomalia": None},
 ]
 TRANSICION_SECTOR = 60          # pasos (1 s) que tarda el fondo en cambiar de color, en 4 etapas
 

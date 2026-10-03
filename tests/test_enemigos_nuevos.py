@@ -5,7 +5,7 @@ import pytest
 
 from juego.config import (COSTO_ENEMIGO, DIVISOR_PUNTOS, ENJAMBRE_CANTIDAD, ENJAMBRE_PUNTOS, ENJAMBRE_BONUS,
                           RECARGA_POR_DESTRUIR, REFUERZO_ESPERA, DIVISOR_NACIMIENTO, MS_POR_FRAME,
-                          CARTEL_JEFE)
+                          CARTEL_JEFE, CARTEL_RANGO)
 from juego.enemigos import TIPOS_ENEMIGO, crear_enemigo, crear_enemigos
 from tests.ayudas import jugar
 
@@ -169,7 +169,7 @@ def test_el_enjambre_vuelve_junto_despues_del_jefe(partida):
     partida.iniciar_jefe()                  # se guardan durante la pelea
     partida.nave.invulnerable_hasta = math.inf
     partida.jefe_vencido()
-    jugar(partida, int(CARTEL_JEFE / MS_POR_FRAME) + 2)
+    jugar(partida, int((CARTEL_JEFE + CARTEL_RANGO) / MS_POR_FRAME) + 2)
     assert all(d in partida.enemigos for d in drones)
     bandada = drones[0].bandada
     for dron in drones:

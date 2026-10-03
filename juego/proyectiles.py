@@ -1,5 +1,5 @@
 """
-Proyectiles de los jefes. Todos viven en partida.balas y comparten la misma interfaz:
+Proyectiles de los jefes (y de las anomalias). Todos viven en partida.balas y comparten la misma interfaz:
 
     mover(partida) -> False si hay que borrarlo (salio de la pantalla o estallo)
     dibujar(pantalla, parpadeo_encendido)
@@ -13,9 +13,10 @@ Proyectiles de los jefes. Todos viven en partida.balas y comparten la misma inte
 - Escombro: un trozo de metal que cae.
 - Onda:     una onda de choque que corre a ras del piso.
 - Veneno:   una gota verde y lenta que escupe la Serpiente.
+- Meteoro:  un asteroide que cae (la lluvia de asteroides); el dash lo rompe.
 
 Como todos estan en la misma lista, el hielo los rompe, el dash los atraviesa y el
-choque con la nave se revisa igual para todos (Partida._choques_jefe). Es polimorfismo:
+choque con la nave se revisa igual para todos (Partida._tocar_balas). Es polimorfismo:
 cada clase resuelve "moverse" y "dibujarse" a su manera.
 """
 import math
@@ -23,7 +24,8 @@ import random
 
 from juego import lienzo
 from juego.dibujo import parpadeo
-from juego.config import (ALTO, MAGENTA, ROJO, BLANCO, AMARILLO, EMBESTIDA, FUEGO, RADIO_BALA, MS_POR_FRAME)
+from juego.config import (ALTO, MAGENTA, ROJO, BLANCO, AMARILLO, EMBESTIDA, FUEGO, RADIO_BALA, MS_POR_FRAME,
+                          ASTEROIDES_PUNTOS)
 
 GRIS_METAL = (90, 100, 150)
 METAL_OSCURO = (44, 48, 86)
@@ -234,6 +236,32 @@ class Veneno(Bala):
         pantalla.fill((60, 255, 120), (gota_x - 6, gota_y - 4, 12, 8))
         pantalla.fill((60, 255, 120), (gota_x - 4, gota_y - 6, 8, 12))
         pantalla.fill(BLANCO if encendido else (200, 255, 210), (gota_x - 4, gota_y - 4, 4, 4))
+
+
+class Meteoro(Bala):
+    # Un asteroide que cae envuelto en fuego; el dash lo rompe
+    __slots__ = ()
+    radio = 10
+    destruible = True
+    puntos = ASTEROIDES_PUNTOS
+
+    def mover(self, partida):
+        self.x += self.vx
+        self.y += self.vy
+        if fuera_de_pantalla(self.x, self.y, 40):
+            return False
+        partida.efectos.particula(self.x + random.randint(-6, 6), self.y - 8, 0, -1, FUEGO, 12, 4)
+        return True
+
+    def dibujar(self, pantalla, encendido):
+        roca_x = int(self.x) // 2 * 2
+        roca_y = int(self.y) // 2 * 2
+        pantalla.fill((50, 56, 90), (roca_x - 10, roca_y - 8, 20, 16))
+        pantalla.fill((50, 56, 90), (roca_x - 8, roca_y - 10, 16, 20))
+        pantalla.fill((110, 120, 160), (roca_x - 8, roca_y - 8, 14, 12))
+        pantalla.fill((200, 210, 240), (roca_x - 6, roca_y - 6, 4, 4))
+        # El borde de abajo se pone al rojo por la friccion
+        pantalla.fill((255, 140, 0) if encendido else ROJO, (roca_x - 8, roca_y + 6, 16, 4))
 
 
 def mover_balas(partida):

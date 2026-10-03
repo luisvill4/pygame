@@ -3,7 +3,7 @@ import math
 import random
 
 from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, ENEMIGOS_MAX, SECTORES, CARTEL_JEFE,
-                          OLEADA_DURACION, MS_POR_FRAME, JEFE_CADA_NIVELES)
+                          CARTEL_RANGO, OLEADA_DURACION, MS_POR_FRAME, JEFE_CADA_NIVELES)
 from tests.ayudas import jugar
 
 
@@ -62,7 +62,7 @@ def test_cada_sector_termina_con_su_jefe_y_despues_viene_el_siguiente(partida):
         assert partida.jefe.tipo == sector["jefe"]
         assert director.sector is sector        # el sector no cambia durante la pelea
         partida.jefe_vencido()
-        jugar(partida, int(CARTEL_JEFE / MS_POR_FRAME) + 2)
+        jugar(partida, int((CARTEL_JEFE + CARTEL_RANGO) / MS_POR_FRAME) + 2)
         siguiente = SECTORES[(vuelta + 1) % len(SECTORES)]
         assert director.sector is siguiente     # en orden, y despues del ultimo vuelve al primero
         assert director.numero_sector == vuelta + 2

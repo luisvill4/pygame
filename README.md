@@ -33,6 +33,20 @@ Las peleas son un **baile**: cada jefe avisa antes de atacar, ataca al ritmo de 
 | Mar de ámbar | **La Colmena** | Abre una compuerta, suelta abejas y la deja abierta: rompela con el dash. Sin compuertas embiste rebotando (el aviso muestra el camino): cuando queda aturdida, dash al ojo. |
 | Abismo azul | **La Singularidad** | Te atrae (el dash te libera). El anillo de asteroides gira a ritmo; cuando colapsa, entrá por un hueco y dash al núcleo. |
 
+### Anomalías, desafíos y rango
+- **Anomalías:** a mitad de cada sector (en su 3er nivel) el espacio se pone raro durante 20 segundos. Siempre avisan antes de atacar:
+
+  | Sector | Anomalía | Qué pasa |
+  |---|---|---|
+  | Cinturón exterior | **Lluvia de asteroides** | Una columna roja punteada marca por dónde cae cada asteroide. El dash los rompe y dan puntos. |
+  | Nebulosa carmesí | **Tormenta solar** | Una franja (vertical u horizontal) parpadea y después quema: salí antes. |
+  | Campo esmeralda | **Niebla cerrada** | Solo ves cerca de la nave; de los enemigos lejanos ves los ojos, y la moneda brilla a través de la niebla. |
+  | Mar de ámbar | **Fiebre del oro** | La buena: las monedas valen el doble y el combo tarda más en cortarse. |
+  | Abismo azul | Una al azar | Desde la segunda vuelta, todos los sectores la sortean. |
+
+- **Desafíos (opcionales):** al llegar a cada sector (en el primero, en el nivel 2) aparece un reto a la derecha, debajo de las vidas: **SIN DASH**, **INTOCABLE** (sin recibir golpes), **SIN AYUDA** (sin agarrar power-ups), **SIN CORTAR EL COMBO** (12 monedas seguidas) o **CAZADOR** (destruir 6 enemigos con el dash). Los tres primeros se cumplen al llegar al jefe; los otros dos, apenas los lográs. Premio: puntos y un power-up.
+- **Rango:** al vencer al jefe, el sector se califica de **S** a **C** con estrellas: sin golpes (2), combo de 12 (1), desafío cumplido (1) y jefe vencido rápido (1). S = 5 estrellas, A = 4, B = 2 o 3. Cada letra da puntos extra.
+
 En **Opciones → FORMATO** se elige entre 4:3 (800x600) y 16:9 (1066x600, un campo de juego más ancho). Se cambia desde el menú de inicio, no en medio de una partida.
 
 En **Opciones → FPS** se elige cuántas veces por segundo se dibuja: 30, 60, 90, 120, 144 o SIN LIMITE. El juego va siempre a la misma velocidad: la lógica avanza 60 veces por segundo y, por encima de 60 FPS, el movimiento se dibuja interpolado (más suave en monitores de alta frecuencia).
@@ -54,6 +68,8 @@ juego/
   app.py                # crea todo y corre el bucle principal
   partida.py            # el estado de una partida y sus reglas
   nave.py  moneda.py  proyectiles.py
+  progresion.py         # el "director": enemigos de cada nivel, sectores, oleadas
+  anomalias.py  desafios.py  rango.py   # lo que pasa en cada sector
   enemigos/             # un archivo por enemigo + base.py
   jefes/                # un archivo por jefe + base.py
   powerups/             # tipos.py (todos los power-ups) + base.py
@@ -69,7 +85,7 @@ tests/                  # pytest
 - **Una responsabilidad por módulo.** Si querés cambiar cómo se ve el marcador, vas a `hud.py`; si querés cambiar el mando, a `entrada.py`. No hay que buscar en un archivo de 2000 líneas.
 - **`config.py` solo tiene valores.** Podés ajustar la dificultad sin miedo a romper la lógica.
 - **Escenas (patrón *State*).** Cada pantalla es una clase con `actualizar()` y `dibujar()`. La `App` llama a esos dos métodos sobre la escena actual. Para cambiar de pantalla: `self.app.cambiar_escena(OtraEscena(...))`.
-- **Registros (patrón *Registry*).** Los enemigos, jefes y power-ups se anotan solos con un decorador (`@registrar_enemigo`…). El resto del juego los crea por nombre, así que **agregar uno nuevo no obliga a tocar el resto del código**.
+- **Registros (patrón *Registry*).** Los enemigos, jefes, power-ups, anomalías y desafíos se anotan solos con un decorador (`@registrar_enemigo`…). El resto del juego los crea por nombre, así que **agregar uno nuevo no obliga a tocar el resto del código**.
 - **Clases base (patrón *Template Method*).** `Enemigo`, `Jefe` y `PowerUp` resuelven todo lo común: aparecer con aviso, congelarse con el hielo, el sprite de respaldo, el HUD… Cada tipo escribe solo lo que lo hace distinto.
 - **`Partida` en vez de variables globales.** Todo el estado de una partida vive en un objeto. Empezar otra partida es crear una nueva, así no queda nada "sucio" de la anterior.
 - **Entrada por acciones.** El juego pregunta "¿se apretó DASH?", no "¿se apretó la barra espaciadora?". Así teclado y mando funcionan igual.
@@ -126,3 +142,9 @@ Entrar (con la presentación de su `nombre` y `apodo`), morir, la vida, el conge
 2. Donde tenga efecto, preguntá `partida.activo("lento")` (por ejemplo, en `Partida.factor_velocidad()`).
 
 El HUD, la caída al azar y el panel de la pantalla de inicio lo muestran solos.
+
+### Una anomalía
+En `juego/anomalias.py`, una clase que herede de `Anomalia`, con `@registrar_anomalia`, un `tipo`, `nombre`, `pista` y `color`. Usá los ganchos que necesites: `actualizar()` (lo que hace en cada paso), `dibujar()` (avisos, efectos), `terminar()`, `multiplicador_monedas()` o `factor_combo()`. Si ataca, que **avise antes** (como las columnas de los asteroides). Para que un sector la tenga, ponela como `"anomalia"` en `SECTORES`.
+
+### Un desafío
+En `juego/desafios.py`, una clase que herede de `Desafio`, con `@registrar_desafio`, `tipo`, `nombre`, `pista` y `color`. Elegí los avisos que le importan (`al_usar_dash`, `al_recibir_golpe`, `al_agarrar_powerup`, `al_recoger_moneda`, `al_destruir_enemigo`) y llamá a `self.fallar()` (los de aguantar) o a `self.avanzar(progreso)` con una `meta` (los de lograr). Si no se puede en cualquier momento, escribí `disponible()`.

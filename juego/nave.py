@@ -11,7 +11,7 @@ import pygame
 from juego import recursos, lienzo
 from juego.dibujo import parpadeo
 from juego.config import (ALTO, CIAN, ENERGIA, MS_CUADRO_ESCUDO, NAVE_ACELERACION,
-                          NAVE_FRICCION, NAVE_VELOCIDAD_GIRO, DASH_FUERZA, DASH_DURACION,
+                          NAVE_FRICCION, NAVE_FRENADO, NAVE_VELOCIDAD_GIRO, DASH_FUERZA, DASH_DURACION,
                           BUFFER_DASH, RADIO_NAVE)
 
 TAMANO = 50
@@ -101,10 +101,7 @@ class Nave:
             # Durante el dash no hay control: la nave sigue disparada y deja copias
             self.fantasmas.append([self.x, self.y, self.angulo, 10])
         elif self.acelerando:
-            # Inercia: la velocidad se acerca poco a poco a la deseada
-            largo = math.hypot(dx, dy)      # asi en diagonal no va mas rapido
-            self.vx += (dx / largo * vel_max - self.vx) * NAVE_ACELERACION
-            self.vy += (dy / largo * vel_max - self.vy) * NAVE_ACELERACION
+            self._acelerar(dx, dy, vel_max)
         else:
             # Al soltar la nave se desliza un poco antes de frenar
             self.vx *= NAVE_FRICCION
@@ -132,6 +129,25 @@ class Nave:
             self.vy = 0
         self.x = max(0, min(self.x, lienzo.ancho - TAMANO))
         self.y = max(0, min(self.y, ALTO - TAMANO))
+
+    def _acelerar(self, dx, dy, vel_max):
+        # Inercia: la velocidad se acerca poco a poco a la deseada. Se separa en dos partes:
+        #   avance: lo que ya va hacia donde apretas
+        #   deriva: lo que va de costado
+        # Arrancar es suave (NAVE_ACELERACION), pero lo que va "para otro lado" (ir hacia
+        # atras o de costado) se corrige mas fuerte (NAVE_FRENADO): asi la nave dobla y
+        # frena enseguida, sin perder la sensacion de inercia
+        largo = math.hypot(dx, dy)          # asi en diagonal no va mas rapido
+        dir_x, dir_y = dx / largo, dy / largo
+        avance = self.vx * dir_x + self.vy * dir_y
+        deriva_x = self.vx - avance * dir_x
+        deriva_y = self.vy - avance * dir_y
+        fuerza = NAVE_FRENADO if avance < 0 else NAVE_ACELERACION
+        avance += (vel_max - avance) * fuerza
+        deriva_x *= 1 - NAVE_FRENADO
+        deriva_y *= 1 - NAVE_FRENADO
+        self.vx = avance * dir_x + deriva_x
+        self.vy = avance * dir_y + deriva_y
 
     def _dash(self, tiempo, dx, dy, pidio_dash, recarga_dash, efectos):
         # Impulso hacia donde presionas (o hacia donde mira la nave).

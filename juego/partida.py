@@ -22,7 +22,7 @@ from juego.config import (COMBO_TIEMPO, COMBO_MAXIMO, MONEDAS_POR_NIVEL, MS_POR_
                           PUNTOS_ENEMIGO_CONGELADO, NAVE_VELOCIDAD, RECARGA_POR_DESTRUIR,
                           TURBO_VELOCIDAD, DASH_RECARGA, RECARGA_RAPIDA, PRIMER_POWERUP, ESPERA_POWERUP,
                           INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, JEFE_CADA_NIVELES, JEFE_PUNTOS,
-                          CARTEL_JEFE, DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
+                          DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
                           ESCARCHA, EMBESTIDA, ARCOIRIS)
 from juego.nave import Nave
 from juego.moneda import Moneda
@@ -97,6 +97,10 @@ class Partida:
     def espera_powerup(self):
         return random.randint(*ESPERA_POWERUP) * self.reglas["espera_powerup"]
 
+    def tiempo_combo(self):
+        # ms maximos entre monedas para seguir el combo (la fiebre del oro lo alarga)
+        return COMBO_TIEMPO * self.director.factor_combo()
+
     def multiplicador_combo(self):
         # x1 con 1-2 monedas seguidas, x2 con 3-5, x3 con 6-8... hasta x5
         return min(1 + self.combo // 3, COMBO_MAXIMO)
@@ -156,6 +160,7 @@ class Partida:
         ahora = self.tiempo
         nave_x, nave_y = nave.centro()
         self.sonidos.reproducir("golpe")
+        self.director.al_recibir_golpe()        # para el desafio y el rango
 
         if self.activo("escudo"):
             # El escudo aguanta el golpe y se rompe (medio segundo para alejarse)
@@ -248,21 +253,26 @@ class Partida:
         self.guardar_posiciones()
         self.tiempo += MS_POR_FRAME
         vel_max = self.vel_max()
+        dash_antes = self.nave.dash_hasta
         self.nave.actualizar(self.tiempo, dx, dy, pidio_dash, vel_max, self.recarga_dash(), self.efectos)
+        if self.nave.dash_hasta != dash_antes:
+            self.director.al_usar_dash()        # (para el desafio "SIN DASH")
 
         # El combo se corta si pasa mucho tiempo sin monedas
-        if self.combo > 0 and self.tiempo - self.ultima_moneda > COMBO_TIEMPO:
+        if self.combo > 0 and self.tiempo - self.ultima_moneda > self.tiempo_combo():
             self.combo = 0
         if self.activo("iman"):
             self.moneda.atraer(self.nave, self.efectos)
 
         self._revisar_moneda()
         self._actualizar_powerups()
-        self.director.actualizar()          # oleadas
+        self.director.actualizar()          # oleadas, anomalias, desafios y rango
         self._devolver_enemigos()
         self._actualizar_enemigos()
         if self.jefe is not None and not self.termino:
             self._actualizar_jefe()
+        elif self.balas and not self.termino:
+            self._actualizar_balas_sueltas()
 
         self.nave.estela(self.tiempo, vel_max, self.efectos)
         self.moneda.brillar(self.efectos)
@@ -272,13 +282,13 @@ class Partida:
         if not self.nave.caja_recoger().colliderect(self.moneda.caja()):
             return
         ahora = self.tiempo
-        if ahora - self.ultima_moneda < COMBO_TIEMPO:
+        if ahora - self.ultima_moneda < self.tiempo_combo():
             self.combo += 1
         else:
             self.combo = 1
         self.ultima_moneda = ahora
         self.mejor_combo = max(self.mejor_combo, self.combo)
-        ganados = self.sumar_puntos(self.multiplicador_combo())
+        ganados = self.sumar_puntos(self.multiplicador_combo() * self.director.multiplicador_monedas())
         centro_x, centro_y = self.moneda.centro()
         if self.multiplicador_combo() > 1:
             self.efectos.explosion(centro_x, centro_y, ARCOIRIS, 20, 5, 3)
@@ -288,8 +298,10 @@ class Partida:
         self.sonidos.reproducir("moneda")
         self.tiempo_moneda = ahora
         self.moneda.mover_a_lugar_nuevo(self)
-        # Durante la pelea con el jefe las monedas dan puntos pero no suben de nivel
-        if self.jefe is None:
+        self.director.al_recoger_moneda(self.combo)
+        # Durante la pelea con el jefe (y el cierre del sector) las monedas dan puntos
+        # pero no suben de nivel
+        if self.jefe is None and not self.director.cerrando_sector():
             self.monedas_recogidas += 1
             if self.monedas_recogidas % MONEDAS_POR_NIVEL == 0:
                 self.subir_nivel()
@@ -307,6 +319,7 @@ class Partida:
             powerup, x, y = self.capsula.powerup, self.capsula.x, self.capsula.y
             self.sonidos.reproducir("powerup")
             powerup.al_recoger(self, x, y)
+            self.director.al_agarrar_powerup()
             self.efectos.texto_flotante(powerup.texto_al_recoger(), x, y - 24, powerup.color)
             self.capsula = None
             self.proximo_powerup = ahora + self.espera_powerup()
@@ -315,10 +328,11 @@ class Partida:
             self.proximo_powerup = ahora + self.espera_powerup()
 
     def _devolver_enemigos(self):
-        # Despues del jefe, los enemigos vuelven cuando se va el cartel (asi no quedan tapados)
+        # Despues del jefe, los enemigos vuelven cuando se cierra el sector (cuando se van
+        # los carteles de "¡JEFE VENCIDO!" y del rango)
         if self.jefe is not None or not self.enemigos_guardados:
             return
-        if self.tiempo - self.tiempo_cartel_jefe < CARTEL_JEFE:
+        if self.director.cerrando_sector():
             return
         for enemigo in self.enemigos_guardados:
             enemigo.reaparecer(self)
@@ -380,6 +394,7 @@ class Partida:
         self.congelar_frames = 2
         self.nave.dash_listo = max(self.tiempo, self.nave.dash_listo - RECARGA_POR_DESTRUIR)
         self.destruir_enemigo(enemigo, con_dash=True)
+        self.director.al_destruir_enemigo()
 
     def destruir_enemigo(self, enemigo, con_dash):
         # Lo saca del juego (si es un divisor, antes se parte)
@@ -416,18 +431,34 @@ class Partida:
                 return
         if jefe.muriendo() or nave.atraviesa(ahora):
             return      # el dash y la invulnerabilidad atraviesan al jefe y sus balas
-        for bala in self.balas:
-            if nave.toca_circulo(bala.x, bala.y, bala.radio):
-                self.balas.remove(bala)
-                self.danar_jugador(bala.x, bala.y)
-                return
+        if self._tocar_balas():
+            return
         # Tocar su cuerpo o sus partes hace daño (congelado no)
         if not jefe.congelado(self) and any(nave.toca_rect(caja) for caja in jefe.cajas_danio()):
             centro_x, centro_y = jefe.centro()
             self.danar_jugador(centro_x, centro_y)
 
+    def _actualizar_balas_sueltas(self):
+        # Proyectiles sin jefe (los asteroides de una anomalia): se mueven, el dash
+        # rompe los destruibles y los demas lastiman
+        mover_balas(self)
+        nave, ahora = self.nave, self.tiempo
+        if nave.en_dash(ahora):
+            self._destruir_proyectiles(nave.caja_recoger())
+        if not nave.atraviesa(ahora):
+            self._tocar_balas()
+
+    def _tocar_balas(self):
+        # Si una bala toca a la nave: se borra, hace daño y devuelve True
+        for bala in self.balas:
+            if self.nave.toca_circulo(bala.x, bala.y, bala.radio):
+                self.balas.remove(bala)
+                self.danar_jugador(bala.x, bala.y)
+                return True
+        return False
+
     def _destruir_proyectiles(self, caja):
-        # Algunos proyectiles (los misiles) se destruyen con el dash y dan puntos
+        # Algunos proyectiles (misiles, asteroides) se destruyen con el dash y dan puntos
         for bala in [b for b in self.balas if b.destruible and caja.collidepoint(b.x, b.y)]:
             self.balas.remove(bala)
             ganados = self.sumar_puntos(bala.puntos)
@@ -466,4 +497,5 @@ class Partida:
         if con_nave:
             self.nave.dibujar(pantalla, self.tiempo, self.restante("escudo"))
         self.efectos.dibujar(pantalla)
+        self.director.dibujar_anomalia(pantalla)    # encima de todo (la niebla tapa el juego)
         hud.dibujar(pantalla, self)

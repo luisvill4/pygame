@@ -35,11 +35,13 @@ def app(tmp_path):
 @pytest.fixture
 def partida(app):
     # Una partida recien empezada y "limpia": sin enemigos, sin power-ups cayendo
-    # y con la moneda lejos, para probar una cosa a la vez
+    # sin anomalias ni desafios y con la moneda lejos, para probar una cosa a la vez
     app.nueva_partida()
     nueva = app.escena.partida
     nueva.enemigos.clear()
     nueva.proximo_powerup = math.inf
     nueva.director.proxima_oleada = math.inf
+    nueva.director.con_anomalias = False        # (tienen sus propios tests)
+    nueva.director.con_desafios = False
     nueva.moneda.x, nueva.moneda.y = -500, -500
     return nueva

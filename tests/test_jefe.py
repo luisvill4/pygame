@@ -3,7 +3,7 @@ import math
 
 import pytest
 
-from juego.config import JEFE_VIDA, CARTEL_JEFE, MS_POR_FRAME, SECTORES
+from juego.config import JEFE_VIDA, CARTEL_JEFE, CARTEL_RANGO, MS_POR_FRAME, SECTORES
 from juego.enemigos import crear_enemigo
 from juego.jefes import TIPOS_JEFE
 from tests.ayudas import jugar
@@ -70,7 +70,7 @@ def test_al_vencerlo_vuelven_los_enemigos_y_se_completa_el_presupuesto(partida):
     llegar_al_jefe(partida)
     guardados = list(partida.enemigos_guardados)
     partida.jefe_vencido()
-    jugar(partida, int(CARTEL_JEFE / MS_POR_FRAME) + 2)
+    jugar(partida, int((CARTEL_JEFE + CARTEL_RANGO) / MS_POR_FRAME) + 2)
     # Vuelven los que estaban (menos los que se fueron al cambiar de sector)
     # y se completa el presupuesto del nivel
     volvieron = [enemigo for enemigo in guardados if enemigo in partida.enemigos]

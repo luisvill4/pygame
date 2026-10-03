@@ -53,7 +53,7 @@ class DivisorBase(Enemigo):
 
     def mover(self, partida):
         dir_x, dir_y, distancia = self.hacia_la_nave(partida)
-        rapidez = DIVISOR_VELOCIDAD[self.tipo] * partida.factor_velocidad()
+        rapidez = self.rapidez(partida, DIVISOR_VELOCIDAD[self.tipo])
         if distancia > 0:
             self.vx += (dir_x / distancia * rapidez - self.vx) * self.giro
             self.vy += (dir_y / distancia * rapidez - self.vy) * self.giro

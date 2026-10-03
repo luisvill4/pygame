@@ -30,7 +30,7 @@ import pygame
 from juego import recursos, dibujo, lienzo
 from juego.config import (ALTO, BLANCO, HIELO, AVISO_APARICION, DISTANCIA_APARICION, MS_CUADRO_ENEMIGO,
                           PUNTOS_ENEMIGO_CONGELADO, SEPARACION_ENEMIGOS, FUERZA_SEPARACION, RADIO_ENEMIGO,
-                          COSTO_ENEMIGO)
+                          COSTO_ENEMIGO, ENEMIGO_VELOCIDAD_MAX)
 
 TIPOS_ENEMIGO = {}          # nombre -> clase
 
@@ -176,6 +176,11 @@ class Enemigo:
         # Caja un poco mas chica que el dibujo (para recogerlo congelado o destruirlo con el dash)
         margen = self.tamano // 10
         return pygame.Rect(self.x + margen, self.y + margen, self.tamano - 2 * margen, self.tamano - 2 * margen)
+
+    def rapidez(self, partida, base):
+        # La velocidad 'base' ajustada al nivel y la dificultad, pero nunca mas rapida que
+        # ENEMIGO_VELOCIDAD_MAX: la nave siempre puede escaparse de los que la persiguen
+        return min(base * partida.factor_velocidad(), ENEMIGO_VELOCIDAD_MAX)
 
     def hacia_la_nave(self, partida):
         # Vector del enemigo a la nave y su largo

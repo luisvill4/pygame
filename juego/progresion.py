@@ -10,17 +10,27 @@ llega una OLEADA. (Los juegos le dicen "director" a esta parte: dirige la tensio
   (otro ambiente, otro enemigo favorito) y parte de los enemigos se van y llegan otros.
 - Oleadas: picos de tension. Llegan muchos enemigos de golpe, duran unos segundos
   y se van; pasarla sin perder una vida da un bonus y un power-up.
+- Anomalias: a mitad de cada sector el espacio se pone raro un rato (anomalias.py).
+- Desafios: un reto opcional por sector (desafios.py).
+- Rango: al vencer al jefe, una nota de S a C para el sector (rango.py). Mientras se ve
+  el cartel, el sector se esta "cerrando": los enemigos esperan para volver.
 
-La Partida le avisa lo que pasa (al_subir_nivel, al_volver_del_jefe...) y le pide
-actualizar() en cada paso.
+La Partida le avisa lo que pasa (al_subir_nivel, al_recibir_golpe, al_usar_dash...) y
+le pide actualizar() en cada paso.
 """
+import math
 import random
 
 from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, PRESUPUESTO_INICIAL, PRESUPUESTO_POR_NIVEL,
                           PRESUPUESTO_MAXIMO, ENEMIGOS_MAX, SECTORES, PESO_FAVORITO,
                           RECAMBIO_SECTOR, OLEADA_DESDE_NIVEL, OLEADA_ESPERA, OLEADA_DURACION,
-                          OLEADA_PRESUPUESTO, OLEADA_PUNTOS, REFUERZO_ESPERA, CARTEL_JEFE, AMARILLO, ROJO)
+                          OLEADA_PRESUPUESTO, OLEADA_PUNTOS, REFUERZO_ESPERA, CARTEL_JEFE, AMARILLO, ROJO,
+                          JEFE_CADA_NIVELES, ANOMALIA_NIVEL, ANOMALIA_ESPERA, RESPIRO_ANOMALIA,
+                          DESAFIO_DESDE_NIVEL, DESAFIO_ESPERA, DESAFIO_PUNTOS, CARTEL_RANGO, RANGO_SELLO, VERDE)
 from juego.enemigos import crear_enemigos, TIPOS_ENEMIGO
+from juego.anomalias import TIPOS_ANOMALIA, crear_anomalia
+from juego.desafios import TIPOS_DESAFIO
+from juego.rango import Bitacora, calcular_rango
 
 
 class Director:
@@ -39,6 +49,22 @@ class Director:
         # Cartel "NUEVO ENEMIGO" la primera vez que aparece un tipo
         self.nuevo_tipo = None
         self.tiempo_cartel_nuevo = -10000
+        # Anomalias (los tests las apagan con con_anomalias = False)
+        self.con_anomalias = True
+        self.anomalia = None
+        self.proxima_anomalia = math.inf
+        # Desafios (igual: con_desafios = False los apaga)
+        self.con_desafios = True
+        self.desafio = None
+        self.ultimo_desafio = None
+        self.proximo_desafio = math.inf
+        self.tiempo_cartel_desafio = -10000
+        # Rango: la bitacora del sector actual y el rango del ultimo sector cerrado
+        self.bitacora = Bitacora()
+        self.rango = None
+        self.tiempo_cartel_rango = -10000
+        self.rango_pagado = True
+        self.fin_del_cierre = -10000
 
     # ---------- Presupuesto ----------
 
@@ -101,13 +127,36 @@ class Director:
         self.completar_presupuesto()
 
     def al_subir_nivel(self):
+        partida = self.partida
         self.completar_presupuesto()
+        if partida.nivel % JEFE_CADA_NIVELES == ANOMALIA_NIVEL and self.con_anomalias:
+            self.proxima_anomalia = partida.tiempo + ANOMALIA_ESPERA
+        if partida.nivel == DESAFIO_DESDE_NIVEL and self.numero_sector == 1:
+            self.proximo_desafio = partida.tiempo + DESAFIO_ESPERA
 
     def al_vencer_al_jefe(self):
-        # Vencido el jefe del sector, se pasa al siguiente (el cartel sale cuando se va
-        # el de "¡JEFE VENCIDO!", para que no se pisen)
+        # Vencido el jefe, se cierra el sector: "¡JEFE VENCIDO!", el cartel del rango, y
+        # recien despues el sector nuevo (los carteles salen uno detras de otro)
+        partida = self.partida
+        bitacora = self.bitacora
+        if bitacora.inicio_jefe is not None:
+            bitacora.tiempo_jefe = partida.tiempo - bitacora.inicio_jefe
+        self.rango = calcular_rango(bitacora, self.sector["jefe"], self.vuelta())
+        self.rango["sector"] = self.numero_sector
+        self.rango["color"] = self.sector["color"]
+        self.tiempo_cartel_rango = partida.tiempo + CARTEL_JEFE
+        self.rango_pagado = False
+        self.fin_del_cierre = self.tiempo_cartel_rango + CARTEL_RANGO
         self.cambiar_sector()
-        self.tiempo_cartel_sector = self.partida.tiempo + CARTEL_JEFE
+        self.tiempo_cartel_sector = self.fin_del_cierre
+        # El sector nuevo empieza con la bitacora en blanco y, al rato, un desafio nuevo
+        self.bitacora = Bitacora()
+        self.desafio = None
+        self.proximo_desafio = self.fin_del_cierre + DESAFIO_ESPERA
+
+    def cerrando_sector(self):
+        # Despues del jefe, mientras se ven "¡JEFE VENCIDO!" y el rango
+        return self.partida.tiempo < self.fin_del_cierre
 
     def al_volver_del_jefe(self):
         self.completar_presupuesto()
@@ -116,8 +165,49 @@ class Director:
         return self.sector["jefe"]
 
     def al_empezar_jefe(self):
-        # Si habia una oleada, se corta (sus enemigos no se guardan)
+        # Si habia una oleada o una anomalia, se cortan (sus enemigos no se guardan),
+        # y el desafio se decide: llegaste al jefe
         self.terminar_oleada(superada=False)
+        self.terminar_anomalia()
+        self.proxima_anomalia = math.inf
+        self.proximo_desafio = math.inf
+        self.bitacora.inicio_jefe = self.partida.tiempo
+        if self.desafio_en_curso():
+            self.desafio.al_llegar_el_jefe()
+            self.revisar_desafio()
+
+    def vuelta(self):
+        # 1 la primera vez que se recorren los sectores, 2 la segunda...
+        return (self.numero_sector - 1) // len(SECTORES) + 1
+
+    # ---------- Lo que pasa en la partida (para el desafio y la bitacora) ----------
+
+    def al_recibir_golpe(self):
+        self.bitacora.golpes += 1
+        if self.desafio_en_curso():
+            self.desafio.al_recibir_golpe()
+            self.revisar_desafio()
+
+    def al_usar_dash(self):
+        if self.desafio_en_curso():
+            self.desafio.al_usar_dash()
+            self.revisar_desafio()
+
+    def al_agarrar_powerup(self):
+        if self.desafio_en_curso():
+            self.desafio.al_agarrar_powerup()
+            self.revisar_desafio()
+
+    def al_recoger_moneda(self, combo):
+        self.bitacora.mejor_combo = max(self.bitacora.mejor_combo, combo)
+        if self.desafio_en_curso():
+            self.desafio.al_recoger_moneda(combo)
+            self.revisar_desafio()
+
+    def al_destruir_enemigo(self):
+        if self.desafio_en_curso():
+            self.desafio.al_destruir_enemigo()
+            self.revisar_desafio()
 
     # ---------- Sectores ----------
 
@@ -144,16 +234,27 @@ class Director:
                     partida.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color], 14, 3, 3)
                     partida.quitar_enemigo(enemigo)
 
-    # ---------- Oleadas ----------
+    # ---------- Cada paso ----------
 
     def actualizar(self):
         partida = self.partida
+        tranquilo = partida.jefe is None and not partida.enemigos_guardados and not self.cerrando_sector()
         if self.en_oleada:
             if partida.tiempo >= self.oleada_hasta:
                 self.terminar_oleada(superada=partida.vidas >= self.vidas_al_empezar_oleada)
         elif (partida.tiempo >= self.proxima_oleada and partida.nivel >= OLEADA_DESDE_NIVEL
-              and partida.jefe is None and not partida.enemigos_guardados):
+              and tranquilo and self.anomalia is None):
             self.empezar_oleada()
+        if self.anomalia is not None:
+            self.anomalia.actualizar(partida)
+            if self.anomalia.termino(partida):
+                self.terminar_anomalia()
+        elif partida.tiempo >= self.proxima_anomalia and tranquilo and not self.en_oleada:
+            self.empezar_anomalia()
+        if partida.tiempo >= self.proximo_desafio and partida.jefe is None:
+            self.proponer_desafio()
+        if not self.rango_pagado and partida.tiempo >= self.tiempo_cartel_rango + RANGO_SELLO:
+            self.pagar_rango()
         self._refuerzos()
 
     def _refuerzos(self):
@@ -207,3 +308,84 @@ class Director:
 
     def restante_oleada(self):
         return max(0, self.oleada_hasta - self.partida.tiempo) if self.en_oleada else 0
+
+    # ---------- Anomalias ----------
+
+    def empezar_anomalia(self):
+        # La del sector; desde la segunda vuelta (o si el sector no tiene), una al azar
+        partida = self.partida
+        tipo = self.sector["anomalia"]
+        if tipo is None or self.vuelta() > 1:
+            tipo = random.choice(list(TIPOS_ANOMALIA))
+        self.anomalia = crear_anomalia(tipo, partida)
+        self.proxima_anomalia = math.inf
+        # Ninguna oleada encima de la anomalia ni justo despues
+        self.proxima_oleada = max(self.proxima_oleada, self.anomalia.hasta + RESPIRO_ANOMALIA)
+        partida.sonidos.reproducir("nuevo_record")
+        partida.efectos.sacudir(10, self.anomalia.color)
+
+    def terminar_anomalia(self):
+        if self.anomalia is not None:
+            self.anomalia.terminar(self.partida)
+            self.anomalia = None
+
+    def multiplicador_monedas(self):
+        return self.anomalia.multiplicador_monedas() if self.anomalia else 1
+
+    def factor_combo(self):
+        return self.anomalia.factor_combo() if self.anomalia else 1
+
+    def dibujar_anomalia(self, pantalla):
+        if self.anomalia is not None:
+            self.anomalia.dibujar(pantalla, self.partida)
+
+    # ---------- Desafios ----------
+
+    def proponer_desafio(self):
+        # Uno al azar entre los que se pueden ahora (distinto del anterior)
+        partida = self.partida
+        self.proximo_desafio = math.inf
+        if not self.con_desafios:
+            return
+        posibles = [clase for clase in TIPOS_DESAFIO.values()
+                    if clase.disponible(partida) and clase.tipo != self.ultimo_desafio]
+        clase = random.choice(posibles)
+        self.desafio = clase()
+        self.ultimo_desafio = clase.tipo
+        self.tiempo_cartel_desafio = partida.tiempo
+        partida.sonidos.reproducir("seleccion")
+
+    def desafio_en_curso(self):
+        return self.desafio is not None and self.desafio.en_curso()
+
+    def revisar_desafio(self):
+        # Despues de cada aviso: si el desafio se cumplio o se fallo, se anuncia (y se premia)
+        partida = self.partida
+        desafio = self.desafio
+        if desafio.en_curso():
+            return
+        self.tiempo_cartel_desafio = partida.tiempo
+        if desafio.estado == "fallado":
+            return
+        self.bitacora.desafio_cumplido = True
+        ganados = partida.sumar_puntos(DESAFIO_PUNTOS * self.numero_sector)
+        nave_x, nave_y = partida.nave.centro()
+        partida.efectos.texto_flotante("¡DESAFIO! +" + str(ganados), nave_x, nave_y - 40, VERDE)
+        partida.efectos.anillo(nave_x, nave_y, [(0, 90, 40), VERDE, (255, 255, 255)], 32, 6)
+        partida.sonidos.reproducir("powerup")
+        if partida.capsula is None:
+            partida.proximo_powerup = partida.tiempo     # de premio, un power-up enseguida
+
+    # ---------- Rango ----------
+
+    def pagar_rango(self):
+        # Cuando la letra aparece en el cartel: el premio y un golpe de efecto
+        partida = self.partida
+        self.rango_pagado = True
+        if self.rango["puntos"]:
+            partida.sumar_puntos(self.rango["puntos"])
+        if self.rango["letra"] in ("S", "A"):
+            partida.sonidos.reproducir("nuevo_record")
+        else:
+            partida.sonidos.reproducir("seleccion")
+        partida.efectos.sacudir(10)

@@ -34,7 +34,7 @@ class Embestidor(Enemigo):
         if self.fase == "acercarse":
             if 0 < distancia < RANGO_EMBESTIDOR:
                 # Te tiene cerca: va hacia ti
-                rapidez = 1.2 * factor
+                rapidez = self.rapidez(partida, 1.2)
                 self.vx += (dir_x / distancia * rapidez - self.vx) * 0.05
                 self.vy += (dir_y / distancia * rapidez - self.vy) * 0.05
             else:

@@ -51,3 +51,22 @@ def test_aviso_de_dash_listo_una_sola_vez(partida):
     jugar(partida, 150)
     assert cantidades.count(16) == 1
     assert cantidades.count(12) == 1
+
+
+def test_al_dar_la_vuelta_frena_enseguida(partida):
+    # A toda velocidad hacia la derecha y de golpe a la izquierda: en 3 pasos ya va para el
+    # otro lado (con la aceleracion normal tardaba 5 y se pasaba de largo)
+    partida.nave.x = 100
+    jugar(partida, 60, dx=1)
+    jugar(partida, 3, dx=-1)
+    assert partida.nave.vx < 0
+
+
+def test_al_doblar_casi_no_patina(partida):
+    # De costado se corrige con NAVE_FRENADO: lo que iba hacia la derecha se pierde rapido
+    partida.nave.x, partida.nave.y = 100, 100
+    jugar(partida, 60, dx=1)
+    partida.nave.x = 300
+    jugar(partida, 5, dy=1)
+    assert abs(partida.nave.vx) < 1
+    assert partida.nave.vy > 2

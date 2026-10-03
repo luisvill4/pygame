@@ -3,7 +3,8 @@ import math
 
 import pytest
 
-from juego.config import RANGO_EMBESTIDOR, DISTANCIA_APARICION, COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, SECTORES
+from juego.config import (RANGO_EMBESTIDOR, DISTANCIA_APARICION, COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, SECTORES,
+                          DIFICULTADES, ENEMIGO_VELOCIDAD_MAX, NAVE_VELOCIDAD)
 from juego.enemigos import TIPOS_ENEMIGO, crear_enemigo
 from tests.ayudas import jugar
 
@@ -85,3 +86,20 @@ def test_el_rebotador_rebota_en_los_bordes(partida):
     partida.nave.invulnerable_hasta = math.inf
     jugar(partida, 3)
     assert rebotador.vx < 0
+
+
+@pytest.mark.parametrize("tipo", ["perseguidor", "rebotador", "divisor_chico"])
+def test_ninguno_te_persigue_mas_rapido_que_la_nave(partida, tipo):
+    # En PESADILLA y en el nivel 20 (lo mas rapido posible) la nave igual puede escaparse
+    partida.reglas = DIFICULTADES["PESADILLA"]
+    partida.nivel = 20
+    partida.nave.invulnerable_hasta = math.inf
+    enemigo = crear_enemigo(tipo, partida)
+    enemigo.aparece_en = 0
+    partida.enemigos.append(enemigo)
+    for paso in range(400):
+        # La nave da vueltas, asi el enemigo la persigue en todas las direcciones
+        jugar(partida, dx=math.cos(paso / 40), dy=math.sin(paso / 40))
+        rapidez = math.hypot(enemigo.vx, enemigo.vy) * enemigo.paso(partida)
+        assert rapidez <= ENEMIGO_VELOCIDAD_MAX + 1e-9
+    assert ENEMIGO_VELOCIDAD_MAX < NAVE_VELOCIDAD

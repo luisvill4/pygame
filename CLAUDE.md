@@ -5,7 +5,7 @@ Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge moneda
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~175 tests, unos 12 s, sin ventana
+python -m pytest        # ~210 tests, unos 18 s, sin ventana
 ```
 - Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
 - **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json` y `__pycache__`.
@@ -21,8 +21,11 @@ juego/
   interpolacion.py      # Interpolador: dibujar en posiciones intermedias entre pasos de logica
   reloj.py              # LimitadorFPS: limite de FPS preciso (sleep + espera activa final)
   partida.py            # Partida: todo el estado de una partida y sus reglas
-  progresion.py         # Director: presupuesto de enemigos, sectores y oleadas
-  nave.py  moneda.py  proyectiles.py (Bala, Obus, Misil, Mina, Escombro, Onda, Veneno)
+  progresion.py         # Director: presupuesto de enemigos, sectores, oleadas, anomalias, desafios y rango
+  anomalias.py          # Anomalia + registro: asteroides, tormenta, niebla, oro
+  desafios.py           # Desafio + registro: sin_dash, intocable, sin_ayuda, combo, cazador
+  rango.py              # Bitacora del sector y calcular_rango() (S/A/B/C)
+  nave.py  moneda.py  proyectiles.py (Bala, Obus, Misil, Mina, Escombro, Onda, Veneno, Meteoro)
   enemigos/  base.py (Enemigo + registro) · perseguidor · rebotador · embestidor · divisor · enjambre · abeja
   jefes/     base.py (Jefe + registro + pulso) · partes.py (Parte) · ojo · fortaleza · serpiente · colmena · singularidad
   powerups/  base.py (PowerUp, Capsula, registro) · tipos.py (los 7 power-ups, en orden)
@@ -154,7 +157,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - `sumar_puntos(base)`: aplica DOBLE y detecta cuándo se supera el récord.
   - `subir_nivel()`, `iniciar_jefe()` y `jefe_vencido()`.
 - Consultas: `activo(tipo)`, `restante(tipo)`, `activar(tipo, duracion)`, `desactivar(tipo)`, `vel_max()` (turbo), `recarga_dash()` (recarga), `factor_velocidad()` y `multiplicador_combo() = min(1 + combo // 3, COMBO_MAXIMO)`.
-- Orden de `actualizar(dx, dy, pidio_dash)`: tiempo → nave → corte del combo → imán → moneda → power-ups → devolver enemigos guardados → enemigos (mover y choques) → jefe (balas, fases y choques) → estela → brillo de la moneda → efectos.
+- Orden de `actualizar(dx, dy, pidio_dash)`: tiempo → nave (y aviso de dash) → corte del combo (`tiempo_combo()`) → imán → moneda → power-ups → director (oleadas, anomalías, desafíos, rango) → devolver enemigos guardados → enemigos (mover y choques) → jefe (balas, fases y choques) o balas sueltas → estela → brillo de la moneda → efectos.
 
 ### Entrada (`entrada.py`)
 - Teclado y mando se convierten en **acciones**: `ACEPTAR`, `VOLVER`, `PAUSA`, `OPCIONES`, `DASH`, `ARRIBA`, `ABAJO`, `IZQUIERDA` y `DERECHA`.
@@ -168,6 +171,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 
 ### Entidades
 - **Nave** (`nave.py`): física con inercia (`NAVE_*`), diagonal normalizada y giro suavizado (0 = arriba, 90 = izquierda, `atan2(-dx, -dy)`). Además:
+  - `_acelerar()` separa la velocidad en **avance** (hacia donde se aprieta) y **deriva** (de costado). Arrancar usa `NAVE_ACELERACION`; lo que va hacia atrás o de costado se corrige con `NAVE_FRENADO` (más fuerte): dobla y frena enseguida sin perder la inercia. Acelerando desde quieta da lo mismo que antes (lo usa `test_frecuencia`).
   - Inclinación al girar; flota 2 px cuando está casi quieta.
   - **Dash con buffer:** `dash_pedido_en` + `BUFFER_DASH`, y un destello cian una sola vez cuando se recarga (`dash_avisado`).
   - Choques: `caja_recoger()` (50x50, para recoger cosas), `toca_circulo()` y `toca_rect()` (daño con `RADIO_NAVE = 11`), `atraviesa(t)` (dash o invulnerable) y `empujon()`.
@@ -179,6 +183,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
     - el congelado (sprite azul y "+5"; tocarlo con la caja grande da puntos);
     - los bordes (`rebota_en_bordes`), la animación con `desfase` y `separarse()`.
   - Las subclases escriben `mover()`, y si hace falta `al_aparecer()`, `paso()` y `dibujar_cuerpo()`.
+  - **Tope de velocidad:** `Enemigo.rapidez(partida, base)` = `min(base * factor_velocidad(), ENEMIGO_VELOCIDAD_MAX)` (4.2; la nave va a 5): ningún enemigo que te persigue es más rápido que la nave. Lo usan perseguidor, divisor, embestidor (al acercarse) y el `paso()` del rebotador. Los ataques con aviso (embestida, picadas) no tienen tope.
   - `perseguidor`: inercia y se separa de los demás.
   - `rebotador`: diagonal y rebota; se acelera con `factor_velocidad()`.
   - **Enemigos destruibles con el dash** (`destruible = True`): `Partida._actualizar_enemigos` los destruye si la nave está en dash y su `caja_recoger()` toca `enemigo.caja()`.
@@ -213,12 +218,22 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
       - El tipo recién desbloqueado se presenta primero.
       - Se llama al empezar, al subir de nivel y al volver del jefe. La cantidad se cuenta con `cantidad_actual()` (un enjambre cuenta como uno).
       - **Refuerzos:** cada `REFUERZO_ESPERA`, si sobra presupuesto (porque destruiste enemigos), llega uno nuevo.
-      - Cuando se desbloquea un tipo después del nivel 1, el HUD muestra una **ficha chica** debajo del puntaje (entra desde la izquierda, `DURACION_CARTEL_NUEVO`): dibujo, "NUEVO ENEMIGO", nombre y pista en MINI. Antes era un cartel al centro y el usuario se quejó de que tapaba la pantalla.
+      - Cuando se desbloquea un tipo después del nivel 1, el HUD muestra una **ficha chica** debajo del puntaje (`hud._ficha`: entra desde su lado, `DURACION_FICHA`, se ensancha si el nombre no entra): dibujo, "NUEVO ENEMIGO", nombre y pista en MINI. Antes era un cartel al centro y el usuario se quejó de que tapaba la pantalla. La ficha del desafío es la misma, del lado derecho.
     - **Sectores = biomas, uno por jefe** (`SECTORES`, en orden fijo): Cinturón → Ojo, Carmesí → Fortaleza, Esmeralda → Serpiente, Ámbar → Colmena, Abismo → Singularidad, y vuelve al primero. `iniciar_jefe()` usa `director.jefe_del_sector()`.
       - Cada sector: `nombre`, `lema` (debajo del nombre en el cartel), `color`, `jefe`, `tinte`, `fondo`, `ambiente`, `estrellas` (factor RGB) y `favorito`.
-      - Se cambia en `jefe_vencido()` → `director.al_vencer_al_jefe()`; el cartel del sector sale cuando se va "¡JEFE VENCIDO!" (`tiempo_cartel_sector` en el futuro; el HUD lo muestra si `0 <= t < 2500`).
+      - Se cambia en `jefe_vencido()` → `director.al_vencer_al_jefe()`; el cartel del sector sale cuando termina el cierre (`tiempo_cartel_sector` en el futuro; el HUD lo muestra si `0 <= t < 2500`).
       - Al cambiar se va `RECAMBIO_SECTOR` de los **grupos** de enemigos (un enjambre es un grupo); si estaban guardados por la pelea, no vuelven.
       - El fondo cambia con `Fondo.ir_a_sector(sector)` en 4 etapas durante `TRANSICION_SECTOR` pasos (lo llama `Escena.mover_fondo(partida)`). Los tintes no pasan de ~110 por canal.
+    - **Anomalías** (`anomalias.py`, registro `TIPOS_ANOMALIA`, `director.anomalia`): en el nivel `ANOMALIA_NIVEL` de cada sector (3, 8, 13…), `ANOMALIA_ESPERA` después, llega la del sector (`sector["anomalia"]`; `None` o desde la 2ª vuelta, al azar) por `ANOMALIA_DURACION`.
+      - Ganchos de `Anomalia`: `actualizar`, `terminar`, `dibujar` (lo llama `Partida._dibujar_todo` encima de todo y debajo del HUD), `multiplicador_monedas` y `factor_combo` (los consulta la Partida por medio del director).
+      - `asteroides`: columnas punteadas (`avisos`) y `Meteoro`s que caen justo ahí `ASTEROIDES_AVISO` después (destruibles). `tormenta`: calma → aviso (bordes punteados) → llamarada (quema con `toca_rect`; el golpe empuja hacia afuera de la franja). `niebla`: superficie a 1/4 escalada x4 (bordes pixelados) con un agujero alrededor de la nave, del color del sector; encima, ojos de los enemigos lejanos y destellos de moneda y cápsula. `oro`: monedas x`ORO_MULTIPLICADOR`, combo x`ORO_COMBO`, polvo dorado.
+      - No se pisa con las oleadas (ninguna empieza durante una ni hasta `RESPIRO_ANOMALIA` después); el jefe la corta. Medido con un bot (golpes/min, mismo nivel): sin nada ~4, oleada ~5.6, tormenta ~6.2, asteroides ~7 (pero solo ~0.7/min son de los asteroides: el resto, enemigos mientras esquiva), niebla y oro ≈ normal.
+      - **Proyectiles sin jefe:** si no hay jefe pero hay balas (asteroides), `Partida._actualizar_balas_sueltas()` las mueve, el dash rompe las destruibles y `_tocar_balas()` revisa el daño (la misma que usa `_choques_jefe`).
+    - **Desafíos** (`desafios.py`, registro `TIPOS_DESAFIO`, `director.desafio`): uno por sector, `DESAFIO_ESPERA` después de llegar (en el primero, del nivel `DESAFIO_DESDE_NIVEL`), al azar entre los `disponible()` y distinto del anterior.
+      - De **aguantar** (`meta = None`: sin_dash, intocable, sin_ayuda) se fallan con su aviso y se cumplen al llegar el jefe; de **lograr** (combo `DESAFIO_COMBO`, cazador `DESAFIO_CAZADOR`, solo desde el divisor) se cumplen con `avanzar()` y se fallan si llega el jefe.
+      - **Avisos:** la Partida llama a `director.al_recibir_golpe()` (en `danar_jugador`, también si para el escudo), `al_usar_dash()` (si cambió `nave.dash_hasta`), `al_agarrar_powerup()`, `al_recoger_moneda(combo)` y `al_destruir_enemigo()` (en `destruir_con_dash`). El director anota la bitácora y le pasa el aviso al desafío; `revisar_desafio()` premia (`DESAFIO_PUNTOS * numero_sector`, anillo, power-up enseguida) o lo marca fallado.
+      - HUD: ficha a la derecha (`_ficha_desafio`: al proponerse, al cumplirse y al fallarse) y el nombre con el progreso debajo de las vidas (y 72/86, MINI).
+    - **Rango y cierre del sector** (`rango.py`): `Bitacora` (golpes, mejor_combo, desafio_cumplido, inicio_jefe, tiempo_jefe). En `al_vencer_al_jefe()` se calcula `calcular_rango()` (estrellas: golpes 2/1/0, combo ≥ `RANGO_COMBO`, desafío, jefe antes de `RANGO_TIEMPO_JEFE` +20% por vuelta; S = 5, A = 4, B ≥ 2, C) y empieza el **cierre**: `CARTEL_JEFE` ("¡JEFE VENCIDO!") + `CARTEL_RANGO` (el cartel con las filas de a una; la letra cae a los `RANGO_SELLO`, y ahí `pagar_rango()` suma `RANGO_PUNTOS`). Mientras `director.cerrando_sector()`, los enemigos guardados no vuelven, las monedas no suben de nivel y no hay oleadas ni anomalías; al terminar sale el cartel del sector nuevo.
     - **Oleadas:** cada `OLEADA_ESPERA` (desde `OLEADA_DESDE_NIVEL`, sin jefe) llegan enemigos extra con `de_oleada=True` por `OLEADA_DURACION`, y después se van.
       - Si no perdiste vidas: `OLEADA_PUNTOS * nivel` y un power-up enseguida.
       - El jefe corta la oleada (`al_empezar_jefe`).
@@ -264,7 +279,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - Daño al jefe: dash contra `caja_nucleo()` mientras puede recibir golpe, o contra una parte golpeable (`Partida._choques_jefe`). La nave rebota y queda 0.8 s invulnerable.
   - **Balance medido con un bot** (script del scratchpad que esquiva balas/cuerpos, lee los avisos y pega en las ventanas; cada jefe con su `jefes_vencidos` real): Ojo ~24 s, Fortaleza ~60 s, Serpiente ~33 s, Colmena ~45 s, Singularidad ~43 s; balas en pantalla de promedio: 7.6 / 3.7 / 0.6 / 0 / 9.5. Cuando el bot recibía muchos golpes en una fase, casi siempre era un aviso que no daba tiempo (se agregaron `fijar`, un pulso más en `temblar` y las flechitas de los huecos).
   - Daño a la nave: las balas (círculo de `bala.radio`) y `cajas_danio()` (`toca_rect`).
-  - Durante la pelea las monedas no suben de nivel. Al vencerlo: bonus `JEFE_PUNTOS * jefes_vencidos` y el cartel "¡JEFE VENCIDO!" (`CARTEL_JEFE`). Los enemigos guardados vuelven recién cuando se va el cartel.
+  - Durante la pelea las monedas no suben de nivel. Al vencerlo: bonus `JEFE_PUNTOS * jefes_vencidos`, el cartel "¡JEFE VENCIDO!" (`CARTEL_JEFE`) y el del rango (`CARTEL_RANGO`). Los enemigos guardados vuelven recién cuando termina el cierre del sector.
 - **Power-ups** (`powerups/`), registro `TIPOS_POWERUP`; el orden de `tipos.py` es el del HUD y del panel de inicio:
   - `duracion`: ms (escudo, hielo, imán, doble; valores en `DURACION`), `HASTA_PERDER_VIDA` (turbo, recarga) o `None` (vida, instantáneo).
   - `disponible(partida)`: vida solo si falta alguna; los permanentes, solo si no están activos.
@@ -294,18 +309,17 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - `conftest.py`:
   - pone los drivers dummy;
   - fixture `app` (datos en `tmp_path`, `usar_mandos=False`, reloj falso `app.reloj_falso` y teclas mantenidas en el conjunto `app.teclas`);
-  - fixture `partida` (recién creada, sin enemigos, sin power-ups y con la moneda lejos).
+  - fixture `partida` (recién creada, sin enemigos, sin power-ups, sin oleadas, **sin anomalías ni desafíos** (`director.con_anomalias`/`con_desafios = False`; sus tests los prenden) y con la moneda lejos).
+  - Para esperar a que vuelvan los enemigos después de un jefe: `CARTEL_JEFE + CARTEL_RANGO`.
 - `ayudas.py`: `avanzar(app, frames)` (frames completos de la App, sin esperar), `tecla(K)`, `boton(n)` y `jugar(partida, frames, dx, dy, dash)` (solo la lógica).
 - Se verificó que los tests detectan bugs inyectados a propósito (combo, hitbox y rango del embestidor).
 - Para inspeccionar algo visual, sacar una captura de `app.pantalla` con `pygame.image.save` desde un script en el scratchpad que use `App(carpeta_datos=<scratchpad>)`. Filtrar la salida con `grep -a`, porque "¡" hace que grep la trate como binaria.
 
 ## Ideas pendientes (propuestas, aún sin hacer)
-- **Elegidas por el usuario y todavía sin hacer** (del plan de dificultad): anomalías de sector (tormenta solar, niebla, lluvia de asteroides, fiebre del oro), desafíos opcionales ("SIN DASH", "SIN CORTAR EL COMBO"…) y rango S/A/B/C al cerrar cada sector.
 - Propuestas no elegidas: Torreta + Mina, Ladrón + Escudero, Fantasma + Barrera + Élites, taller de cartas, Los Gemelos, fase 2 del Ojo.
 - Estadísticas al final de la partida (monedas, enemigos destruidos, tiempo); por ahora solo se muestra el mejor combo.
 - Logros, tecla M para silenciar, música más intensa según el nivel, transiciones retro entre pantallas y F11 para pantalla completa.
-- Del análisis de gameplay (no elegidas todavía):
-  - tope de velocidad de los enemigos por debajo de la nave (el perseguidor la supera desde el nivel 11);
-  - frenar más rápido al cambiar de dirección;
+- Del análisis de gameplay (no elegidas todavía; el tope de velocidad y el frenado ya se hicieron):
   - roce (graze) con puntos;
   - HUD que se oscurece si hay algo debajo.
+- Mostrar los rangos de cada sector en la pantalla de Fin.
