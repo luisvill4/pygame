@@ -5,7 +5,7 @@ Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge moneda
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~210 tests, unos 18 s, sin ventana
+python -m pytest        # ~215 tests, unos 20 s, sin ventana
 ```
 - Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
 - **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json` y `__pycache__`.
@@ -69,6 +69,7 @@ Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
   - `dibujo.texto(pantalla, mensaje, tamaño, color, x, y, sombra, alinear)` recibe el tamaño como número; `recursos.fuente(tamaño)` guarda las fuentes en caché.
 - Colores neón definidos como constantes en `config.py` (`AMARILLO`, `CIAN`, `MAGENTA`, `ROJO`…). Números con 6 dígitos (`dibujo.numero_arcade`).
 - Partículas (`efectos.Efectos`): cuadrados alineados a una cuadrícula de 2 px. Pueden tener `gravedad`; `pedazos()` la usa para trozos que saltan y caen. No se desvanecen con transparencia: cambian de color por etapas según una **paleta**, una lista que va de oscuro a brillante (`FUEGO`, `ORO`, `ESCARCHA`…).
+- **Carteles que no tapan el juego** (pedido del usuario: los carteles le tapaban monedas y enemigos): todo cartel o ficha del HUD se dibuja con `hud._cartel(pantalla, partida, nombre, funcion, *datos)`. La función dibuja en una capa transparente del tamaño de la pantalla; `_zona_dibujada()` busca qué ocupó (con la capa achicada 8 veces por `smoothscale`: `get_bounding_rect()` tardaba 2 ms) y, si esa zona + `CARTEL_MARGEN` toca algo de `cosas_que_importan(partida)` (nave, moneda, cápsula, enemigos, balas, jefe), se pega con opacidad `CARTEL_ALFA_TAPANDO` y sigue así `CARTEL_ESPERA_TAPANDO` ms (reloj real) para no titilar. Cuesta ~0.5 ms por cartel visible. **Trampa:** para volverla opaca se usa `set_alpha(255)`; `set_alpha(None)` le saca la transparencia por píxel y el cartel sale sobre un recuadro negro. Un cartel nuevo tiene que pasar por `_cartel()`.
 - Efectos disponibles:
   - en `dibujo`: líneas CRT (`efecto_crt`), parpadeos duros (`parpadeo`), texto con relieve (`texto_3d`), marcos de doble línea (`marco`), arcoíris (`color_arcoiris`) y `oscurecer`;
   - en `Efectos`: temblor en pasos de 2 px y destello de color (`sacudir`, `dibujar_temblor_y_destello`; se descuentan en `actualizar`).
@@ -211,6 +212,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
     - Si un dron te choca, explota (`muere_al_chocar`). Destruirlos a todos con el dash da `ENJAMBRE_BONUS` (`todos_con_dash`).
     - Al volver del jefe, la bandada se reubica una sola vez (`ubicar`).
   - `embestidor`: `acercarse → apuntar (0.6 s, línea roja) → cargar (0.5 s)`. Solo te sigue y embiste dentro de `RANGO_EMBESTIDOR`; si no, deambula con `rumbo`.
+    - **Mira fija** (pedido del usuario): en `apuntar` guarda `mira` (dirección y distancia) y la sigue actualizando hasta `reglas["apunte_fijo"]` ms antes de embestir (FACIL 350, NORMAL 200, DIFICIL y PESADILLA 0 = hasta el final). Desde ahí `mira_fija = True`: embiste hacia donde estabas y la línea deja de parpadear y se alarga (es la señal para correrse).
   - **Separación:** los que persiguen se alejan entre sí a menos de `SEPARACION_ENEMIGOS`, con fuerza `FUERZA_SEPARACION`. Sin esto, se fusionaban a los ~10 s.
   - Progresión: la decide `Partida.director` (`progresion.Director`).
     - **Presupuesto:** cada tipo cuesta `COSTO_ENEMIGO` y se desbloquea en `DESBLOQUEO_ENEMIGO`. Cada nivel tiene `presupuesto()` (`PRESUPUESTO_INICIAL + (nivel-1) * PRESUPUESTO_POR_NIVEL`, con tope `PRESUPUESTO_MAXIMO`, por `reglas["presupuesto"]`).
@@ -239,7 +241,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
       - El jefe corta la oleada (`al_empezar_jefe`).
       - HUD: cartel "¡OLEADA!" y una barra abajo al centro.
   - **Dificultad:** `Partida(…, dificultad)` guarda `reglas = DIFICULTADES[dificultad]`, `vidas_max` y `vidas`.
-    - `factor_velocidad()` multiplica por `reglas["velocidad"]` (también las balas del Ojo), y `espera_powerup()` por `reglas["espera_powerup"]`.
+    - `factor_velocidad()` multiplica por `reglas["velocidad"]` (también las balas del Ojo), y `espera_powerup()` por `reglas["espera_powerup"]`. `reglas["apunte_fijo"]` lo usa el embestidor.
     - El HUD dibuja `vidas_max` íconos.
 - **Jefes** (`jefes/`), registro `TIPOS_JEFE`; el que sale es el `"jefe"` del sector actual.
   - **Filosofía (pedido explícito del usuario):** las peleas son un **baile con ritmo, estilo Cuphead/Dark Souls**, no una lluvia de balas. Un ataque por vez, cada uno con **anticipación (aviso) → ataque a ritmo → ventana para pegarle**. Pocas balas (el bot mide ~0-10 en pantalla de promedio). Cada jefe con personalidad (nombre, apodo, gestos, textos) y su propio estilo de combate. Si se agrega uno, seguir esto.
@@ -321,5 +323,5 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - Logros, tecla M para silenciar, música más intensa según el nivel, transiciones retro entre pantallas y F11 para pantalla completa.
 - Del análisis de gameplay (no elegidas todavía; el tope de velocidad y el frenado ya se hicieron):
   - roce (graze) con puntos;
-  - HUD que se oscurece si hay algo debajo.
+  - HUD fijo (puntos, vidas) que se oscurece si hay algo debajo (los carteles y fichas ya lo hacen).
 - Mostrar los rangos de cada sector en la pantalla de Fin.

@@ -103,3 +103,25 @@ def test_ninguno_te_persigue_mas_rapido_que_la_nave(partida, tipo):
         rapidez = math.hypot(enemigo.vx, enemigo.vy) * enemigo.paso(partida)
         assert rapidez <= ENEMIGO_VELOCIDAD_MAX + 1e-9
     assert ENEMIGO_VELOCIDAD_MAX < NAVE_VELOCIDAD
+
+
+@pytest.mark.parametrize("dificultad", ["FACIL", "NORMAL", "DIFICIL"])
+def test_en_las_dificultades_faciles_la_mira_del_embestidor_se_fija_antes(partida, dificultad):
+    # El embestidor apunta hacia abajo y, justo antes de embestir, la nave se corre a un costado
+    partida.reglas = DIFICULTADES[dificultad]
+    partida.nave.invulnerable_hasta = math.inf
+    partida.nave.x, partida.nave.y = 375, 380           # centro de la nave: (400, 405)
+    embestidor = poner_embestidor(partida, 380, 180)    # centro: (400, 200), justo arriba
+    embestidor.fase_hasta = partida.tiempo              # que apunte ya
+    while embestidor.fase != "apuntar":
+        jugar(partida)
+    while partida.tiempo < embestidor.fase_hasta - 150:
+        jugar(partida)
+    partida.nave.x += 150
+    while embestidor.fase == "apuntar":
+        jugar(partida)
+    if DIFICULTADES[dificultad]["apunte_fijo"] > 150:
+        assert abs(embestidor.vx) < 0.5     # embiste hacia donde estabas: derecho hacia abajo
+    else:
+        assert embestidor.vx > 3            # te sigue hasta el ultimo momento
+    assert embestidor.vy > 0

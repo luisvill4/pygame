@@ -175,6 +175,11 @@ JEFE_FLOTAR = 2500              # ms que se mueve de lado a lado antes de atacar
 JEFE_CANSADO = 2500             # ms que deja el nucleo al descubierto
 JEFE_RAFAGAS = 3                # rafagas de balas en cada ataque
 CARTEL_JEFE = 2000              # ms que se ve "¡JEFE VENCIDO!" (los enemigos vuelven despues)
+# Carteles y fichas que tapan algo (la nave, la moneda, un enemigo, una bala...) se vuelven
+# casi transparentes, asi se sigue leyendo el mensaje sin perder de vista el juego
+CARTEL_ALFA_TAPANDO = 70        # opacidad (0 = invisible, 255 = normal) mientras tapa algo
+CARTEL_MARGEN = 24              # px alrededor del cartel que ya cuentan como "debajo"
+CARTEL_ESPERA_TAPANDO = 300     # ms que sigue transparente despues (asi no titila en el borde)
 
 # La Fortaleza: una marcha militar. Cada "compas" un cañon se carga, dispara a ritmo y
 # queda RECALENTADO: ahi se le pega con el dash. Un ataque por vez, siempre con aviso.
@@ -269,19 +274,21 @@ RANGO_PUNTOS = {"S": 150, "A": 100, "B": 50, "C": 0}
 #   velocidad:      multiplica la velocidad de enemigos y balas
 #   presupuesto:    multiplica el presupuesto de enemigos (mas o menos enemigos)
 #   espera_powerup: multiplica la espera entre power-ups (mas = caen menos seguido)
+#   apunte_fijo:    ms antes de embestir en que el embestidor deja de seguirte con la mira:
+#                   embiste hacia donde estabas un momento antes (0 = te sigue hasta el final)
 ORDEN_DIFICULTADES = ["FACIL", "NORMAL", "DIFICIL", "PESADILLA"]
 DIFICULTADES = {
     "FACIL": {"color": VERDE, "paleta": TREBOL, "calaveras": 1, "vidas": 5, "velocidad": 0.8,
-              "presupuesto": 0.7, "espera_powerup": 0.8,
+              "presupuesto": 0.7, "espera_powerup": 0.8, "apunte_fijo": 350,
               "descripcion": ["5 VIDAS", "ENEMIGOS MAS LENTOS", "MAS POWER-UPS"]},
     "NORMAL": {"color": CIAN, "paleta": ENERGIA, "calaveras": 2, "vidas": 3, "velocidad": 1.0,
-               "presupuesto": 1.0, "espera_powerup": 1.0,
+               "presupuesto": 1.0, "espera_powerup": 1.0, "apunte_fijo": 200,
                "descripcion": ["3 VIDAS", "EL DESAFIO ORIGINAL", ""]},
     "DIFICIL": {"color": AMARILLO, "paleta": ORO, "calaveras": 3, "vidas": 3, "velocidad": 1.15,
-                "presupuesto": 1.3, "espera_powerup": 1.3,
+                "presupuesto": 1.3, "espera_powerup": 1.3, "apunte_fijo": 0,
                 "descripcion": ["3 VIDAS", "ENEMIGOS 15% MAS RAPIDOS", "MAS ENEMIGOS, MENOS POWER-UPS"]},
     "PESADILLA": {"color": ROJO, "paleta": FUEGO, "calaveras": 4, "vidas": 1, "velocidad": 1.3,
-                  "presupuesto": 1.6, "espera_powerup": 1.6,
+                  "presupuesto": 1.6, "espera_powerup": 1.6, "apunte_fijo": 0,
                   "descripcion": ["1 VIDA", "ENEMIGOS 30% MAS RAPIDOS", "SIN PIEDAD"]},
 }
 

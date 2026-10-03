@@ -18,7 +18,9 @@ python main.py
 | Opciones (en pausa) | O | Vista (⧉) |
 | Volver | Esc | B |
 
-Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. Cada tanto llega una **oleada**: muchos enemigos durante unos segundos; si la pasás sin perder una vida, ganás puntos y un power-up. Los enemigos de cada nivel se eligen al azar según un "presupuesto", así que cada partida es distinta.
+Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. En FÁCIL y NORMAL el embestidor deja de seguirte con la mira un momento antes de embestir (la línea roja deja de parpadear): ahí es cuando hay que correrse. En DIFÍCIL y PESADILLA te sigue hasta el último instante.
+
+Los carteles ("NIVEL 3", "¡JEFE VENCIDO!", el rango...) y las fichas (enemigo nuevo, desafío) se vuelven casi transparentes cuando tienen algo abajo (la nave, la moneda, un enemigo, una bala), así nunca te tapan el juego. Cada tanto llega una **oleada**: muchos enemigos durante unos segundos; si la pasás sin perder una vida, ganás puntos y un power-up. Los enemigos de cada nivel se eligen al azar según un "presupuesto", así que cada partida es distinta.
 
 ### Sectores y jefes
 El viaje pasa por 5 **sectores**, cada uno con su ambiente (asteroides, brasas, luciérnagas, un panal gigante, polvo que cae en un agujero negro), sus enemigos favoritos y **su jefe**, que llega cada 5 niveles. Al vencerlo se pasa al sector siguiente; después del último se vuelve a empezar, más difícil.

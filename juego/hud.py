@@ -8,6 +8,9 @@ HUD: el marcador que se dibuja encima del juego.
 - Carteles: "NIVEL X", "¡JEFE VENCIDO!", el rango del sector, la anomalia que llega...
 - Fichas: tarjetas chicas que entran deslizandose (enemigo nuevo a la izquierda,
   desafio a la derecha), asi no tapan el centro de la pantalla.
+- Carteles y fichas se dibujan primero en una capa aparte (_cartel). Si debajo hay algo
+  que importa (la nave, la moneda, un enemigo, una bala...), la capa se pega casi
+  transparente: el mensaje se sigue leyendo, pero no tapa el juego.
 
 Lo de la izquierda se ancla al borde izquierdo, lo de la derecha al borde derecho y
 lo del centro al centro, asi el HUD se acomoda solo al formato (4:3 o 16:9).
@@ -22,7 +25,8 @@ import pygame
 from juego import dibujo, nave, lienzo, recursos
 from juego.dibujo import texto, MINI, CHICA, MEDIA, GRANDE, TITULO
 from juego.config import (ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA, VERDE,
-                          CARTEL_JEFE, CARTEL_RANGO, RANGO_SELLO, OLEADA_DURACION, ANOMALIA_DURACION)
+                          CARTEL_JEFE, CARTEL_RANGO, RANGO_SELLO, OLEADA_DURACION, ANOMALIA_DURACION,
+                          CARTEL_ALFA_TAPANDO, CARTEL_MARGEN, CARTEL_ESPERA_TAPANDO)
 from juego.powerups import TIPOS_POWERUP
 
 
@@ -58,27 +62,101 @@ def dibujar(pantalla, partida):
         _barra_tiempo(pantalla, "ANOMALIA", anomalia.restante(partida) / ANOMALIA_DURACION, anomalia.color)
     if director.desafio is not None and partida.jefe is None:
         _desafio(pantalla, director.desafio)
-    # Carteles: nivel, sector nuevo, oleada, anomalia, jefe vencido y rango
-    if partida.tiempo - partida.tiempo_cartel_nivel < 1500:
-        dibujo.texto_3d(pantalla, "NIVEL " + str(partida.nivel), GRANDE, AMARILLO, MAGENTA, 250, 4)
-    if 0 <= partida.tiempo - director.tiempo_cartel_sector < 2500:
-        sector = director.sector
-        texto(pantalla, "SECTOR " + str(director.numero_sector), CHICA, GRIS, lienzo.centro_x(), 300)
-        dibujo.texto_3d(pantalla, sector["nombre"], MEDIA, sector["color"], (30, 30, 50), 330, 3)
-        if partida.tiempo - director.tiempo_cartel_sector > 600:
-            texto(pantalla, sector["lema"], CHICA, BLANCO, lienzo.centro_x(), 370)
-    if director.nuevo_tipo is not None and partida.tiempo - director.tiempo_cartel_nuevo < DURACION_FICHA:
-        _ficha_nuevo_enemigo(pantalla, director.nuevo_tipo, partida.tiempo - director.tiempo_cartel_nuevo)
-    if director.desafio is not None and partida.tiempo - director.tiempo_cartel_desafio < DURACION_FICHA:
-        _ficha_desafio(pantalla, director.desafio, partida.tiempo - director.tiempo_cartel_desafio)
+    # Carteles: nivel, sector nuevo, fichas, oleada, anomalia, jefe vencido y rango.
+    # Cada uno pasa por _cartel(), que lo vuelve transparente si tapa algo
+    t = partida.tiempo
+    if t - partida.tiempo_cartel_nivel < 1500:
+        _cartel(pantalla, partida, "nivel", _cartel_nivel, partida.nivel)
+    if 0 <= t - director.tiempo_cartel_sector < 2500:
+        _cartel(pantalla, partida, "sector", _cartel_sector, director, t - director.tiempo_cartel_sector)
+    if director.nuevo_tipo is not None and t - director.tiempo_cartel_nuevo < DURACION_FICHA:
+        _cartel(pantalla, partida, "enemigo nuevo", _ficha_nuevo_enemigo, director.nuevo_tipo,
+                t - director.tiempo_cartel_nuevo)
+    if director.desafio is not None and t - director.tiempo_cartel_desafio < DURACION_FICHA:
+        _cartel(pantalla, partida, "desafio", _ficha_desafio, director.desafio, t - director.tiempo_cartel_desafio)
     if director.en_oleada and director.restante_oleada() > OLEADA_DURACION - 2000 and dibujo.parpadeo(150):
-        dibujo.texto_3d(pantalla, "¡OLEADA!", GRANDE, ROJO, (110, 0, 30), 200, 4)
+        _cartel(pantalla, partida, "oleada", dibujo.texto_3d, "¡OLEADA!", GRANDE, ROJO, (110, 0, 30), 200, 4)
     if director.anomalia is not None:
-        _cartel_anomalia(pantalla, director.anomalia, partida.tiempo - director.anomalia.desde)
-    if partida.tiempo - partida.tiempo_cartel_jefe < CARTEL_JEFE:
-        dibujo.texto_3d(pantalla, "¡JEFE VENCIDO!", GRANDE, dibujo.color_arcoiris(), MAGENTA, 300, 4)
-    if director.rango is not None and 0 <= partida.tiempo - director.tiempo_cartel_rango < CARTEL_RANGO:
-        _cartel_rango(pantalla, director.rango, partida.tiempo - director.tiempo_cartel_rango)
+        _cartel(pantalla, partida, "anomalia", _cartel_anomalia, director.anomalia, t - director.anomalia.desde)
+    if t - partida.tiempo_cartel_jefe < CARTEL_JEFE:
+        _cartel(pantalla, partida, "jefe vencido", dibujo.texto_3d, "¡JEFE VENCIDO!", GRANDE,
+                dibujo.color_arcoiris(), MAGENTA, 300, 4)
+    if director.rango is not None and 0 <= t - director.tiempo_cartel_rango < CARTEL_RANGO:
+        _cartel(pantalla, partida, "rango", _cartel_rango, director.rango, t - director.tiempo_cartel_rango)
+
+
+# ---------- Carteles que no tapan el juego ----------
+
+_capas = {}             # tamaño de la pantalla -> [superficie transparente, zona usada la ultima vez]
+_tapando_hasta = {}     # nombre del cartel -> hasta cuando (reloj real) sigue transparente
+
+
+def _cartel(pantalla, partida, nombre, dibujar_cartel, *datos):
+    # Dibuja el cartel en una capa transparente, mira que rectangulo ocupo y, si ahi
+    # abajo hay algo que importa, lo pega casi transparente.
+    # dibujar_cartel(capa, *datos) es cualquier funcion que dibuja (la capa mide lo
+    # mismo que la pantalla, asi los carteles centrados quedan en el mismo lugar)
+    tamano = pantalla.get_size()
+    if tamano not in _capas:
+        _capas[tamano] = [pygame.Surface(tamano, pygame.SRCALPHA), pygame.Rect(0, 0, 0, 0)]
+    capa, usada = _capas[tamano]
+    capa.fill((0, 0, 0, 0), usada)              # el resto de la capa ya esta vacio
+    dibujar_cartel(capa, *datos)
+    ocupado = _zona_dibujada(capa)
+    _capas[tamano][1] = ocupado
+    if ocupado.width == 0:
+        return                                  # (parpadeando: en este cuadro no dibujo nada)
+    ahora = pygame.time.get_ticks()             # reloj real: es solo un efecto visual
+    zona = ocupado.inflate(2 * CARTEL_MARGEN, 2 * CARTEL_MARGEN)
+    if zona.collidelist(cosas_que_importan(partida)) != -1:
+        _tapando_hasta[nombre] = ahora + CARTEL_ESPERA_TAPANDO
+    if ahora < _tapando_hasta.get(nombre, 0):
+        capa.set_alpha(CARTEL_ALFA_TAPANDO)
+    else:
+        capa.set_alpha(255)     # opaco (ojo: set_alpha(None) le sacaria la transparencia de cada pixel)
+    pantalla.blit(capa, ocupado.topleft, ocupado)
+
+
+def _zona_dibujada(capa):
+    # El rectangulo de la capa que tiene algo dibujado (o uno vacio).
+    # capa.get_bounding_rect() revisa pixel por pixel y tarda ~2 ms: demasiado a 144 FPS.
+    # Achicar la capa 8 veces con smoothscale es 4 veces mas rapido, y como promedia los
+    # pixeles, cualquier cosa dibujada deja algo de color en la chica. La zona queda unos
+    # pixeles mas grande que el cartel: no importa
+    ancho, alto = capa.get_size()
+    chica = pygame.transform.smoothscale(capa, (ancho // 8, alto // 8))
+    zona = chica.get_bounding_rect()
+    if zona.width == 0:
+        return zona
+    escala_x, escala_y = ancho / chica.get_width(), alto / chica.get_height()
+    grande = pygame.Rect(int(zona.x * escala_x), int(zona.y * escala_y),
+                         int(zona.width * escala_x) + 1, int(zona.height * escala_y) + 1)
+    return grande.inflate(4, 4).clip(capa.get_rect())
+
+
+def cosas_que_importan(partida):
+    # Los rectangulos de lo que el jugador tiene que ver siempre
+    rectangulos = [partida.nave.caja_recoger(), partida.moneda.caja()]
+    if partida.capsula is not None:
+        rectangulos.append(partida.capsula.caja())
+    rectangulos += [enemigo.caja() for enemigo in partida.enemigos]
+    rectangulos += [pygame.Rect(bala.x - bala.radio, bala.y - bala.radio, 2 * bala.radio, 2 * bala.radio)
+                    for bala in partida.balas]
+    if partida.jefe is not None:
+        rectangulos += partida.jefe.cajas_danio()
+    return rectangulos
+
+
+def _cartel_nivel(pantalla, nivel):
+    dibujo.texto_3d(pantalla, "NIVEL " + str(nivel), GRANDE, AMARILLO, MAGENTA, 250, 4)
+
+
+def _cartel_sector(pantalla, director, transcurrido):
+    sector = director.sector
+    texto(pantalla, "SECTOR " + str(director.numero_sector), CHICA, GRIS, lienzo.centro_x(), 300)
+    dibujo.texto_3d(pantalla, sector["nombre"], MEDIA, sector["color"], (30, 30, 50), 330, 3)
+    if transcurrido > 600:
+        texto(pantalla, sector["lema"], CHICA, BLANCO, lienzo.centro_x(), 370)
 
 
 def _marcador(pantalla, partida):
