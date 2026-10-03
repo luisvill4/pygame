@@ -77,8 +77,8 @@ def lugar_para_moneda(partida):
             continue
         if any(math.hypot(centro_x - e.centro()[0], centro_y - e.centro()[1]) < 60 for e in partida.enemigos):
             continue
-        if partida.jefe is not None and partida.jefe.caja_cuerpo().inflate(40, 40).colliderect(
-                (nueva_x, nueva_y, TAMANO, TAMANO)):
+        if partida.jefe is not None and any(caja.inflate(40, 40).colliderect((nueva_x, nueva_y, TAMANO, TAMANO))
+                                            for caja in partida.jefe.cajas_danio()):
             continue
         return nueva_x, nueva_y
     return nueva_x, nueva_y     # muy raro: si no encontro un lugar ideal, usa el ultimo

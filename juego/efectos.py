@@ -13,15 +13,16 @@ from juego.config import BLANCO, FONDO, FUEGO
 
 
 class Particula:
-    __slots__ = ("x", "y", "vx", "vy", "paleta", "vida", "vida_inicial", "tamano")
+    __slots__ = ("x", "y", "vx", "vy", "paleta", "vida", "vida_inicial", "tamano", "gravedad")
 
-    def __init__(self, x, y, vx, vy, paleta, vida, tamano):
+    def __init__(self, x, y, vx, vy, paleta, vida, tamano, gravedad=0):
         self.x, self.y = x, y               # posicion
         self.vx, self.vy = vx, vy           # velocidad
         self.paleta = paleta                # colores por los que va pasando
         self.vida = vida                    # frames que le quedan
         self.vida_inicial = vida
         self.tamano = tamano                # lado del cuadrado en pixeles
+        self.gravedad = gravedad            # cuanto acelera hacia abajo por frame (0 = flota)
 
 
 class TextoFlotante:
@@ -47,8 +48,8 @@ class Efectos:
 
     # ---------- Crear ----------
 
-    def particula(self, x, y, vx, vy, paleta, vida, tamano):
-        self.particulas.append(Particula(x, y, vx, vy, paleta, vida, tamano))
+    def particula(self, x, y, vx, vy, paleta, vida, tamano, gravedad=0):
+        self.particulas.append(Particula(x, y, vx, vy, paleta, vida, tamano, gravedad))
 
     def explosion(self, cx, cy, paleta, cantidad, fuerza, tamano=4):
         # Lanza particulas en todas direcciones desde (cx, cy)
@@ -64,6 +65,13 @@ class Efectos:
             direccion = 2 * math.pi * i / cantidad
             self.particula(cx, cy, math.cos(direccion) * fuerza, math.sin(direccion) * fuerza,
                            paleta, 22, tamano)
+
+    def pedazos(self, cx, cy, paleta, cantidad, fuerza):
+        # Trozos grandes que saltan hacia arriba y caen (algo que se rompe: un cañon, una coraza)
+        for _ in range(cantidad):
+            self.particula(cx + random.randint(-8, 8), cy + random.randint(-8, 8),
+                           random.uniform(-fuerza, fuerza), random.uniform(-fuerza, fuerza * 0.3),
+                           paleta, random.randint(40, 60), random.choice([6, 8]), gravedad=0.35)
 
     def texto_flotante(self, mensaje, x, y, color):
         self.textos.append(TextoFlotante(mensaje, x, y, color))
@@ -93,7 +101,7 @@ class Efectos:
             particula.x += particula.vx
             particula.y += particula.vy
             particula.vx *= 0.92        # friccion: se van frenando
-            particula.vy *= 0.92
+            particula.vy = particula.vy * 0.92 + particula.gravedad
             particula.vida -= 1
             if particula.vida <= 0:
                 self.particulas.remove(particula)

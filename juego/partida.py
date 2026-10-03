@@ -19,7 +19,7 @@ import random
 
 from juego import hud, lienzo
 from juego.config import (COMBO_TIEMPO, COMBO_MAXIMO, MONEDAS_POR_NIVEL, MS_POR_FRAME,
-                          PUNTOS_ENEMIGO_CONGELADO, RADIO_BALA, NAVE_VELOCIDAD, RECARGA_POR_DESTRUIR,
+                          PUNTOS_ENEMIGO_CONGELADO, NAVE_VELOCIDAD, RECARGA_POR_DESTRUIR,
                           TURBO_VELOCIDAD, DASH_RECARGA, RECARGA_RAPIDA, PRIMER_POWERUP, ESPERA_POWERUP,
                           INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, JEFE_CADA_NIVELES, ORDEN_JEFES, JEFE_PUNTOS,
                           CARTEL_JEFE, DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
@@ -386,32 +386,44 @@ class Partida:
         enemigo.al_quitar(self)
 
     def _actualizar_jefe(self):
-        mover_balas(self.balas, self.efectos)
+        mover_balas(self)
         self.jefe.actualizar(self)
         if self.jefe is not None:
             self._choques_jefe()
 
     def _choques_jefe(self):
         jefe, nave, ahora = self.jefe, self.nave, self.tiempo
-        # Dash contra el nucleo descubierto (con la caja grande, para que sea facil acertarle)
-        if jefe.puede_recibir_golpe() and nave.en_dash(ahora) and nave.caja_recoger().colliderect(jefe.caja_nucleo()):
-            nucleo_x, nucleo_y = jefe.centro_nucleo()
-            nave.vx, nave.vy = nave.empujon(nucleo_x, nucleo_y, 9)     # la nave rebota
-            nave.dash_hasta = 0
-            nave.invulnerable_hasta = ahora + 800       # para alcanzar a alejarse del cuerpo
-            jefe.recibir_golpe(self)
-            return
+        if nave.en_dash(ahora):
+            # Dash contra una parte golpeable o contra el nucleo descubierto
+            # (con la caja grande de la nave, para que sea facil acertarle)
+            caja = nave.caja_recoger()
+            parte = jefe.parte_golpeable(caja)
+            if parte is not None:
+                self._rebotar_en(*parte.centro(jefe))
+                jefe.golpear_parte(self, parte)
+                return
+            if jefe.puede_recibir_golpe() and caja.colliderect(jefe.caja_nucleo()):
+                self._rebotar_en(*jefe.centro_nucleo())
+                jefe.recibir_golpe(self)
+                return
         if jefe.muriendo() or nave.atraviesa(ahora):
             return      # el dash y la invulnerabilidad atraviesan al jefe y sus balas
         for bala in self.balas:
-            if nave.toca_circulo(bala.x, bala.y, RADIO_BALA):
+            if nave.toca_circulo(bala.x, bala.y, bala.radio):
                 self.balas.remove(bala)
                 self.danar_jugador(bala.x, bala.y)
                 return
-        # Tocar su cuerpo hace daño (congelado no)
-        if not jefe.congelado(self) and nave.toca_rect(jefe.caja_cuerpo()):
+        # Tocar su cuerpo o sus partes hace daño (congelado no)
+        if not jefe.congelado(self) and any(nave.toca_rect(caja) for caja in jefe.cajas_danio()):
             centro_x, centro_y = jefe.centro()
             self.danar_jugador(centro_x, centro_y)
+
+    def _rebotar_en(self, x, y):
+        # Despues de pegarle al jefe, la nave rebota y queda un rato invulnerable
+        nave = self.nave
+        nave.vx, nave.vy = nave.empujon(x, y, 9)
+        nave.dash_hasta = 0
+        nave.invulnerable_hasta = self.tiempo + 800     # para alcanzar a alejarse del cuerpo
 
     # ================================== #
     # ============= DIBUJO ============= #

@@ -152,10 +152,11 @@ def _barra_jefe(pantalla, jefe):
     # Abajo al centro: un bloque por cada golpe que le queda
     centro = lienzo.centro_x()
     texto(pantalla, "JEFE", CHICA, ROJO, centro - 82, 575, alinear="derecha")
-    ancho_bloque = 200 // jefe.vida_max
-    for i in range(jefe.vida_max):
+    vida, vida_max = jefe.vida_barra()
+    ancho_bloque = 200 // vida_max
+    for i in range(vida_max):
         bloque = pygame.Rect(centro - 70 + i * ancho_bloque, 567, ancho_bloque - 4, 16)
-        if i < jefe.vida:
+        if i < vida:
             pantalla.fill(MAGENTA, bloque)
         else:
             pygame.draw.rect(pantalla, GRIS, bloque, 2)

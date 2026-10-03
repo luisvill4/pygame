@@ -20,6 +20,10 @@ python main.py
 
 Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. Cada 2 niveles cambia el **sector**: otro color de fondo y otros enemigos frecuentes. Cada tanto llega una **oleada**: muchos enemigos durante unos segundos; si la pasás sin perder una vida, ganás puntos y un power-up. Los enemigos de cada nivel se eligen al azar según un "presupuesto", así que cada partida es distinta.
 
+Cada 5 niveles llega un **jefe**, y se turnan:
+- **El Ojo:** dispara abanicos y anillos de balas. Cuando queda cansado, se le pega con el dash en el núcleo.
+- **La Fortaleza:** un acorazado con 4 cañones, cada uno con su ataque: ráfaga (luz roja), misiles que te siguen (amarilla), láser (cian) y minas (magenta). Después de disparar, cada cañón se recalienta y brilla: ahí se le pega con el dash (una flechita lo señala). Sin cañones se le cae la coraza y el núcleo dispara en espiral; cuando se cansa, es tu momento.
+
 En **Opciones → FORMATO** se elige entre 4:3 (800x600) y 16:9 (1066x600, un campo de juego más ancho). Se cambia desde el menú de inicio, no en medio de una partida.
 
 En **Opciones → FPS** se elige cuántas veces por segundo se dibuja: 30, 60, 90, 120, 144 o SIN LIMITE. El juego va siempre a la misma velocidad: la lógica avanza 60 veces por segundo y, por encima de 60 FPS, el movimiento se dibuja interpolado (más suave en monitores de alta frecuencia).
@@ -94,7 +98,9 @@ Otras opciones (atributos de la clase): `tamano` y `radio` (tamaño y radio de d
 2. Escribí `cargar_animaciones()`, `al_terminar_de_entrar()`, `actualizar_fase()` (sus fases y ataques) y `animacion()`.
 3. Importalo en `juego/jefes/__init__.py` y agregalo a `ORDEN_JEFES` en `config.py` (por ejemplo, `["ojo", "mi_jefe"]` para que se turnen).
 
-Entrar, morir, la vida, el congelado y el destello al recibir un golpe ya los resuelve la clase base. `ojo.py` es el ejemplo.
+Entrar, morir, la vida, el congelado y el destello al recibir un golpe ya los resuelve la clase base. `ojo.py` es el ejemplo simple. Si es más grande que 120x120, dale `ancho`, `alto` y `y_final`.
+
+**Jefes con partes** (cañones, compuertas, segmentos…): cada pieza es una `Parte` (`jefes/partes.py`) con su caja, su vida y su dibujo, y se guarda en `self.partes`. La base ya resuelve el golpe con el dash, el daño al tocarlas, la flechita de "¡DASH!" y la barra del HUD. Vos decidís cuándo se le puede pegar (`golpeable()`) y qué pasa al golpearla o romperla (`al_golpear_parte()` y `al_romper_parte()`). `fortaleza.py` es el ejemplo completo.
 
 ### Un power-up
 1. En `juego/powerups/tipos.py`:

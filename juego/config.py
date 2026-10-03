@@ -164,13 +164,34 @@ RANGO_EMBESTIDOR = 250
 
 # Jefes: se les pega con el dash en el nucleo cuando quedan cansados
 JEFE_CADA_NIVELES = 5           # aparece al llegar a los niveles 5, 10, 15...
-ORDEN_JEFES = ["ojo"]           # que jefe sale cada vez (se repite la lista)
+ORDEN_JEFES = ["ojo", "fortaleza"]  # que jefe sale cada vez (se repite la lista)
 JEFE_VIDA = 3                   # golpes que aguanta el primero (cada jefe nuevo aguanta uno mas)
 JEFE_PUNTOS = 50                # bonus al vencerlo (el segundo da el doble, el tercero el triple...)
 JEFE_FLOTAR = 2500              # ms que se mueve de lado a lado antes de atacar
 JEFE_CANSADO = 2500             # ms que deja el nucleo al descubierto
 JEFE_RAFAGAS = 3                # rafagas de balas en cada ataque
 CARTEL_JEFE = 2000              # ms que se ve "¡JEFE VENCIDO!" (los enemigos vuelven despues)
+
+# La Fortaleza: 4 cañones que se turnan para atacar. Despues de disparar, cada uno se
+# recalienta y ahi se le puede pegar con el dash. Sin cañones se cae la coraza y queda el nucleo
+FORTALEZA_VIDA_CANON = 2        # golpes que aguanta cada cañon
+FORTALEZA_PUNTOS_CANON = 10     # puntos por romper un cañon
+FORTALEZA_ESPERA = {4: 2000, 3: 1600, 2: 1200, 1: 900}  # ms entre ataques segun los cañones que quedan
+FORTALEZA_CARGA = 700           # ms que se carga un cañon antes de disparar
+FORTALEZA_RECALENTADO = 2200    # ms que queda recalentado (y se le puede pegar)
+FORTALEZA_DISPAROS = {          # (disparos, ms entre uno y otro) de cada cañon
+    "rafaga": (3, 160),         # 3 balas hacia la nave, 3 veces
+    "misiles": (2, 500),        # misiles lentos que te siguen
+    "laser": (1, 0),            # un rayo hacia abajo que barre la pantalla
+    "minas": (3, 350),          # minas que se quedan quietas y estallan en un anillo
+}
+FORTALEZA_LASER = 1000          # ms que dura el rayo
+FORTALEZA_MISIL_GUIADO = 2500   # ms que te sigue un misil (despues sigue derecho)
+FORTALEZA_MINA_ESPERA = 1800    # ms desde que sale una mina hasta que estalla
+FORTALEZA_FURIA = 3000          # sin coraza: ms que dispara en espiral...
+FORTALEZA_CANSADO = 2200        # ...y ms que deja el nucleo al descubierto
+FORTALEZA_BRAZOS = 3            # brazos de la espiral
+FORTALEZA_ESPIRAL_CADA = 120    # ms entre una vuelta de balas y la siguiente
 
 # ================================== #
 # ===== DIFICULTAD Y SECTORES ====== #

@@ -5,7 +5,7 @@ Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge moneda
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~90 tests, unos 7 s, sin ventana
+python -m pytest        # ~140 tests, unos 14 s, sin ventana
 ```
 - Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
 - **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json` y `__pycache__`.
@@ -22,9 +22,9 @@ juego/
   reloj.py              # LimitadorFPS: limite de FPS preciso (sleep + espera activa final)
   partida.py            # Partida: todo el estado de una partida y sus reglas
   progresion.py         # Director: presupuesto de enemigos, sectores y oleadas
-  nave.py  moneda.py  proyectiles.py (Bala)
+  nave.py  moneda.py  proyectiles.py (Bala, Misil, Mina)
   enemigos/  base.py (Enemigo + registro) · perseguidor · rebotador · embestidor · divisor · enjambre
-  jefes/     base.py (Jefe + registro) · ojo.py (JefeOjo)
+  jefes/     base.py (Jefe + registro) · partes.py (Parte) · ojo.py (JefeOjo) · fortaleza.py (Fortaleza, Canon)
   powerups/  base.py (PowerUp, Capsula, registro) · tipos.py (los 7 power-ups, en orden)
   escenas/   base.py · inicio · dificultad · opciones · listo · juego · pausa · explosion · iniciales · fin
   entrada.py  sonido.py  ventana.py  guardado.py  recursos.py
@@ -65,7 +65,7 @@ Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
 - Fuente Press Start 2P, siempre con `antialias=False`, en tamaños múltiplos de 8: `dibujo.CHICA/MEDIA/GRANDE/TITULO` = 16/24/40/56.
   - `dibujo.texto(pantalla, mensaje, tamaño, color, x, y, sombra, alinear)` recibe el tamaño como número; `recursos.fuente(tamaño)` guarda las fuentes en caché.
 - Colores neón definidos como constantes en `config.py` (`AMARILLO`, `CIAN`, `MAGENTA`, `ROJO`…). Números con 6 dígitos (`dibujo.numero_arcade`).
-- Partículas (`efectos.Efectos`): cuadrados alineados a una cuadrícula de 2 px. No se desvanecen con transparencia: cambian de color por etapas según una **paleta**, una lista que va de oscuro a brillante (`FUEGO`, `ORO`, `ESCARCHA`…).
+- Partículas (`efectos.Efectos`): cuadrados alineados a una cuadrícula de 2 px. Pueden tener `gravedad`; `pedazos()` la usa para trozos que saltan y caen. No se desvanecen con transparencia: cambian de color por etapas según una **paleta**, una lista que va de oscuro a brillante (`FUEGO`, `ORO`, `ESCARCHA`…).
 - Efectos disponibles:
   - en `dibujo`: líneas CRT (`efecto_crt`), parpadeos duros (`parpadeo`), texto con relieve (`texto_3d`), marcos de doble línea (`marco`), arcoíris (`color_arcoiris`) y `oscurecer`;
   - en `Efectos`: temblor en pasos de 2 px y destello de color (`sacudir`, `dibujar_temblor_y_destello`; se descuentan en `actualizar`).
@@ -97,8 +97,10 @@ El usuario dibuja los sprites; Claude los integra. Todos están en `sprites/`.
 | `escudo.png` | 152x76 | 2 de 76x76 | burbuja en `Nave.dibujar()`. Tiene píxeles semitransparentes (el brillo); está bien así | círculo cian |
 | `nebulosa.png`, `planeta_chico.png`, `planeta_grande.png` | 256x192 / 32x32 / 96x96 | 1 | `Fondo` (paralaje) | no se dibujan |
 | `jefe.png` | 720x120 | 6 de 120x120, de a pares: flotar, atacar, cansado | `JefeOjo.cargar_animaciones()`; `Jefe.animaciones()` arma las variantes congelada y blanca. Con 2 cuadros se usan para todo | `jefe_respaldo(color_nucleo)` |
+| `fortaleza.png` (opcional, aún no existe) | 1536x128 | 6 de 256x128, de a pares: coraza, furia, cansado | `Fortaleza.cargar_animaciones()` | `fortaleza_respaldo(con_coraza, color_nucleo, luces)` |
+| `fortaleza_canon.png` (opcional, aún no existe) | 64x32 | 2 de 32x32: sano, dañado (caño hacia abajo) | `cuadros_canon()`: variantes brasa (recalentado), hielo y blanco con `tenir`/`blanquear`; la luz de color se dibuja encima | `canon_respaldo(danado)` |
 
-La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere que siga así: no proponer un sprite de propulsor. Los enemigos congelados se generan con `tenir(..., HIELO)`. No hay sprites pendientes y el usuario solo quiso dibujar el jefe: no proponer sprites nuevos.
+La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere que siga así: no proponer un sprite de propulsor. Los enemigos congelados se generan con `tenir(..., HIELO)`. Los sprites de la Fortaleza son opcionales (tiene respaldo); fuera de los jefes, no proponer sprites nuevos.
 
 - **Trampa:** en Press Start 2P la "É" mayúscula se dibuja como "é" pequeña. Por eso se escribe "RECORD" sin tilde. "¡" y los números funcionan bien.
 - **Trampa:** en este Windows `SysFont("Arial")` carga **Arial Narrow**.
@@ -204,12 +206,27 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - **Dificultad:** `Partida(…, dificultad)` guarda `reglas = DIFICULTADES[dificultad]`, `vidas_max` y `vidas`.
     - `factor_velocidad()` multiplica por `reglas["velocidad"]` (también las balas del Ojo), y `espera_powerup()` por `reglas["espera_powerup"]`.
     - El HUD dibuja `vidas_max` íconos.
-- **Jefes** (`jefes/`), registro `TIPOS_JEFE`; el que sale lo decide `ORDEN_JEFES[jefes_vencidos % len]`:
-  - La base resuelve las fases `entrar` (baja hasta y=70 con "¡CUIDADO!") y `morir` (2 s, después llama a `partida.jefe_vencido()`). También: la vida (`JEFE_VIDA + jefes_vencidos`), el congelado (no aplica en entrar ni en morir; corre `fase_hasta`), `recibir_golpe()`, `explotar()`, las variantes de sprite, "¡DASH!" cuando `puede_recibir_golpe()` y las cajas `caja_cuerpo()` y `caja_nucleo()`.
+- **Jefes** (`jefes/`), registro `TIPOS_JEFE`; el que sale lo decide `ORDEN_JEFES[jefes_vencidos % len]` (hoy `["ojo", "fortaleza"]`):
+  - La base resuelve las fases `entrar` (baja hasta `y_final` con "¡CUIDADO!") y `morir` (2 s, después llama a `partida.jefe_vencido()`). También: la vida (`JEFE_VIDA + jefes_vencidos`), el congelado (solo en `fases_congelables`; corre `fase_hasta` y llama a `al_congelarse()`), `recibir_golpe()`, `explotar()`, las variantes de sprite, "¡DASH!" cuando `puede_recibir_golpe()` y las cajas `caja_cuerpo()` y `caja_nucleo()`.
+  - Tamaño por clase: `ancho`, `alto` (120 por defecto) e `y_final`. `temblando()` dice cuándo se dibuja temblando (por defecto, al morir).
+  - **Partes** (`partes.py`, `Parte(dx, dy, ancho, alto, vida)`): piezas con posición relativa al jefe, guardadas en `jefe.partes`.
+    - `Partida._choques_jefe`: en dash, primero `jefe.parte_golpeable(caja)` → `jefe.golpear_parte()` (efectos, hit-stop y `al_golpear_parte`/`al_romper_parte`); después el núcleo. Las dos rebotan la nave con `_rebotar_en()`.
+    - El daño al tocar usa `jefe.cajas_danio()` (cuerpo + partes vivas; la Fortaleza suma los láseres prendidos). `lugar_para_moneda` también las esquiva.
+    - `vida_barra()` da (vida, máximo) para el HUD; los jefes con partes suman las de ellas.
+    - La base dibuja las partes (con el mismo flotar y temblor del cuerpo) y, debajo de cada parte golpeable, una flechita cian con un solo "¡DASH!" entre todas (con un cartel por parte se pisaban).
+    - Congelado, una parte golpeable se puede seguir golpeando: el hielo alarga la ventana, igual que con el núcleo del Ojo.
   - `JefeOjo` (`ojo.py`): `flotar` (`JEFE_FLOTAR`) → `atacar` (carga 0.7 s y `JEFE_RAFAGAS` ráfagas, turnando abanico y anillo) → `cansado` (`JEFE_CANSADO`) → `flotar`.
     - `direcciones_ataque()` la usan tanto el disparo como el **aviso** (`dibujar_aviso_ataque`, apagable con `opciones.aviso_jefe`).
-  - Daño al jefe: dash contra `caja_nucleo()` mientras puede recibir golpe (`Partida._choques_jefe`). La nave rebota y queda 0.8 s invulnerable.
-  - Daño a la nave: las balas (círculo) y el cuerpo (`toca_rect`).
+  - `Fortaleza` (`fortaleza.py`, 256x128, `y_final = 56`): `pelear` → `descubrirse` (1.8 s, tiembla) → `furia` (`FORTALEZA_FURIA`, espiral de `FORTALEZA_BRAZOS`) ⇄ `cansado` (`FORTALEZA_CANSADO`, núcleo golpeable).
+    - 4 `Canon` (partes de 32x32 en `CANONES`): misiles, ráfaga, láser y minas, cada uno con una luz de su color.
+    - Cada cañón pasa por `listo → cargando (FORTALEZA_CARGA) → disparando (FORTALEZA_DISPAROS) → recalentado (FORTALEZA_RECALENTADO, golpeable) → listo`. Se turnan cada `FORTALEZA_ESPERA[cañones vivos]`, así que con menos cañones atacan más seguido.
+    - Un golpe que no lo rompe lo enfría (vuelve a `listo`). Romperlo da `FORTALEZA_PUNTOS_CANON` y pedazos; sin cañones se rompen las balas y empieza `descubrirse`, y al final `caer_coraza()`.
+    - Avisos durante la carga: el láser siempre muestra una línea fina; ráfaga (`direcciones_rafaga`, que comparte con el disparo), minas (X en `objetivos`, que se eligen al cargar) y misiles solo con `opciones.aviso_jefe`.
+    - La barra del HUD suma los cañones y el núcleo.
+    - Con un bot que acierta todo, la pelea dura ~31 s; acertando la mitad, entre 1 y 1:45 min.
+  - **Proyectiles** (`proyectiles.py`): todos en `partida.balas`, con `mover(partida)` (False = borrar), `dibujar(pantalla, encendido)` y `radio`. `Misil` te sigue `FORTALEZA_MISIL_GUIADO` ms girando de a poco; `Mina` frena, parpadea y a los `FORTALEZA_MINA_ESPERA` ms estalla en 8 `Bala`.
+  - Daño al jefe: dash contra `caja_nucleo()` mientras puede recibir golpe, o contra una parte golpeable (`Partida._choques_jefe`). La nave rebota y queda 0.8 s invulnerable.
+  - Daño a la nave: las balas (círculo de `bala.radio`) y `cajas_danio()` (`toca_rect`).
   - Durante la pelea las monedas no suben de nivel. Al vencerlo: bonus `JEFE_PUNTOS * jefes_vencidos` y el cartel "¡JEFE VENCIDO!" (`CARTEL_JEFE`). Los enemigos guardados vuelven recién cuando se va el cartel.
 - **Power-ups** (`powerups/`), registro `TIPOS_POWERUP`; el orden de `tipos.py` es el del HUD y del panel de inicio:
   - `duracion`: ms (escudo, hielo, imán, doble; valores en `DURACION`), `HASTA_PERDER_VIDA` (turbo, recarga) o `None` (vida, instantáneo).
