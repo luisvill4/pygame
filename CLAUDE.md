@@ -117,6 +117,11 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - Flujo: `Inicio → Dificultad → Listo → Juego ⇄ Pausa ⇄ Opciones`, y `Juego → Explosion → Iniciales (si entra al top 5 de esa dificultad) → Fin → Listo` (Fin repite con la misma dificultad).
 - `App.nueva_partida(dificultad=None)`: sin dificultad, usa `opciones.dificultad`. Reinicia los efectos, vuelve el fondo a los colores del primer sector, crea una `Partida`, suena "seleccion", arranca la música y pasa a `Listo`.
 - **Dificultad** (`escenas/dificultad.py`): IZQ/DER cambian con animación. El nombre entra deslizándose (`PASOS_ANIMACION`) y destella, las calaveras (`CALAVERA`, pixel art de 7x7) aparecen de a una, saltan chispas con la `paleta` de la dificultad y PESADILLA hace temblar la pantalla. ENTER guarda `opciones.dificultad` y empieza; ESC vuelve al inicio.
+- **Pausa** (`escenas/pausa.py`): menú `FILAS_PAUSA` = CONTINUAR, OPCIONES y VOLVER AL MENU (ARRIBA/ABAJO + ENTER).
+  - Siguen los atajos P/ESC/Menú (seguir) y O/Vista (opciones).
+  - VOLVER AL MENU pregunta "¿VOLVER AL MENU?" (`confirmando`, NO por defecto; IZQ/DER cambia y ESC/B es NO) y avisa que se pierden la partida y su puntaje.
+  - Si se confirma, `_volver_al_menu()` reanuda el mixer, para la música, reinicia los efectos y el fondo y pasa a un `Inicio` nuevo, sin guardar récord.
+  - La ayuda de abajo cambia según si está la pregunta.
 - Hay escenas que guardan otras escenas: `Opciones(volver_a=escena)` y `Pausa(escena_juego, captura)`, así al volver se retoma la misma instancia.
 - **Hit-stop:** mientras `partida.congelar_frames > 0`, Juego y Explosion no actualizan ni dibujan (`saltar_dibujo`). `Juego.actualizar` revisa primero `partida.termino`, después el hit-stop y después la pausa.
 

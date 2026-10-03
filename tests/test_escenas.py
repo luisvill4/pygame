@@ -66,6 +66,74 @@ def test_pausa_y_opciones_desde_la_pausa(app):
     assert isinstance(app.escena, Juego)
 
 
+def pausar(app):
+    tecla(pygame.K_p)
+    avanzar(app)
+    assert isinstance(app.escena, Pausa)
+    return app.escena
+
+
+def test_menu_de_pausa_continuar_y_opciones(app):
+    empezar(app)
+    pausar(app)
+    tecla(pygame.K_RETURN)                  # CONTINUAR (la primera)
+    avanzar(app)
+    assert isinstance(app.escena, Juego)
+    pausa = pausar(app)
+    tecla(pygame.K_DOWN)
+    tecla(pygame.K_RETURN)                  # OPCIONES
+    avanzar(app)
+    assert isinstance(app.escena, Opciones)
+    tecla(pygame.K_ESCAPE)
+    avanzar(app)
+    assert app.escena is pausa
+
+
+def ir_a_volver_al_menu(app):
+    pausa = pausar(app)
+    tecla(pygame.K_UP)                      # da la vuelta: la ultima es VOLVER AL MENU
+    tecla(pygame.K_RETURN)
+    avanzar(app)
+    assert pausa.confirmando and not pausa.confirmar_si     # pregunta, con NO elegido
+    return pausa
+
+
+def test_volver_al_menu_pregunta_y_no_cancela(app):
+    partida = empezar(app)
+    partida.puntaje = 321
+    pausa = ir_a_volver_al_menu(app)
+    tecla(pygame.K_RETURN)                  # NO
+    avanzar(app)
+    assert not pausa.confirmando and app.escena is pausa
+    tecla(pygame.K_ESCAPE)                  # ESC en el menu de pausa: sigue el juego
+    avanzar(app)
+    assert isinstance(app.escena, Juego) and app.escena.partida.puntaje == 321
+
+
+def test_escape_en_la_pregunta_es_no(app):
+    empezar(app)
+    pausa = ir_a_volver_al_menu(app)
+    tecla(pygame.K_ESCAPE)
+    avanzar(app)
+    assert not pausa.confirmando and app.escena is pausa
+
+
+def test_volver_al_menu_si_pierde_la_partida(app):
+    partida = empezar(app)
+    partida.puntaje = 500
+    ir_a_volver_al_menu(app)
+    tecla(pygame.K_RIGHT)                   # SI
+    tecla(pygame.K_RETURN)
+    avanzar(app)
+    assert isinstance(app.escena, Inicio)
+    assert app.records.filas("NORMAL") == []        # el puntaje no se guardo
+    tecla(pygame.K_RETURN)                  # y se puede jugar otra vez, desde cero
+    avanzar(app)
+    tecla(pygame.K_RETURN)
+    avanzar(app, 101)
+    assert isinstance(app.escena, Juego) and app.escena.partida.puntaje == 0
+
+
 def test_b_del_mando_no_pausa_el_juego(app):
     empezar(app)
     boton(BOTON_B)
