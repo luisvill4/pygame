@@ -67,6 +67,7 @@ class Jefe:
     ancho = TAMANO
     alto = TAMANO
     y_final = 70                # altura a la que baja al entrar
+    y_presentacion = 310        # altura de su nombre al presentarse
     ms_pulso = JEFE_PULSO       # el tempo de su pelea
     fases_congelables = ("flotar", "atacar", "cansado")    # el hielo no lo congela al entrar ni al morir
 
@@ -117,6 +118,10 @@ class Jefe:
     def cajas_danio(self):
         # Todo lo que hace daño al tocarlo: el cuerpo y las partes que quedan
         return [self.caja_cuerpo()] + [parte.caja(self) for parte in self.partes_vivas()]
+
+    def zonas_sin_monedas(self):
+        # Donde no puede aparecer la moneda (por defecto: donde el jefe hace daño)
+        return self.cajas_danio()
 
     def puede_recibir_golpe(self):
         # Por defecto: con el dash contra el nucleo mientras esta cansado
@@ -355,11 +360,12 @@ class Jefe:
         transcurrido = partida.tiempo - self.creado_en
         letras = int(transcurrido // 70)
         centro = lienzo.centro_x()
+        y = self.y_presentacion
         if dibujo.parpadeo(250) or letras < len(self.nombre):
-            dibujo.texto(pantalla, "¡CUIDADO!", dibujo.CHICA, ROJO, centro, 270)
-        dibujo.texto_3d(pantalla, self.nombre[:letras], dibujo.GRANDE, self.color, (40, 0, 30), 310, 4)
+            dibujo.texto(pantalla, "¡CUIDADO!", dibujo.CHICA, ROJO, centro, y - 40)
+        dibujo.texto_3d(pantalla, self.nombre[:letras], dibujo.GRANDE, self.color, (40, 0, 30), y, 4)
         if letras > len(self.nombre) + 4:
-            dibujo.texto(pantalla, self.apodo, dibujo.CHICA, GRIS, centro, 360)
+            dibujo.texto(pantalla, self.apodo, dibujo.CHICA, GRIS, centro, y + 50)
 
     def dibujar_avisos_partes(self, pantalla):
         # Una flechita debajo de cada parte golpeable y un solo "¡DASH!" entre todas

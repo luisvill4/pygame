@@ -207,6 +207,16 @@ COLMENA_EXPUESTA = 5            # pulsos que la compuerta queda abierta
 COLMENA_EMBESTIDA = 7.5         # px por paso al embestir
 COLMENA_REBOTES = 1             # rebotes de la primera embestida (uno mas por cada golpe al ojo)
 COLMENA_ATURDIDA = 5            # pulsos que queda aturdida despues de embestir
+# La Singularidad: un agujero negro en el centro. Te atrae todo el tiempo, la rodea un
+# anillo de asteroides con huecos que gira de a un hueco por pulso (tic, tic...), suelta
+# brazos de balas en espiral, INHALA (te tira fuerte) y EXHALA una nova con un hueco.
+# Cuando COLAPSA, el nucleo queda a la vista: entra por un hueco del anillo y ¡DASH!
+SINGULARIDAD_PULSO = 450        # ms del pulso
+SINGULARIDAD_GRAVEDAD = 0.16    # cuanto te atrae por paso (normal)
+SINGULARIDAD_INHALAR = 0.42     # cuanto te atrae mientras inhala
+SINGULARIDAD_RADIO = 150        # radio del anillo de asteroides
+SINGULARIDAD_HUECOS = 3         # huecos del anillo al empezar (de 12 lugares; uno menos cada 2 golpes)
+SINGULARIDAD_EXPUESTA = 6       # pulsos con el nucleo a la vista
 ABEJA_VELOCIDAD = 2.6           # rondando a tu alrededor
 ABEJA_PICADA = 6.5              # al picar
 ABEJA_PUNTOS = 2
@@ -259,7 +269,7 @@ SECTORES = [
     {"nombre": "MAR DE AMBAR", "lema": "LA COLMENA TE OBSERVA", "color": AMARILLO, "jefe": "colmena",
      "tinte": (110, 80, 30), "fondo": (14, 10, 4), "ambiente": "panal", "estrellas": (1, 0.85, 0.6),
      "favorito": "enjambre"},
-    {"nombre": "ABISMO AZUL", "lema": "NI LA LUZ ESCAPA", "color": HIELO, "jefe": "ojo",
+    {"nombre": "ABISMO AZUL", "lema": "NI LA LUZ ESCAPA", "color": HIELO, "jefe": "singularidad",
      "tinte": (35, 65, 110), "fondo": (4, 6, 20), "ambiente": "abismo", "estrellas": (0.7, 0.8, 1),
      "favorito": "rebotador"},
 ]
