@@ -184,6 +184,18 @@ FORTALEZA_MISIL_GUIADO = 2600   # ms que te sigue un misil (despues sigue derech
 FORTALEZA_LASER_VELOCIDAD = 2.4 # px por paso que barre el laser
 FORTALEZA_ATURDIDA = 6          # pulsos que queda aturdida despues de caer
 
+# La Serpiente: un jefe de movimiento (casi sin balas). Nada a tu alrededor, acecha,
+# MUERDE en linea recta y si se golpea contra un borde queda aturdida con la COLA
+# brillando: ahi se la cortas con el dash. Cada corte la deja mas corta y mas rapida.
+# Desde el segundo corte tambien se enrosca a tu alrededor (escapate antes de que apriete)
+SERPIENTE_PULSOS = (460, 380)   # ms del pulso al empezar y al final (se acelera con cada corte)
+SERPIENTE_VELOCIDAD = 3.2       # px por paso nadando (sube un 8% por corte)
+SERPIENTE_GIRO = 0.06           # cuanto puede doblar por paso (radianes)
+SERPIENTE_MORDIDA = 10          # px por paso al morder
+SERPIENTE_ESPACIO = 26          # px entre un segmento y el siguiente
+SERPIENTE_CUELLO = 4            # segmentos que no se cortan (cortes = vida del jefe)
+SERPIENTE_VENTANA = 5           # pulsos que la cola brilla despues de chocar (la ventana para cortarla)
+
 # ================================== #
 # ===== DIFICULTAD Y SECTORES ====== #
 # ================================== #
@@ -226,7 +238,7 @@ SECTORES = [
     {"nombre": "NEBULOSA CARMESI", "lema": "EL AIRE ARDE", "color": ROJO, "jefe": "fortaleza",
      "tinte": (110, 35, 50), "fondo": (16, 4, 8), "ambiente": "brasas", "estrellas": (1, 0.7, 0.7),
      "favorito": "embestidor"},
-    {"nombre": "CAMPO ESMERALDA", "lema": "ALGO SE MUEVE ENTRE LAS ESPORAS", "color": VERDE, "jefe": "ojo",
+    {"nombre": "CAMPO ESMERALDA", "lema": "ALGO SE MUEVE ENTRE LAS ESPORAS", "color": VERDE, "jefe": "serpiente",
      "tinte": (35, 105, 70), "fondo": (4, 14, 10), "ambiente": "esporas", "estrellas": (0.75, 1, 0.8),
      "favorito": "divisor"},
     {"nombre": "MAR DE AMBAR", "lema": "LA COLMENA TE OBSERVA", "color": AMARILLO, "jefe": "fortaleza",

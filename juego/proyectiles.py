@@ -12,6 +12,7 @@ Proyectiles de los jefes. Todos viven en partida.balas y comparten la misma inte
 - Mina:     viaja frenando, se queda quieta, avisa y estalla en una cruz de balas.
 - Escombro: un trozo de metal que cae.
 - Onda:     una onda de choque que corre a ras del piso.
+- Veneno:   una gota verde y lenta que escupe la Serpiente.
 
 Como todos estan en la misma lista, el hielo los rompe, el dash los atraviesa y el
 choque con la nave se revisa igual para todos (Partida._choques_jefe). Es polimorfismo:
@@ -209,6 +210,30 @@ class Onda(Bala):
         onda_y = int(self.y) // 2 * 2
         for alto, color in ((20, ROJO), (12, (255, 140, 0)), (6, AMARILLO if encendido else BLANCO)):
             pantalla.fill(color, (onda_x - 4, onda_y - alto // 2, 8, alto))
+
+
+class Veneno(Bala):
+    # Gota lenta que gotea mientras viaja
+    __slots__ = ()
+    radio = 7
+
+    def mover(self, partida):
+        self.x += self.vx
+        self.y += self.vy
+        if fuera_de_pantalla(self.x, self.y):
+            return False
+        if random.random() < 0.4:
+            partida.efectos.particula(self.x, self.y, 0, 0.6, [(0, 60, 30), (60, 255, 120), (200, 255, 210)], 14, 2)
+        return True
+
+    def dibujar(self, pantalla, encendido):
+        gota_x = int(self.x) // 2 * 2
+        gota_y = int(self.y) // 2 * 2
+        pantalla.fill((0, 90, 40), (gota_x - 8, gota_y - 6, 16, 12))
+        pantalla.fill((0, 90, 40), (gota_x - 6, gota_y - 8, 12, 16))
+        pantalla.fill((60, 255, 120), (gota_x - 6, gota_y - 4, 12, 8))
+        pantalla.fill((60, 255, 120), (gota_x - 4, gota_y - 6, 8, 12))
+        pantalla.fill(BLANCO if encendido else (200, 255, 210), (gota_x - 4, gota_y - 4, 4, 4))
 
 
 def mover_balas(partida):

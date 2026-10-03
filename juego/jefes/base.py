@@ -143,6 +143,14 @@ class Jefe:
         # segmentos de la Serpiente, se agregan aca)
         return [self]
 
+    def punto_cartel_dash(self):
+        # Donde va el "¡DASH!" cuando se le puede pegar: debajo del jefe (o encima, si
+        # esta abajo de todo y no entra)
+        cartel_y = self.y + self.alto + 12
+        if cartel_y > ALTO - 50:
+            cartel_y = self.y - 16
+        return self.centro_nucleo()[0], cartel_y
+
     def muriendo(self):
         return self.fase == "morir"
 
@@ -330,12 +338,8 @@ class Jefe:
             self.dibujar_presentacion(pantalla, partida)
         if dibujo.parpadeo(200):
             if self.puede_recibir_golpe():
-                # Debajo del jefe; si no entra (esta abajo de todo), encima
-                nucleo_x = self.centro_nucleo()[0]
-                cartel_y = int(self.y) + self.alto + 12
-                if cartel_y > ALTO - 50:
-                    cartel_y = int(self.y) - 16
-                dibujo.texto(pantalla, "¡DASH!", dibujo.CHICA, CIAN, int(nucleo_x), cartel_y)
+                cartel_x, cartel_y = self.punto_cartel_dash()
+                dibujo.texto(pantalla, "¡DASH!", dibujo.CHICA, CIAN, int(cartel_x), int(cartel_y))
             if self.fase in self.fases_congelables:
                 self.dibujar_avisos_partes(pantalla)
 
