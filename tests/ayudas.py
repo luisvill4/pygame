@@ -28,6 +28,16 @@ def boton(numero):
     pygame.event.post(pygame.event.Event(pygame.JOYBUTTONDOWN, button=numero, instance_id=0, joy=0))
 
 
+def empezar_partida(app):
+    # Desde el inicio: JUGAR -> ELIGE DIFICULTAD (la ultima elegida) -> READY -> juego.
+    # Devuelve la partida
+    tecla(pygame.K_RETURN)
+    avanzar(app)
+    tecla(pygame.K_RETURN)
+    avanzar(app, 101)
+    return app.escena.partida
+
+
 def jugar(partida, frames=1, dx=0, dy=0, dash=False):
     # Avanza la partida sola (sin escenas), como si se jugara
     for _ in range(frames):

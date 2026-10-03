@@ -7,3 +7,5 @@ from juego.powerups.base import (PowerUp, Capsula, TIPOS_POWERUP, HASTA_PERDER_V
 
 # Importarlos es lo que los anota en el registro
 from juego.powerups import tipos  # noqa: F401
+
+__all__ = ["PowerUp", "Capsula", "TIPOS_POWERUP", "HASTA_PERDER_VIDA", "registrar_powerup"]

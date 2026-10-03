@@ -10,10 +10,14 @@ from juego.escenas.pausa import Pausa
 from juego.escenas.explosion import Explosion
 from juego.escenas.iniciales import Iniciales
 from juego.escenas.fin import Fin
+from juego.escenas.dificultad import Dificultad
 from tests.ayudas import avanzar, tecla, boton
 
 
 def empezar(app):
+    tecla(pygame.K_RETURN)
+    avanzar(app)
+    assert isinstance(app.escena, Dificultad)
     tecla(pygame.K_RETURN)
     avanzar(app)
     assert isinstance(app.escena, Listo)
@@ -79,6 +83,8 @@ def test_pausa_automatica_al_perder_el_foco(app):
 def test_foco_perdido_durante_ready_pausa_al_empezar(app):
     tecla(pygame.K_RETURN)
     avanzar(app)
+    tecla(pygame.K_RETURN)
+    avanzar(app)
     pygame.event.post(pygame.event.Event(pygame.WINDOWFOCUSLOST))
     avanzar(app, 101)
     assert isinstance(app.escena, Pausa)
@@ -112,7 +118,7 @@ def test_game_over_con_record_iniciales_y_otra_partida(app):
         tecla(pygame.K_RETURN)
     avanzar(app)
     assert isinstance(app.escena, Fin)
-    assert app.records.filas[0] == {"nombre": "BAA", "puntos": 25}
+    assert app.records.filas("NORMAL")[0] == {"nombre": "BAA", "puntos": 25}
     tecla(pygame.K_RETURN)          # muy pronto: se ignora
     avanzar(app)
     assert isinstance(app.escena, Fin)
@@ -134,4 +140,4 @@ def test_cerrar_en_las_iniciales_guarda_el_record(app):
     pygame.event.post(pygame.event.Event(pygame.QUIT))
     avanzar(app)
     assert not app.ejecutando
-    assert app.records.filas[0]["puntos"] == 40
+    assert app.records.filas("NORMAL")[0]["puntos"] == 40

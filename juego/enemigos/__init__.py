@@ -6,3 +6,5 @@ from juego.enemigos.base import Enemigo, TIPOS_ENEMIGO, registrar_enemigo, crear
 
 # Importarlos es lo que los anota en el registro
 from juego.enemigos import perseguidor, rebotador, embestidor  # noqa: F401
+
+__all__ = ["Enemigo", "TIPOS_ENEMIGO", "registrar_enemigo", "crear_enemigo"]

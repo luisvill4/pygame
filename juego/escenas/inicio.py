@@ -9,6 +9,7 @@ from juego.config import ROJO, BLANCO, AMARILLO, MAGENTA, CIAN, GRIS, MS_CUADRO_
 from juego.entrada import ACEPTAR, IZQUIERDA, DERECHA
 from juego.escenas.base import Escena
 from juego.escenas.opciones import Opciones
+from juego.escenas.dificultad import Dificultad
 from juego.enemigos import TIPOS_ENEMIGO
 from juego.moneda import imagen_moneda
 from juego.powerups import TIPOS_POWERUP
@@ -33,10 +34,10 @@ class Inicio(Escena):
         if entrada.pulso(IZQUIERDA) or entrada.pulso(DERECHA):
             self.opcion = 1 - self.opcion
         if entrada.pulso(ACEPTAR):
+            self.app.sonidos.reproducir("seleccion")
             if self.opcion == 0:
-                self.app.nueva_partida()
+                self.app.cambiar_escena(Dificultad(self.app, volver_a=self))
             else:
-                self.app.sonidos.reproducir("seleccion")
                 self.app.cambiar_escena(Opciones(self.app, volver_a=self))
 
     def dibujar(self, pantalla_completa):
@@ -46,7 +47,8 @@ class Inicio(Escena):
 
         # Record arriba, como en las maquinas
         texto(pantalla, "RECORD", CHICA, ROJO, 400, 22)
-        texto(pantalla, dibujo.numero_arcade(self.app.records.maximo), CHICA, BLANCO, 400, 46)
+        dificultad = self.app.opciones.dificultad
+        texto(pantalla, dibujo.numero_arcade(self.app.records.maximo(dificultad)), CHICA, BLANCO, 400, 46)
 
         # Titulo con relieve y la nave flotando
         dibujo.texto_3d(pantalla, "CAZA", TITULO, AMARILLO, MAGENTA, 115)
@@ -57,8 +59,9 @@ class Inicio(Escena):
 
         # Panel que cambia cada 6 segundos: reglas / mejores puntajes
         dibujo.marco(pantalla, pygame.Rect(170, 290, 460, 180), CIAN)
-        if self.app.records.filas and pygame.time.get_ticks() // 6000 % 2 == 1:
-            dibujo.tabla_records(pantalla, self.app.records.filas, 315)
+        filas = self.app.records.filas(dificultad)
+        if filas and pygame.time.get_ticks() // 6000 % 2 == 1:
+            dibujo.tabla_records(pantalla, filas, 315, titulo="MEJORES - " + dificultad)
         else:
             self._dibujar_reglas(pantalla)
 

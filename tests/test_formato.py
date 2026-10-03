@@ -11,7 +11,7 @@ from juego.escenas.opciones import Opciones
 from juego.escenas.pausa import Pausa
 from juego.hud import zonas_hud
 from juego.moneda import lugar_para_moneda
-from tests.ayudas import avanzar, tecla, jugar
+from tests.ayudas import avanzar, tecla, jugar, empezar_partida
 
 
 def cambiar_formato_en_opciones(app, tecla_direccion):
@@ -43,8 +43,7 @@ def test_cambiar_el_formato_desde_el_menu(app, tmp_path):
 
 
 def test_desde_la_pausa_no_se_puede_cambiar(app):
-    tecla(pygame.K_RETURN)
-    avanzar(app, 101)                   # Inicio -> Listo -> Juego
+    empezar_partida(app)
     tecla(pygame.K_p)
     avanzar(app)
     assert isinstance(app.escena, Pausa)
@@ -101,8 +100,8 @@ def test_en_16_9_todo_usa_el_ancho_completo(app):
 
 def test_en_16_9_se_dibujan_todas_las_pantallas(app):
     pasar_a_16_9(app)
-    tecla(pygame.K_RETURN)
-    avanzar(app, 105)                   # Inicio, Listo y Juego
+    empezar_partida(app)
+    avanzar(app, 5)
     tecla(pygame.K_p)
     avanzar(app, 3)                     # Pausa
     assert app.pantalla.get_size() == (1066, 600)

@@ -107,9 +107,9 @@ def oscurecer(pantalla, color, transparencia):
     pantalla.blit(velo, (0, 0))
 
 
-def tabla_records(pantalla, filas, y_titulo, resaltar=-1):
+def tabla_records(pantalla, filas, y_titulo, resaltar=-1, titulo="MEJORES PUNTAJES"):
     # Los mejores puntajes; 'resaltar' es la fila recien agregada (va en arcoiris)
-    texto(pantalla, "MEJORES PUNTAJES", CHICA, ROJO, 400, y_titulo)
+    texto(pantalla, titulo, CHICA, ROJO, 400, y_titulo)
     for i in range(FILAS_RECORDS):
         fila_y = y_titulo + 32 + i * 26
         if i < len(filas):

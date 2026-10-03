@@ -118,7 +118,7 @@ class JefeOjo(Jefe):
         # Angulos (en radianes) y rapidez de las balas de la proxima rafaga.
         # Las usan el disparo y el aviso, asi el aviso muestra justo lo que va a salir
         ojo_x, ojo_y = self.ojo()
-        rapidez = min(3 + partida.jefes_vencidos * 0.3, 4.5)
+        rapidez = min(3 + partida.jefes_vencidos * 0.3, 4.5) * partida.reglas["velocidad"]
         direcciones = []
         if self.ataque == "abanico":
             # Hacia la nave, abierto como un abanico

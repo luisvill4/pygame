@@ -78,7 +78,6 @@ TREBOL = [(0, 90, 40), VERDE, BLANCO]
 # ================================== #
 # (cambialas para ajustar la dificultad)
 
-VIDAS_MAX = 3
 COMBO_TIEMPO = 2000             # ms maximos entre monedas para seguir el combo
 COMBO_MAXIMO = 5                # el multiplicador llega hasta x5
 MONEDAS_POR_NIVEL = 10
@@ -123,16 +122,24 @@ DURACION = {                    # milisegundos que dura cada power-up temporal
 # Enemigos
 AVISO_APARICION = 800           # ms que se ve la "X" antes de que aparezca un enemigo
 DISTANCIA_APARICION = 300       # los enemigos aparecen a mas de esta distancia de la nave
-ENEMIGOS_INICIALES = ["perseguidor"]
-ENEMIGOS_POR_NIVEL = {          # enemigo nuevo que se agrega al llegar a cada nivel
-    2: "rebotador",
-    3: "embestidor",
-    4: "perseguidor",
-    5: "rebotador",
-}
-# Despues de cada jefe vencido se suma uno mas (se van turnando), hasta ENEMIGOS_MAX
-ENEMIGOS_POR_JEFE = ["embestidor", "perseguidor", "rebotador"]
-ENEMIGOS_MAX = 8
+
+# Presupuesto de amenaza: cada enemigo "cuesta" puntos y cada nivel tiene un presupuesto.
+# El juego elige al azar que enemigos poner hasta gastarlo (entre los ya desbloqueados),
+# asi cada partida es distinta pero la dificultad sigue controlada (ver progresion.py)
+COSTO_ENEMIGO = {"rebotador": 1, "perseguidor": 2, "embestidor": 3}
+DESBLOQUEO_ENEMIGO = {"perseguidor": 1, "rebotador": 2, "embestidor": 3}   # nivel desde el que aparece
+PRESUPUESTO_INICIAL = 2
+PRESUPUESTO_POR_NIVEL = 1.8
+PRESUPUESTO_MAXIMO = 24
+ENEMIGOS_MAX = 10               # nunca mas que esto en pantalla (sin contar las oleadas)
+
+# Oleadas: cada tanto llegan muchos enemigos de golpe por unos segundos y despues se van
+OLEADA_DESDE_NIVEL = 2
+OLEADA_ESPERA = (35000, 55000)  # ms de juego entre una oleada y la siguiente (al azar)
+OLEADA_DURACION = 12000         # ms que dura
+OLEADA_PRESUPUESTO = 0.6        # enemigos extra: esta parte del presupuesto del nivel
+OLEADA_PUNTOS = 10              # bonus por nivel si la pasas sin perder una vida
+
 # Los que persiguen se separan entre si, para no terminar todos encimados en el mismo punto
 SEPARACION_ENEMIGOS = 50        # distancia (px) a la que empiezan a alejarse de otro enemigo
 FUERZA_SEPARACION = 0.3         # que tan fuerte se alejan (mas = se separan mas rapido)
@@ -148,6 +155,51 @@ JEFE_FLOTAR = 2500              # ms que se mueve de lado a lado antes de atacar
 JEFE_CANSADO = 2500             # ms que deja el nucleo al descubierto
 JEFE_RAFAGAS = 3                # rafagas de balas en cada ataque
 CARTEL_JEFE = 2000              # ms que se ve "¡JEFE VENCIDO!" (los enemigos vuelven despues)
+
+# ================================== #
+# ===== DIFICULTAD Y SECTORES ====== #
+# ================================== #
+
+# Cada dificultad tiene su propia tabla de records.
+#   vidas:          vidas al empezar (y maximas)
+#   velocidad:      multiplica la velocidad de enemigos y balas
+#   presupuesto:    multiplica el presupuesto de enemigos (mas o menos enemigos)
+#   espera_powerup: multiplica la espera entre power-ups (mas = caen menos seguido)
+ORDEN_DIFICULTADES = ["FACIL", "NORMAL", "DIFICIL", "PESADILLA"]
+DIFICULTADES = {
+    "FACIL": {"color": VERDE, "paleta": TREBOL, "calaveras": 1, "vidas": 5, "velocidad": 0.8,
+              "presupuesto": 0.7, "espera_powerup": 0.8,
+              "descripcion": ["5 VIDAS", "ENEMIGOS MAS LENTOS", "MAS POWER-UPS"]},
+    "NORMAL": {"color": CIAN, "paleta": ENERGIA, "calaveras": 2, "vidas": 3, "velocidad": 1.0,
+               "presupuesto": 1.0, "espera_powerup": 1.0,
+               "descripcion": ["3 VIDAS", "EL DESAFIO ORIGINAL", ""]},
+    "DIFICIL": {"color": AMARILLO, "paleta": ORO, "calaveras": 3, "vidas": 3, "velocidad": 1.15,
+                "presupuesto": 1.3, "espera_powerup": 1.3,
+                "descripcion": ["3 VIDAS", "ENEMIGOS 15% MAS RAPIDOS", "MAS ENEMIGOS, MENOS POWER-UPS"]},
+    "PESADILLA": {"color": ROJO, "paleta": FUEGO, "calaveras": 4, "vidas": 1, "velocidad": 1.3,
+                  "presupuesto": 1.6, "espera_powerup": 1.6,
+                  "descripcion": ["1 VIDA", "ENEMIGOS 30% MAS RAPIDOS", "SIN PIEDAD"]},
+}
+
+# Sectores: cada SECTOR_CADA_NIVELES niveles cambia el ambiente (fondo teñido) y el enemigo
+# que mas aparece. El primero es siempre el Cinturon; despues se sortean (nunca dos iguales
+# seguidos). 'tinte' tiñe nebulosas y planetas (None = colores originales; ningun canal
+# por encima de ~110, para que no se confunda con enemigos); 'fondo' es el color del espacio
+SECTOR_CADA_NIVELES = 2
+PESO_FAVORITO = 3               # el enemigo favorito del sector sale 3 veces mas seguido
+RECAMBIO_SECTOR = 0.34          # al cambiar de sector se va esta parte de los enemigos (vienen otros)
+SECTORES = [
+    {"nombre": "CINTURON EXTERIOR", "color": CIAN, "tinte": None, "fondo": FONDO, "favorito": "perseguidor"},
+    {"nombre": "NEBULOSA CARMESI", "color": ROJO, "tinte": (110, 35, 50), "fondo": (16, 4, 8),
+     "favorito": "embestidor"},
+    {"nombre": "CAMPO ESMERALDA", "color": VERDE, "tinte": (35, 105, 70), "fondo": (4, 14, 10),
+     "favorito": "rebotador"},
+    {"nombre": "MAR DE AMBAR", "color": AMARILLO, "tinte": (110, 80, 30), "fondo": (14, 10, 4),
+     "favorito": "perseguidor"},
+    {"nombre": "ABISMO AZUL", "color": HIELO, "tinte": (35, 65, 110), "fondo": (4, 6, 20),
+     "favorito": "embestidor"},
+]
+TRANSICION_SECTOR = 60          # pasos (1 s) que tarda el fondo en cambiar de color, en 4 etapas
 
 # Animaciones: milisegundos que dura cada cuadro (menos = mas rapido)
 MS_CUADRO_ENEMIGO = 250

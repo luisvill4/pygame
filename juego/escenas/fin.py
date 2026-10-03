@@ -30,7 +30,7 @@ class Fin(Escena):
             self.app.efectos.explosion(random.randint(80, lienzo.ancho - 80), random.randint(80, 560), paleta, 40, 6)
         # ENTER se ignora el primer momento (para no saltear esta pantalla sin querer)
         if entrada.pulso(ACEPTAR) and self.tiempo_en_escena() > 800:
-            self.app.nueva_partida()
+            self.app.nueva_partida(self.partida.dificultad)     # otra vez, con la misma dificultad
 
     def dibujar(self, pantalla_completa):
         # Fondo y fuegos artificiales en todo el ancho; el resto en la zona central de 800x600
@@ -47,7 +47,9 @@ class Fin(Escena):
         if self.fila_nueva == 0 and contador == self.partida.puntaje:
             texto(pantalla, "¡NUEVO RECORD!", MEDIA, dibujo.color_arcoiris(), 400, 288)
 
-        dibujo.tabla_records(pantalla, self.app.records.filas, 330, self.fila_nueva)
+        dificultad = self.partida.dificultad
+        dibujo.tabla_records(pantalla, self.app.records.filas(dificultad), 330, self.fila_nueva,
+                             titulo="MEJORES - " + dificultad)
 
         if dibujo.parpadeo():
             texto(pantalla, self.app.entrada.ayuda("PRESIONA ENTER", "PRESIONA A"), MEDIA, CIAN, 400, 545)

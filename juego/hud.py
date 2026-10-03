@@ -16,9 +16,9 @@ import random
 import pygame
 
 from juego import dibujo, nave, lienzo
-from juego.dibujo import texto, CHICA, GRANDE
+from juego.dibujo import texto, CHICA, MEDIA, GRANDE
 from juego.config import (ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA,
-                          VIDAS_MAX, COMBO_TIEMPO, CARTEL_JEFE)
+                          COMBO_TIEMPO, CARTEL_JEFE, OLEADA_DURACION)
 from juego.powerups import TIPOS_POWERUP
 
 
@@ -45,9 +45,18 @@ def dibujar(pantalla, partida):
     _activos(pantalla, partida)
     if partida.jefe is not None:
         _barra_jefe(pantalla, partida.jefe)
-    # Carteles al subir de nivel y al vencer al jefe
+    director = partida.director
+    if director.en_oleada:
+        _barra_oleada(pantalla, director)
+    # Carteles: nivel, sector nuevo, oleada y jefe vencido
     if partida.tiempo - partida.tiempo_cartel_nivel < 1500:
         dibujo.texto_3d(pantalla, "NIVEL " + str(partida.nivel), GRANDE, AMARILLO, MAGENTA, 250, 4)
+    if partida.tiempo - director.tiempo_cartel_sector < 2500:
+        sector = director.sector
+        texto(pantalla, "SECTOR " + str(director.numero_sector), CHICA, GRIS, lienzo.centro_x(), 300)
+        dibujo.texto_3d(pantalla, sector["nombre"], MEDIA, sector["color"], (30, 30, 50), 330, 3)
+    if director.en_oleada and director.restante_oleada() > OLEADA_DURACION - 2000 and dibujo.parpadeo(150):
+        dibujo.texto_3d(pantalla, "¡OLEADA!", GRANDE, ROJO, (110, 0, 30), 200, 4)
     if partida.tiempo - partida.tiempo_cartel_jefe < CARTEL_JEFE:
         dibujo.texto_3d(pantalla, "¡JEFE VENCIDO!", GRANDE, dibujo.color_arcoiris(), MAGENTA, 300, 4)
 
@@ -94,8 +103,8 @@ def _marcador(pantalla, partida):
     texto(pantalla, "VIDAS", CHICA, ROJO, derecha, 22, alinear="derecha")
     if ahora - partida.tiempo_golpe < 800 and dibujo.parpadeo(80):
         return
-    for i in range(VIDAS_MAX):
-        icono_x = derecha - VIDAS_MAX * 28 + 3 + i * 28
+    for i in range(partida.vidas_max):
+        icono_x = derecha - partida.vidas_max * 28 + 3 + i * 28
         icono = nave.imagen("icono") if i < partida.vidas else nave.imagen("icono_vacio")
         pantalla.blit(icono, (icono_x, 34))
 
@@ -113,6 +122,16 @@ def _activos(pantalla, partida):
             mensaje = powerup.nombre + " " + str(segundos)
         texto(pantalla, mensaje, CHICA, powerup.color, 20, fila_y, alinear="izquierda")
         fila_y -= 26
+
+
+def _barra_oleada(pantalla, director):
+    # Abajo al centro: cuanto le queda a la oleada
+    centro = lienzo.centro_x()
+    color = ROJO if dibujo.parpadeo(300) else AMARILLO
+    texto(pantalla, "OLEADA", CHICA, color, centro - 82, 575, alinear="derecha")
+    restante = director.restante_oleada() / OLEADA_DURACION
+    pygame.draw.rect(pantalla, GRIS, (centro - 70, 567, 200, 16), 2)
+    pantalla.fill(color, (centro - 66, 571, int(192 * restante) // 4 * 4, 8))
 
 
 def _barra_jefe(pantalla, jefe):

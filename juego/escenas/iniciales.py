@@ -33,18 +33,19 @@ class Iniciales(Escena):
                 self.app.sonidos.reproducir("seleccion")
                 self.actual += 1
                 if self.actual == 3:
-                    fila = self.app.records.agregar("".join(self.letras), self.partida.puntaje)
+                    fila = self.app.records.agregar("".join(self.letras), self.partida.puntaje,
+                                                    self.partida.dificultad)
                     self.app.cambiar_escena(Fin(self.app, self.partida, fila_nueva=fila))
 
     def al_cerrar(self):
         # Si se cierra la ventana aca, el record se guarda igual
-        self.app.records.agregar("".join(self.letras), self.partida.puntaje)
+        self.app.records.agregar("".join(self.letras), self.partida.puntaje, self.partida.dificultad)
 
     def dibujar(self, pantalla_completa):
         # Fondo en todo el ancho; el resto en la zona central de 800x600
         self.dibujar_fondo(pantalla_completa)
         pantalla = dibujo.zona_central(pantalla_completa)
-        filas = self.app.records.filas
+        filas = self.app.records.filas(self.partida.dificultad)
         if not filas or self.partida.puntaje > filas[0]["puntos"]:
             dibujo.texto_3d(pantalla, "NUEVO RECORD", GRANDE, dibujo.color_arcoiris(), MAGENTA, 110, 4)
         else:

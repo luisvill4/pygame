@@ -13,14 +13,13 @@ from juego.guardado import Opciones as OpcionesGuardadas
 from juego.escenas.juego import Juego
 from juego.escenas.opciones import Opciones
 from juego.interpolacion import Interpolador
-from tests.ayudas import avanzar, tecla
+from tests.ayudas import avanzar, tecla, empezar_partida
 
 
 def empezar(app):
-    tecla(pygame.K_RETURN)
-    avanzar(app, 101)
+    partida = empezar_partida(app)
     assert isinstance(app.escena, Juego)
-    partida = app.escena.partida
+    partida.director.proxima_oleada = float("inf")
     partida.enemigos.clear()
     partida.proximo_powerup = float("inf")
     partida.moneda.x, partida.moneda.y = -500, -500

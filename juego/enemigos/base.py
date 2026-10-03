@@ -10,7 +10,7 @@ para agregar un enemigo nuevo NO hay que tocar ningun otro archivo:
     2. Ponerle @registrar_enemigo, un 'tipo' unico y un 'color'.
     3. Escribir mover(): como cambia su velocidad en cada frame.
     4. Importarlo en enemigos/__init__.py.
-    5. Usarlo en ENEMIGOS_POR_NIVEL o ENEMIGOS_POR_JEFE (config.py).
+    5. Darle un costo en COSTO_ENEMIGO y un nivel en DESBLOQUEO_ENEMIGO (config.py).
     (Opcional) sprites/mi_enemigo.png: 2 cuadros de 40x40. Si no esta, se dibuja uno de respaldo.
 
 Todo lo comun ya lo resuelve la clase base: la "X" de aviso al aparecer, el
@@ -71,6 +71,7 @@ class Enemigo:
     color = BLANCO              # color de la "X" de aviso y del dibujo de respaldo
     archivo_sprite = None       # por defecto: tipo + ".png"
     rebota_en_bordes = False    # si no rebota, al tocar un borde se detiene
+    de_oleada = False           # los de una oleada se van cuando termina
 
     # ---------- Sprites (compartidos por todos los enemigos del mismo tipo) ----------
 

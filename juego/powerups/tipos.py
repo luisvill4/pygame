@@ -3,7 +3,7 @@ Todos los power-ups. El orden en que estan aca es el orden del HUD y del panel d
 (los cinco primeros, ademas, son los cuadros de sprites/powerups.png).
 """
 from juego.config import (CIAN, HIELO, ROJO, MAGENTA, VERDE, AMARILLO, ENERGIA, ESCARCHA,
-                          CORAZON, IMANTADO, TREBOL, ORO, DURACION, VIDAS_MAX)
+                          CORAZON, IMANTADO, TREBOL, ORO, DURACION)
 from juego.powerups.base import PowerUp, registrar_powerup, HASTA_PERDER_VIDA
 from juego.proyectiles import romper_balas
 
@@ -53,7 +53,7 @@ class Vida(PowerUp):
     duracion = None
 
     def disponible(self, partida):
-        return partida.vidas < VIDAS_MAX       # solo si falta alguna
+        return partida.vidas < partida.vidas_max       # solo si falta alguna
 
     def al_recoger(self, partida, x, y):
         super().al_recoger(partida, x, y)

@@ -18,6 +18,8 @@ python main.py
 | Opciones (en pausa) | O | Vista (⧉) |
 | Volver | Esc | B |
 
+Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. Cada 2 niveles cambia el **sector**: otro color de fondo y otros enemigos frecuentes. Cada tanto llega una **oleada**: muchos enemigos durante unos segundos; si la pasás sin perder una vida, ganás puntos y un power-up. Los enemigos de cada nivel se eligen al azar según un "presupuesto", así que cada partida es distinta.
+
 En **Opciones → FORMATO** se elige entre 4:3 (800x600) y 16:9 (1066x600, un campo de juego más ancho). Se cambia desde el menú de inicio, no en medio de una partida.
 
 En **Opciones → FPS** se elige cuántas veces por segundo se dibuja: 30, 60, 90, 120, 144 o SIN LIMITE. El juego va siempre a la misma velocidad: la lógica avanza 60 veces por segundo y, por encima de 60 FPS, el movimiento se dibuja interpolado (más suave en monitores de alta frecuencia).
@@ -80,7 +82,7 @@ tests/                  # pytest
            ...
    ```
 2. Importalo en `juego/enemigos/__init__.py`.
-3. Usalo en `ENEMIGOS_POR_NIVEL` o `ENEMIGOS_POR_JEFE` (`config.py`).
+3. Dale un costo en `COSTO_ENEMIGO` y un nivel de aparición en `DESBLOQUEO_ENEMIGO` (`config.py`). El director lo va a sumar solo, según el presupuesto de cada nivel; podés hacerlo el `favorito` de algún sector en `SECTORES`.
 4. (Opcional) `sprites/zigzag.png`: 2 cuadros de 40x40. Si no está, se dibuja uno de respaldo con su color.
 
 Si necesita algo al aparecer, usá `al_aparecer()`; para dibujarse distinto, `dibujar_cuerpo()`. Mirá `embestidor.py` como ejemplo completo.

@@ -26,7 +26,7 @@ def test_aparece_en_el_nivel_5_y_guarda_a_los_enemigos(partida):
     assert jefe is not None
     assert jefe.vida == JEFE_VIDA
     assert partida.enemigos == []
-    assert len(partida.enemigos_guardados) == 5     # 4 + el rebotador del nivel 5
+    assert len(partida.enemigos_guardados) >= 4
 
 
 def test_golpe_con_dash_en_el_nucleo(partida):
@@ -65,14 +65,15 @@ def test_el_aviso_muestra_justo_las_balas_que_salen(partida):
             assert math.atan2(bala.vy, bala.vx) == pytest.approx(math.atan2(math.sin(direccion), math.cos(direccion)))
 
 
-def test_al_vencerlo_vuelven_los_enemigos_despues_del_cartel_y_se_suma_uno(partida):
+def test_al_vencerlo_vuelven_los_enemigos_y_se_completa_el_presupuesto(partida):
     partida.nave.invulnerable_hasta = math.inf
-    llegar_al_jefe(partida)                         # 5 enemigos guardados
-    for esperados in [6, 7, 8, 8]:                  # uno mas por jefe, hasta ENEMIGOS_MAX
-        partida.jefe_vencido()
-        jugar(partida, int(CARTEL_JEFE / MS_POR_FRAME) + 2)
-        assert len(partida.enemigos) == esperados
-        partida.iniciar_jefe()
+    llegar_al_jefe(partida)
+    guardados = list(partida.enemigos_guardados)
+    partida.jefe_vencido()
+    jugar(partida, int(CARTEL_JEFE / MS_POR_FRAME) + 2)
+    # Vuelven todos los que estaban y se completa el presupuesto del nivel
+    assert all(enemigo in partida.enemigos for enemigo in guardados)
+    assert partida.director.costo_actual() >= partida.director.presupuesto() - 1
 
 
 def test_los_enemigos_no_vuelven_mientras_esta_el_cartel(partida):

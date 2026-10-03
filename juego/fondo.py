@@ -13,7 +13,7 @@ import random
 import pygame
 
 from juego import recursos, lienzo
-from juego.config import ALTO, ANCHO_MENU, FONDO, PROFUNDIDAD
+from juego.config import ALTO, ANCHO_MENU, FONDO, PROFUNDIDAD, TRANSICION_SECTOR
 from juego.interpolacion import Interpolador
 
 
@@ -46,6 +46,34 @@ class Fondo:
         self.agregar("planeta_chico", 150 * escala, 470)
         self.agregar("planeta_grande", 520 * escala, 250)
         self.interpolador = Interpolador()
+        # Colores del sector: tinte de nebulosas/planetas (None = originales) y color del espacio
+        self.tinte, self.color = None, FONDO
+        self.tinte_anterior, self.color_anterior = None, FONDO
+        self.transicion = 0             # pasos que le quedan al cambio de colores
+        self._tenidas = {}              # (imagen, tinte) -> imagen teñida (se tiñe una sola vez)
+
+    def ir_a_sector(self, tinte, color, instantaneo=False):
+        # Cambia los colores del fondo; el cambio tarda TRANSICION_SECTOR pasos, en 4 etapas
+        if (tinte, color) == (self.tinte, self.color):
+            return
+        self.tinte_anterior, self.color_anterior = self.tinte, self.color
+        self.tinte, self.color = tinte, color
+        self.transicion = 0 if instantaneo else TRANSICION_SECTOR
+
+    def _imagen(self, objeto, tinte):
+        if tinte is None:
+            return objeto.imagen
+        clave = (id(objeto.imagen), tinte)
+        if clave not in self._tenidas:
+            self._tenidas[clave] = recursos.tenir(objeto.imagen, tinte)
+        return self._tenidas[clave]
+
+    def _etapa(self):
+        # Avance del cambio de colores: 0, 0.25, 0.5 o 0.75 (1 = terminado), como en las
+        # consolas viejas que cambiaban la paleta de a saltos en vez de fundir suave
+        if self.transicion <= 0:
+            return 1
+        return int((1 - self.transicion / TRANSICION_SECTOR) * 4) / 4
 
     def agregar(self, nombre, x, y, voltear=False):
         # Si falta el sprite, simplemente no se agrega
@@ -59,6 +87,8 @@ class Fondo:
     def mover(self, empuje_x=0, empuje_y=0):
         # Un paso de logica: cada capa cae a 0.6 * profundidad px, mas el empuje (paralaje)
         self.interpolador.guardar(self.objetos + self.estrellas)
+        if self.transicion > 0:
+            self.transicion -= 1
         for objeto in self.objetos:
             ancho, alto = objeto.imagen.get_size()
             objeto.x += empuje_x * objeto.profundidad
@@ -91,10 +121,21 @@ class Fondo:
                 estrella.y = ALTO
 
     def dibujar(self, pantalla, fraccion=1):
-        pantalla.fill(FONDO)
+        etapa = self._etapa()
+        color = [round(a + (b - a) * etapa) for a, b in zip(self.color_anterior, self.color)]
+        pantalla.fill(color)
         with self.interpolador.aplicar(self.objetos + self.estrellas, fraccion):
             for objeto in self.objetos:
-                pantalla.blit(objeto.imagen, (int(objeto.x), int(objeto.y)))
+                posicion = (int(objeto.x), int(objeto.y))
+                if etapa < 1:
+                    # Durante el cambio: los colores viejos y encima los nuevos, cada vez mas
+                    pantalla.blit(self._imagen(objeto, self.tinte_anterior), posicion)
+                    if etapa > 0:
+                        nueva = self._imagen(objeto, self.tinte).copy()
+                        nueva.set_alpha(int(255 * etapa))
+                        pantalla.blit(nueva, posicion)
+                else:
+                    pantalla.blit(self._imagen(objeto, self.tinte), posicion)
             for estrella in self.estrellas:
                 brillo = 60 + estrella.velocidad * 60
                 tamano = 1 if estrella.velocidad < 3 else 2

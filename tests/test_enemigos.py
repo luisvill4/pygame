@@ -3,14 +3,15 @@ import math
 
 import pytest
 
-from juego.config import RANGO_EMBESTIDOR, DISTANCIA_APARICION, ENEMIGOS_POR_NIVEL, ENEMIGOS_POR_JEFE
+from juego.config import RANGO_EMBESTIDOR, DISTANCIA_APARICION, COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, SECTORES
 from juego.enemigos import TIPOS_ENEMIGO, crear_enemigo
 from tests.ayudas import jugar
 
 
 def test_todos_los_tipos_de_config_existen():
-    usados = set(ENEMIGOS_POR_NIVEL.values()) | set(ENEMIGOS_POR_JEFE)
+    usados = set(COSTO_ENEMIGO) | set(DESBLOQUEO_ENEMIGO) | {s["favorito"] for s in SECTORES}
     assert usados <= set(TIPOS_ENEMIGO)
+    assert set(DESBLOQUEO_ENEMIGO) <= set(COSTO_ENEMIGO)
 
 
 def test_enemigo_que_no_existe_avisa_claro(partida):

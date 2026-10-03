@@ -40,5 +40,6 @@ def partida(app):
     nueva = app.escena.partida
     nueva.enemigos.clear()
     nueva.proximo_powerup = math.inf
+    nueva.director.proxima_oleada = math.inf
     nueva.moneda.x, nueva.moneda.y = -500, -500
     return nueva

@@ -25,7 +25,7 @@ class Explosion(Escena):
         if self.tiempo_en_escena() > 1500:
             self.app.efectos.reiniciar()
             self.app.sonidos.reproducir("game_over")
-            if self.app.records.entra(self.partida.puntaje):
+            if self.app.records.entra(self.partida.puntaje, self.partida.dificultad):
                 self.app.cambiar_escena(Iniciales(self.app, self.partida))
             else:
                 self.app.cambiar_escena(Fin(self.app, self.partida, fila_nueva=-1))

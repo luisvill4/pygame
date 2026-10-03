@@ -8,7 +8,7 @@ Nunca hacen caer el juego:
 """
 import json
 
-from juego.config import VOLUMEN_MAX, FILAS_RECORDS, FORMATOS, FRECUENCIAS
+from juego.config import VOLUMEN_MAX, FILAS_RECORDS, FORMATOS, FRECUENCIAS, ORDEN_DIFICULTADES
 
 
 def _escribir_json(archivo, datos):
@@ -19,42 +19,66 @@ def _escribir_json(archivo, datos):
         pass    # no se pudo guardar: el juego sigue igual
 
 
+def _limpiar_tabla(datos):
+    # Lista de {"nombre": "ABC", "puntos": 123}, de mayor a menor (lanza error si esta dañada)
+    tabla = [{"nombre": str(fila["nombre"])[:3], "puntos": int(fila["puntos"])} for fila in datos]
+    tabla.sort(key=lambda fila: fila["puntos"], reverse=True)
+    return tabla[:FILAS_RECORDS]
+
+
 class TablaRecords:
-    # Los mejores puntajes: lista de {"nombre": "ABC", "puntos": 123}, de mayor a menor
+    # Los mejores puntajes, una tabla por dificultad. En el archivo:
+    #   {"FACIL": [...], "NORMAL": [...], "DIFICIL": [...], "PESADILLA": [...]}
+    # Un records.json viejo (una sola lista) pasa a ser la tabla de NORMAL
 
     def __init__(self, archivo):
         self.archivo = archivo
-        self.filas = self._cargar()
+        self.tablas = {dificultad: [] for dificultad in ORDEN_DIFICULTADES}
+        self._cargar()
 
     def _cargar(self):
         try:
             with open(self.archivo, encoding="utf-8") as abierto:
                 datos = json.load(abierto)
-            tabla = [{"nombre": str(fila["nombre"])[:3], "puntos": int(fila["puntos"])} for fila in datos]
-            tabla.sort(key=lambda fila: fila["puntos"], reverse=True)
-            return tabla[:FILAS_RECORDS]
         except FileNotFoundError:
-            _escribir_json(self.archivo, [])
-            return []
-        except (ValueError, KeyError, TypeError):
-            return []   # archivo dañado: se sobrescribe al guardar el proximo record
+            self._guardar()
+            return
+        except ValueError:
+            return      # archivo dañado: se sobrescribe al guardar el proximo record
+        if isinstance(datos, list):
+            datos = {"NORMAL": datos}       # formato viejo
+        if not isinstance(datos, dict):
+            return
+        for dificultad in ORDEN_DIFICULTADES:
+            try:
+                self.tablas[dificultad] = _limpiar_tabla(datos.get(dificultad, []))
+            except (KeyError, TypeError, ValueError):
+                pass    # esa tabla esta dañada: queda vacia
 
-    @property
-    def maximo(self):
-        return self.filas[0]["puntos"] if self.filas else 0
+    def _guardar(self):
+        _escribir_json(self.archivo, self.tablas)
 
-    def entra(self, puntos):
-        # ¿Este puntaje entra en la tabla?
-        return puntos > 0 and (len(self.filas) < FILAS_RECORDS or puntos > self.filas[-1]["puntos"])
+    def filas(self, dificultad):
+        return self.tablas[dificultad]
 
-    def agregar(self, nombre, puntos):
+    def maximo(self, dificultad):
+        filas = self.tablas[dificultad]
+        return filas[0]["puntos"] if filas else 0
+
+    def entra(self, puntos, dificultad):
+        # ¿Este puntaje entra en la tabla de esa dificultad?
+        filas = self.tablas[dificultad]
+        return puntos > 0 and (len(filas) < FILAS_RECORDS or puntos > filas[-1]["puntos"])
+
+    def agregar(self, nombre, puntos, dificultad):
         # Agrega el puntaje, deja los mejores, guarda y devuelve su posicion (-1 si no quedo)
+        filas = self.tablas[dificultad]
         nueva = {"nombre": nombre, "puntos": puntos}
-        self.filas.append(nueva)
-        self.filas.sort(key=lambda fila: fila["puntos"], reverse=True)
-        del self.filas[FILAS_RECORDS:]
-        _escribir_json(self.archivo, self.filas)
-        for posicion, fila in enumerate(self.filas):
+        filas.append(nueva)
+        filas.sort(key=lambda fila: fila["puntos"], reverse=True)
+        del filas[FILAS_RECORDS:]
+        self._guardar()
+        for posicion, fila in enumerate(filas):
             if fila is nueva:
                 return posicion
         return -1
@@ -74,6 +98,7 @@ class Opciones:
         self.musica = True
         self.efectos = True
         self.aviso_jefe = True      # el jefe muestra hacia donde van a salir sus balas
+        self.dificultad = "NORMAL"   # la ultima elegida (el selector arranca en esa)
         self.cargar()
 
     def cargar(self):
@@ -91,6 +116,8 @@ class Opciones:
             self.musica = bool(datos.get("musica", True))
             self.efectos = bool(datos.get("efectos", True))
             self.aviso_jefe = bool(datos.get("aviso_jefe", True))
+            if datos.get("dificultad") in ORDEN_DIFICULTADES:
+                self.dificultad = datos["dificultad"]
         except FileNotFoundError:
             self.guardar()
         except (ValueError, TypeError, AttributeError):
@@ -105,4 +132,5 @@ class Opciones:
             "musica": self.musica,
             "efectos": self.efectos,
             "aviso_jefe": self.aviso_jefe,
+            "dificultad": self.dificultad,
         })

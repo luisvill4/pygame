@@ -7,30 +7,50 @@ from juego.guardado import TablaRecords, Opciones
 def test_records_si_no_existe_lo_crea(tmp_path):
     archivo = tmp_path / "records.json"
     tabla = TablaRecords(str(archivo))
-    assert tabla.filas == [] and tabla.maximo == 0
-    assert json.loads(archivo.read_text()) == []
+    assert tabla.filas("NORMAL") == [] and tabla.maximo("NORMAL") == 0
+    assert json.loads(archivo.read_text()) == {"FACIL": [], "NORMAL": [], "DIFICIL": [], "PESADILLA": []}
 
 
 def test_records_dañado_empieza_vacio(tmp_path):
     archivo = tmp_path / "records.json"
     archivo.write_text("esto no es json")
-    assert TablaRecords(str(archivo)).filas == []
+    assert TablaRecords(str(archivo)).filas("NORMAL") == []
+
+
+def test_records_del_formato_viejo_pasan_a_normal(tmp_path):
+    # Antes habia una sola tabla (una lista): no se pierden, quedan como los de NORMAL
+    archivo = tmp_path / "records.json"
+    archivo.write_text(json.dumps([{"nombre": "LUI", "puntos": 120}, {"nombre": "ABC", "puntos": 80}]))
+    tabla = TablaRecords(str(archivo))
+    assert tabla.maximo("NORMAL") == 120
+    assert tabla.filas("FACIL") == [] and tabla.filas("PESADILLA") == []
+
+
+def test_cada_dificultad_tiene_su_tabla(tmp_path):
+    archivo = tmp_path / "records.json"
+    tabla = TablaRecords(str(archivo))
+    tabla.agregar("AAA", 100, "FACIL")
+    tabla.agregar("BBB", 50, "PESADILLA")
+    assert tabla.maximo("FACIL") == 100 and tabla.maximo("PESADILLA") == 50 and tabla.maximo("NORMAL") == 0
+    otra_vez = TablaRecords(str(archivo))
+    assert otra_vez.filas("PESADILLA") == [{"nombre": "BBB", "puntos": 50}]
 
 
 def test_records_deja_los_5_mejores_y_guarda(tmp_path):
     archivo = tmp_path / "records.json"
     tabla = TablaRecords(str(archivo))
     for puntos in [10, 50, 30, 20, 40, 5]:
-        tabla.agregar("AAA", puntos)
-    assert [f["puntos"] for f in tabla.filas] == [50, 40, 30, 20, 10]
-    assert tabla.agregar("ZZZ", 45) == 1
-    assert not tabla.entra(15) and tabla.entra(25)
-    assert TablaRecords(str(archivo)).maximo == 50
+        tabla.agregar("AAA", puntos, "NORMAL")
+    assert [f["puntos"] for f in tabla.filas("NORMAL")] == [50, 40, 30, 20, 10]
+    assert tabla.agregar("ZZZ", 45, "NORMAL") == 1
+    assert not tabla.entra(15, "NORMAL") and tabla.entra(25, "NORMAL")
+    assert tabla.entra(1, "DIFICIL")                # esa tabla esta vacia
+    assert TablaRecords(str(archivo)).maximo("NORMAL") == 50
 
 
 def test_records_sin_poder_escribir_no_se_cae(tmp_path):
     tabla = TablaRecords(str(tmp_path / "no_existe" / "records.json"))
-    assert tabla.agregar("AAA", 10) == 0
+    assert tabla.agregar("AAA", 10, "NORMAL") == 0
 
 
 def test_opciones_de_fabrica_y_claves_que_faltan(tmp_path):

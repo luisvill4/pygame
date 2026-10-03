@@ -55,7 +55,9 @@ def test_cada_10_monedas_sube_de_nivel(partida):
     for _ in range(10):
         recoger_moneda(partida)
     assert partida.nivel == 2
-    assert [e.tipo for e in partida.enemigos] == ["rebotador"]
+    # Al nivel 2 se desbloquea el rebotador: se presenta enseguida, y se completa el presupuesto
+    assert "rebotador" in [e.tipo for e in partida.enemigos]
+    assert partida.director.costo_actual() <= partida.director.presupuesto() + 1
 
 
 def test_lugar_de_la_moneda(partida):

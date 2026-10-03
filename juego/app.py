@@ -17,7 +17,7 @@ import os
 import pygame
 
 from juego import lienzo
-from juego.config import CARPETA, MS_POR_FRAME, ATRASO_MAXIMO, NOMBRE_CONFIG, NOMBRE_RECORDS
+from juego.config import CARPETA, MS_POR_FRAME, ATRASO_MAXIMO, NOMBRE_CONFIG, NOMBRE_RECORDS, FONDO
 from juego.reloj import LimitadorFPS
 from juego.ventana import Ventana
 from juego.guardado import Opciones, TablaRecords
@@ -69,10 +69,12 @@ class App:
     def cambiar_escena(self, escena):
         self.escena = escena
 
-    def nueva_partida(self):
-        # Deja todo como al principio y muestra "READY?"
+    def nueva_partida(self, dificultad=None):
+        # Deja todo como al principio y muestra "READY?" (sin dificultad: la ultima elegida)
+        dificultad = dificultad or self.opciones.dificultad
         self.efectos.reiniciar()
-        partida = Partida(self.efectos, self.sonidos, self.entrada, self.records, self.opciones)
+        self.fondo.ir_a_sector(None, FONDO, instantaneo=True)      # vuelve a los colores del primer sector
+        partida = Partida(self.efectos, self.sonidos, self.entrada, self.records, self.opciones, dificultad)
         self.sonidos.reproducir("seleccion")
         self.sonidos.empezar_musica()
         self.cambiar_escena(Listo(self, partida))

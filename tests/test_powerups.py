@@ -1,7 +1,7 @@
 """Power-ups: registro, capsula que cae, efectos y los que duran hasta perder una vida."""
 import pytest
 
-from juego.config import (VIDAS_MAX, TURBO_VELOCIDAD, NAVE_VELOCIDAD, RECARGA_RAPIDA, DASH_RECARGA,
+from juego.config import (TURBO_VELOCIDAD, NAVE_VELOCIDAD, RECARGA_RAPIDA, DASH_RECARGA,
                           VELOCIDAD_POWERUP, MS_POR_FRAME)
 from juego.powerups import TIPOS_POWERUP, Capsula
 from juego.proyectiles import Bala
@@ -51,7 +51,7 @@ def test_vida_suma_una_y_solo_cae_si_falta(partida):
     partida.vidas = 2
     assert TIPOS_POWERUP["vida"].disponible(partida)
     recoger(partida, "vida")
-    assert partida.vidas == 3 == VIDAS_MAX
+    assert partida.vidas == 3 == partida.vidas_max
 
 
 def test_turbo_y_recarga(partida):

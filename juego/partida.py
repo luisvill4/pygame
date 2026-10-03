@@ -18,30 +18,32 @@ import math
 import random
 
 from juego import hud, lienzo
-from juego.config import (VIDAS_MAX, COMBO_TIEMPO, COMBO_MAXIMO, MONEDAS_POR_NIVEL, MS_POR_FRAME,
+from juego.config import (COMBO_TIEMPO, COMBO_MAXIMO, MONEDAS_POR_NIVEL, MS_POR_FRAME,
                           PUNTOS_ENEMIGO_CONGELADO, RADIO_ENEMIGO, RADIO_BALA, NAVE_VELOCIDAD,
                           TURBO_VELOCIDAD, DASH_RECARGA, RECARGA_RAPIDA, PRIMER_POWERUP, ESPERA_POWERUP,
-                          INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, ENEMIGOS_INICIALES, ENEMIGOS_POR_NIVEL,
-                          ENEMIGOS_POR_JEFE, ENEMIGOS_MAX, JEFE_CADA_NIVELES, ORDEN_JEFES, JEFE_PUNTOS,
-                          CARTEL_JEFE, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
+                          INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, JEFE_CADA_NIVELES, ORDEN_JEFES, JEFE_PUNTOS,
+                          CARTEL_JEFE, DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
                           ESCARCHA, EMBESTIDA, ARCOIRIS)
 from juego.nave import Nave
 from juego.moneda import Moneda
-from juego.enemigos import crear_enemigo
 from juego.jefes import crear_jefe
+from juego.progresion import Director
 from juego.powerups import TIPOS_POWERUP, Capsula, HASTA_PERDER_VIDA
 from juego.proyectiles import mover_balas, dibujar_balas
 from juego.interpolacion import Interpolador
 
 
 class Partida:
-    def __init__(self, efectos, sonidos, entrada, records, opciones):
+    def __init__(self, efectos, sonidos, entrada, records, opciones, dificultad="NORMAL"):
         # Servicios que usa (los crea la App y se comparten)
         self.efectos = efectos
         self.sonidos = sonidos
         self.entrada = entrada          # solo para vibrar el mando
         self.opciones = opciones        # se leen en vivo (ej: el aviso del jefe)
-        self.puntaje_maximo = records.maximo
+        # Dificultad: sus reglas (vidas, velocidad, presupuesto...) y su propio record
+        self.dificultad = dificultad
+        self.reglas = DIFICULTADES[dificultad]
+        self.puntaje_maximo = records.maximo(dificultad)
 
         # Reloj y control
         self.tiempo = 0
@@ -52,7 +54,8 @@ class Partida:
 
         # Jugador y puntaje
         self.nave = Nave()
-        self.vidas = VIDAS_MAX
+        self.vidas_max = self.reglas["vidas"]
+        self.vidas = self.vidas_max
         self.puntaje = 0
         self.combo = 0                  # monedas seguidas sin dejar pasar mucho tiempo
         self.mejor_combo = 0
@@ -67,7 +70,7 @@ class Partida:
         # Moneda y power-ups
         self.moneda = Moneda()
         self.capsula = None             # power-up cayendo (None = ninguno)
-        self.proximo_powerup = PRIMER_POWERUP
+        self.proximo_powerup = PRIMER_POWERUP * self.reglas["espera_powerup"]
         self.activos = {}               # tipo de power-up -> momento en que se acaba
 
         # Jefe (None = no hay pelea)
@@ -76,19 +79,23 @@ class Partida:
         self.tiempo_cartel_jefe = -10000
         self.balas = []
 
-        # Enemigos (durante la pelea con el jefe se guardan aparte)
+        # Enemigos (durante la pelea con el jefe se guardan aparte). Cuales y cuantos
+        # los decide el director (presupuesto, sectores y oleadas: ver progresion.py)
         self.enemigos = []
         self.enemigos_guardados = []
-        for tipo in ENEMIGOS_INICIALES:
-            self.enemigos.append(crear_enemigo(tipo, self))
+        self.director = Director(self)
+        self.director.al_empezar()
 
     # ================================== #
     # ============ CONSULTAS =========== #
     # ================================== #
 
     def factor_velocidad(self):
-        # Desde el nivel 6 todos los enemigos se aceleran un poco por nivel
-        return min(1 + max(0, self.nivel - 5) * 0.08, 1.5)
+        # Desde el nivel 6 todos los enemigos se aceleran un poco por nivel (y segun la dificultad)
+        return min(1 + max(0, self.nivel - 5) * 0.08, 1.5) * self.reglas["velocidad"]
+
+    def espera_powerup(self):
+        return random.randint(*ESPERA_POWERUP) * self.reglas["espera_powerup"]
 
     def multiplicador_combo(self):
         # x1 con 1-2 monedas seguidas, x2 con 3-5, x3 con 6-8... hasta x5
@@ -139,8 +146,7 @@ class Partida:
         self.sonidos.reproducir("seleccion")
         nave_x, nave_y = self.nave.centro()
         self.efectos.anillo(nave_x, nave_y, ORO, 32, 6)
-        if self.nivel in ENEMIGOS_POR_NIVEL:
-            self.enemigos.append(crear_enemigo(ENEMIGOS_POR_NIVEL[self.nivel], self))
+        self.director.al_subir_nivel()      # sector nuevo cada tanto y mas enemigos
         if self.nivel % JEFE_CADA_NIVELES == 0:
             self.iniciar_jefe()
 
@@ -193,6 +199,7 @@ class Partida:
     def iniciar_jefe(self):
         # Los enemigos explotan y se guardan hasta que venzas al jefe, que baja desde arriba
         tipo = ORDEN_JEFES[self.jefes_vencidos % len(ORDEN_JEFES)]
+        self.director.al_empezar_jefe()     # si habia una oleada, se corta
         self.jefe = crear_jefe(tipo, self)
         self.balas.clear()
         for enemigo in self.enemigos:
@@ -245,6 +252,7 @@ class Partida:
 
         self._revisar_moneda()
         self._actualizar_powerups()
+        self.director.actualizar()          # oleadas
         self._devolver_enemigos()
         self._actualizar_enemigos()
         if self.jefe is not None and not self.termino:
@@ -295,10 +303,10 @@ class Partida:
             powerup.al_recoger(self, x, y)
             self.efectos.texto_flotante(powerup.texto_al_recoger(), x, y - 24, powerup.color)
             self.capsula = None
-            self.proximo_powerup = ahora + random.randint(*ESPERA_POWERUP)
+            self.proximo_powerup = ahora + self.espera_powerup()
         elif self.capsula.salio():
             self.capsula = None
-            self.proximo_powerup = ahora + random.randint(*ESPERA_POWERUP)
+            self.proximo_powerup = ahora + self.espera_powerup()
 
     def _devolver_enemigos(self):
         # Despues del jefe, los enemigos vuelven cuando se va el cartel (asi no quedan tapados)
@@ -310,10 +318,7 @@ class Partida:
             enemigo.reaparecer(self)
             self.enemigos.append(enemigo)
         self.enemigos_guardados.clear()
-        # Y por cada jefe vencido se suma uno nuevo (hasta ENEMIGOS_MAX)
-        if len(self.enemigos) < ENEMIGOS_MAX:
-            tipo = ENEMIGOS_POR_JEFE[(self.jefes_vencidos - 1) % len(ENEMIGOS_POR_JEFE)]
-            self.enemigos.append(crear_enemigo(tipo, self))
+        self.director.al_volver_del_jefe()      # y se completa el presupuesto del nivel
 
     def _actualizar_enemigos(self):
         ahora = self.tiempo

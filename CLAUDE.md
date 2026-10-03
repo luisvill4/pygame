@@ -21,17 +21,19 @@ juego/
   interpolacion.py      # Interpolador: dibujar en posiciones intermedias entre pasos de logica
   reloj.py              # LimitadorFPS: limite de FPS preciso (sleep + espera activa final)
   partida.py            # Partida: todo el estado de una partida y sus reglas
+  progresion.py         # Director: presupuesto de enemigos, sectores y oleadas
   nave.py  moneda.py  proyectiles.py (Bala)
   enemigos/  base.py (Enemigo + registro) · perseguidor.py · rebotador.py · embestidor.py
   jefes/     base.py (Jefe + registro) · ojo.py (JefeOjo)
   powerups/  base.py (PowerUp, Capsula, registro) · tipos.py (los 7 power-ups, en orden)
-  escenas/   base.py · inicio · opciones · listo · juego · pausa · explosion · iniciales · fin
+  escenas/   base.py · inicio · dificultad · opciones · listo · juego · pausa · explosion · iniciales · fin
   entrada.py  sonido.py  ventana.py  guardado.py  recursos.py
   dibujo.py   efectos.py  fondo.py   hud.py
 tests/                  # conftest.py (fixtures app/partida), ayudas.py, test_*.py
 sprites/ efectos/ fuentes/   # recursos (ver "Sprites"); efectos/ son los sonidos
-records.json            # top 5 {"nombre", "puntos"}; se crea vacío si no existe
-config.json             # {"formato", "resolucion", "fps", "volumen" (0-10), "musica", "efectos", "aviso_jefe"}
+records.json            # top 5 POR DIFICULTAD: {"FACIL": [{"nombre", "puntos"}...], "NORMAL": [...], ...}
+                        # (un archivo viejo con una sola lista pasa a ser la tabla de NORMAL)
+config.json             # {"formato", "resolucion", "fps", "volumen" (0-10), "musica", "efectos", "aviso_jefe", "dificultad"}
 ```
 
 **Frecuencia: paso fijo (fixed timestep) + interpolación.**
@@ -112,7 +114,9 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - `al_cerrar()` se llama si se cierra la ventana; Iniciales guarda el récord ahí.
   - `tiempo_en_escena()` cuenta con el reloj real y sirve para READY (1.6 s), la explosión (1.5 s) y el Game Over (ENTER se ignora 0.8 s).
   - `dibujar_partida(pantalla, partida, con_nave, paralaje)` dibuja el fondo y la partida.
-- Flujo: `Inicio → Listo → Juego ⇄ Pausa ⇄ Opciones`, y `Juego → Explosion → Iniciales (si entra al top 5) → Fin → Listo`. `App.nueva_partida()` reinicia los efectos, crea una `Partida`, suena "seleccion", arranca la música y pasa a `Listo`.
+- Flujo: `Inicio → Dificultad → Listo → Juego ⇄ Pausa ⇄ Opciones`, y `Juego → Explosion → Iniciales (si entra al top 5 de esa dificultad) → Fin → Listo` (Fin repite con la misma dificultad).
+- `App.nueva_partida(dificultad=None)`: sin dificultad, usa `opciones.dificultad`. Reinicia los efectos, vuelve el fondo a los colores del primer sector, crea una `Partida`, suena "seleccion", arranca la música y pasa a `Listo`.
+- **Dificultad** (`escenas/dificultad.py`): IZQ/DER cambian con animación. El nombre entra deslizándose (`PASOS_ANIMACION`) y destella, las calaveras (`CALAVERA`, pixel art de 7x7) aparecen de a una, saltan chispas con la `paleta` de la dificultad y PESADILLA hace temblar la pantalla. ENTER guarda `opciones.dificultad` y empieza; ESC vuelve al inicio.
 - Hay escenas que guardan otras escenas: `Opciones(volver_a=escena)` y `Pausa(escena_juego, captura)`, así al volver se retoma la misma instancia.
 - **Hit-stop:** mientras `partida.congelar_frames > 0`, Juego y Explosion no actualizan ni dibujan (`saltar_dibujo`). `Juego.actualizar` revisa primero `partida.termino`, después el hit-stop y después la pausa.
 
@@ -156,7 +160,21 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - `rebotador`: diagonal y rebota; se acelera con `factor_velocidad()`.
   - `embestidor`: `acercarse → apuntar (0.6 s, línea roja) → cargar (0.5 s)`. Solo te sigue y embiste dentro de `RANGO_EMBESTIDOR`; si no, deambula con `rumbo`.
   - **Separación:** los que persiguen se alejan entre sí a menos de `SEPARACION_ENEMIGOS`, con fuerza `FUERZA_SEPARACION`. Sin esto, se fusionaban a los ~10 s.
-  - Progresión: `ENEMIGOS_INICIALES`, `ENEMIGOS_POR_NIVEL` y, después de cada jefe, uno de `ENEMIGOS_POR_JEFE` hasta `ENEMIGOS_MAX`.
+  - Progresión: la decide `Partida.director` (`progresion.Director`).
+    - **Presupuesto:** cada tipo cuesta `COSTO_ENEMIGO` y se desbloquea en `DESBLOQUEO_ENEMIGO`. Cada nivel tiene `presupuesto()` (`PRESUPUESTO_INICIAL + (nivel-1) * PRESUPUESTO_POR_NIVEL`, con tope `PRESUPUESTO_MAXIMO`, por `reglas["presupuesto"]`).
+      - `completar_presupuesto()` agrega enemigos al azar con `random.choices`; el favorito del sector pesa `PESO_FAVORITO`. Como mucho hay `ENEMIGOS_MAX` fijos.
+      - El tipo recién desbloqueado se presenta primero.
+      - Se llama al empezar, al subir de nivel y al volver del jefe.
+    - **Sectores** (`SECTORES`, cada `SECTOR_CADA_NIVELES` niveles): el primero es siempre el Cinturón y después se sortean sin repetir el mismo seguido.
+      - Al cambiar, se va `RECAMBIO_SECTOR` de los enemigos y aparece el cartel (`tiempo_cartel_sector`).
+      - El fondo pasa a sus colores con `Fondo.ir_a_sector(tinte, color)`, que lo hace en 4 etapas durante `TRANSICION_SECTOR` pasos (lo llama `Escena.mover_fondo(partida)`). Los tintes no pasan de ~110 por canal.
+    - **Oleadas:** cada `OLEADA_ESPERA` (desde `OLEADA_DESDE_NIVEL`, sin jefe) llegan enemigos extra con `de_oleada=True` por `OLEADA_DURACION`, y después se van.
+      - Si no perdiste vidas: `OLEADA_PUNTOS * nivel` y un power-up enseguida.
+      - El jefe corta la oleada (`al_empezar_jefe`).
+      - HUD: cartel "¡OLEADA!" y una barra abajo al centro.
+  - **Dificultad:** `Partida(…, dificultad)` guarda `reglas = DIFICULTADES[dificultad]`, `vidas_max` y `vidas`.
+    - `factor_velocidad()` multiplica por `reglas["velocidad"]` (también las balas del Ojo), y `espera_powerup()` por `reglas["espera_powerup"]`.
+    - El HUD dibuja `vidas_max` íconos.
 - **Jefes** (`jefes/`), registro `TIPOS_JEFE`; el que sale lo decide `ORDEN_JEFES[jefes_vencidos % len]`:
   - La base resuelve las fases `entrar` (baja hasta y=70 con "¡CUIDADO!") y `morir` (2 s, después llama a `partida.jefe_vencido()`). También: la vida (`JEFE_VIDA + jefes_vencidos`), el congelado (no aplica en entrar ni en morir; corre `fase_hasta`), `recibir_golpe()`, `explotar()`, las variantes de sprite, "¡DASH!" cuando `puede_recibir_golpe()` y las cajas `caja_cuerpo()` y `caja_nucleo()`.
   - `JefeOjo` (`ojo.py`): `flotar` (`JEFE_FLOTAR`) → `atacar` (carga 0.7 s y `JEFE_RAFAGAS` ráfagas, turnando abanico y anillo) → `cansado` (`JEFE_CANSADO`) → `flotar`.
@@ -177,7 +195,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - `opciones.resolucion` es un nombre ("800x600", `None` = la primera) y `opciones.formato` es "4:3" o "16:9".
   - IZQ/DER cambian el valor con `_cambiar()`, que lo aplica al instante y lo guarda. ENTER cambia los `INTERRUPTORES`.
   - Para agregar una opción: sumarla a `FILAS`, dibujarla en `_dibujar_valor`, manejarla en `_cambiar` y guardarla en `guardado.Opciones`.
-- **Guardado:** `TablaRecords` (`filas`, `maximo`, `entra()`, `agregar()` → posición) y `Opciones`.
+- **Guardado:** `TablaRecords`, con una tabla por dificultad: `filas(dif)`, `maximo(dif)`, `entra(puntos, dif)` y `agregar(nombre, puntos, dif)` → posición. `Opciones` guarda además `dificultad` (la última elegida).
   - Si el archivo no existe, se crea; si está dañado, se usan los valores de fábrica.
   - Si no se puede escribir, el juego sigue (`_escribir_json` ignora `OSError`).
 - **Sonido:** `Sonidos.reproducir(nombre)`, `empezar_musica()`/`parar_musica()`, `pausar_todo()`/`reanudar_todo()` y `aplicar_volumen(opciones)`.
