@@ -1,0 +1,7 @@
+# Archivos que genera Python
+__pycache__/
+.pytest_cache/
+
+# Datos del jugador: los crea el juego al arrancar
+records.json
+config.json
