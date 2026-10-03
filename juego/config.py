@@ -196,6 +196,21 @@ SERPIENTE_ESPACIO = 26          # px entre un segmento y el siguiente
 SERPIENTE_CUELLO = 4            # segmentos que no se cortan (cortes = vida del jefe)
 SERPIENTE_VENTANA = 5           # pulsos que la cola brilla despues de chocar (la ventana para cortarla)
 
+# La Colmena: una madre que defiende a sus hijas. Abre una compuerta (tiembla y zumba),
+# suelta abejas a ritmo y la deja ABIERTA un rato: ahi se rompe con el dash. Sin
+# compuertas, EMBISTE rebotando en las paredes (el aviso dibuja el camino con los
+# rebotes) y al terminar queda aturdida con el ojo de la reina a la vista
+COLMENA_PULSO = 480             # ms del pulso
+COLMENA_ABEJAS = 3              # abejas que suelta cada compuerta (una por pulso)
+COLMENA_ABEJAS_MAX = 4          # nunca mas abejas que esto a la vez
+COLMENA_EXPUESTA = 5            # pulsos que la compuerta queda abierta
+COLMENA_EMBESTIDA = 7.5         # px por paso al embestir
+COLMENA_REBOTES = 1             # rebotes de la primera embestida (uno mas por cada golpe al ojo)
+COLMENA_ATURDIDA = 5            # pulsos que queda aturdida despues de embestir
+ABEJA_VELOCIDAD = 2.6           # rondando a tu alrededor
+ABEJA_PICADA = 6.5              # al picar
+ABEJA_PUNTOS = 2
+
 # ================================== #
 # ===== DIFICULTAD Y SECTORES ====== #
 # ================================== #
@@ -241,7 +256,7 @@ SECTORES = [
     {"nombre": "CAMPO ESMERALDA", "lema": "ALGO SE MUEVE ENTRE LAS ESPORAS", "color": VERDE, "jefe": "serpiente",
      "tinte": (35, 105, 70), "fondo": (4, 14, 10), "ambiente": "esporas", "estrellas": (0.75, 1, 0.8),
      "favorito": "divisor"},
-    {"nombre": "MAR DE AMBAR", "lema": "LA COLMENA TE OBSERVA", "color": AMARILLO, "jefe": "fortaleza",
+    {"nombre": "MAR DE AMBAR", "lema": "LA COLMENA TE OBSERVA", "color": AMARILLO, "jefe": "colmena",
      "tinte": (110, 80, 30), "fondo": (14, 10, 4), "ambiente": "panal", "estrellas": (1, 0.85, 0.6),
      "favorito": "enjambre"},
     {"nombre": "ABISMO AZUL", "lema": "NI LA LUZ ESCAPA", "color": HIELO, "jefe": "ojo",

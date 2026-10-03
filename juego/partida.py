@@ -214,6 +214,10 @@ class Partida:
         centro_x, centro_y = self.jefe.centro()
         self.jefe.al_vencerlo(self)
         self.jefe.explotar(self)
+        for esbirro in [e for e in self.enemigos if e.esbirro]:     # sus esbirros se van con el
+            esbirro_x, esbirro_y = esbirro.centro()
+            self.efectos.explosion(esbirro_x, esbirro_y, [(40, 40, 60), esbirro.color], 14, 3, 3)
+            self.quitar_enemigo(esbirro)
         self.jefes_vencidos += 1
         ganados = self.sumar_puntos(JEFE_PUNTOS * self.jefes_vencidos)
         self.efectos.texto_flotante("+" + str(ganados), centro_x, centro_y - 40, AMARILLO)
@@ -353,7 +357,8 @@ class Partida:
                 continue
             elif enemigo.destruible and nave.en_dash(ahora) and caja_nave.colliderect(enemigo.caja()):
                 self.destruir_con_dash(enemigo)
-            elif nave.toca_circulo(golpe_x, golpe_y, enemigo.radio) and not nave.atraviesa(ahora):
+            elif (enemigo.hace_danio() and nave.toca_circulo(golpe_x, golpe_y, enemigo.radio)
+                  and not nave.atraviesa(ahora)):
                 self.danar_jugador(golpe_x, golpe_y)
                 if self.termino:
                     break

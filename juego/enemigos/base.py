@@ -96,6 +96,7 @@ class Enemigo:
     puntos_dash = 0             # puntos por destruirlo con el dash
     muere_al_chocar = False     # si te pega, se destruye (si no, reaparece lejos)
     de_oleada = False           # los de una oleada se van cuando termina
+    esbirro = False             # es de un jefe (ej: las abejas de la Colmena): se va cuando lo vencen
 
     # ---------- Sprites (compartidos por todos los enemigos del mismo tipo) ----------
 
@@ -163,6 +164,10 @@ class Enemigo:
 
     def activo(self, tiempo):
         return tiempo >= self.aparece_en
+
+    def hace_danio(self):
+        # Para las subclases: un enemigo que por un rato no lastima (ej: una abeja volviendo a casa)
+        return True
 
     def centro(self):
         return self.x + self.tamano / 2, self.y + self.tamano / 2
