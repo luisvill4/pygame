@@ -1,38 +1,52 @@
 # Caza Monedas (Pygame)
 
-Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge monedas y esquiva enemigos. Todo el código está en `main.py`.
+Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge monedas, esquiva enemigos y pelea contra jefes. El código está en el paquete `juego/`; `main.py` solo lo arranca. README.md tiene la guía para el usuario y explica cómo agregar enemigos, jefes y power-ups.
 
-## Cómo ejecutar
+## Cómo ejecutar y probar
 ```
 python main.py
+python -m pytest        # ~70 tests, unos 4 s, sin ventana
 ```
-- Requisitos: Python 3.12 y pygame 2.6.1. Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
-- No hay `requirements.txt`, ni tests en el repo, ni git.
+- Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
+- **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json` y `__pycache__`.
+- **Correr `python -m pytest` después de cada cambio.** Si se agrega una regla de juego, sumarle su test.
 
 ## Estructura
 ```
-main.py                 # todo el juego (~2200 líneas)
-sprites/                # imágenes del juego (lista completa en la sección "Sprites")
-efectos/                # musica.mp3, moneda.wav, moneda_brillante.wav, golpe.wav,
-                        # game_over.wav, seleccion.wav, nuevo_record.wav
-fuentes/                # PressStart2P-Regular.ttf + OFL.txt (licencia, descargada de Google Fonts)
-records.json            # top 5 {"nombre", "puntos"}; se crea vacío ([]) al arrancar si no existe
-config.json             # {"resolucion", "volumen" (0-10), "musica", "efectos", "aviso_jefe"}; se crea al arrancar si no existe
+main.py                 # App().ejecutar()
+juego/
+  config.py             # SOLO valores: colores, paletas, "Reglas del juego", DURACION, mando
+  app.py                # App: crea los servicios, cambia de escena, bucle (paso() + ejecutar())
+  partida.py            # Partida: todo el estado de una partida y sus reglas
+  nave.py  moneda.py  proyectiles.py (Bala)
+  enemigos/  base.py (Enemigo + registro) · perseguidor.py · rebotador.py · embestidor.py
+  jefes/     base.py (Jefe + registro) · ojo.py (JefeOjo)
+  powerups/  base.py (PowerUp, Capsula, registro) · tipos.py (los 7 power-ups, en orden)
+  escenas/   base.py · inicio · opciones · listo · juego · pausa · explosion · iniciales · fin
+  entrada.py  sonido.py  ventana.py  guardado.py  recursos.py
+  dibujo.py   efectos.py  fondo.py   hud.py
+tests/                  # conftest.py (fixtures app/partida), ayudas.py, test_*.py
+sprites/ efectos/ fuentes/   # recursos (ver "Sprites"); efectos/ son los sonidos
+records.json            # top 5 {"nombre", "puntos"}; se crea vacío si no existe
+config.json             # {"resolucion", "volumen" (0-10), "musica", "efectos", "aviso_jefe"}
 ```
-El juego se dibuja siempre en 800x600 a 60 FPS (la ventana puede ser más grande, ver "Ventana"). Todas las rutas pasan por `ruta()` (relativas a la carpeta de `main.py`).
+El juego se dibuja siempre en un lienzo de 800x600 a 60 FPS (`ANCHO`, `ALTO`, `FPS`). Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
 
 ## El usuario y el estilo del código
-- **Todo en español**: la conversación, los nombres de variables y funciones, y los comentarios. El usuario escribe en español informal.
-- **Código de nivel principiante, a propósito:** variables globales a nivel de módulo, funciones simples con `global` cuando hace falta y comentarios cortos que explican el "por qué". La única clase es `Enemigo`. Mantener ese estilo y no introducir patrones avanzados sin que lo pida.
-- Las constantes de ajuste están arriba, en la sección "Reglas del juego", y en el diccionario `DURACION`. Poner ahí cualquier número nuevo que el usuario pueda querer tocar.
-- El archivo está dividido en secciones con banners `# ===== NOMBRE =====`: CONFIGURACION, RECURSOS, ESTADO, RECORDS, OPCIONES, MANDO, DIBUJO, PARTICULAS, ENEMIGOS, JEFE, JUEGO y BUCLE PRINCIPAL.
+- **Todo en español**: la conversación, los nombres de variables, funciones y clases, y los comentarios. El usuario escribe en español informal.
+- **El usuario está aprendiendo.** Pidió explícitamente una arquitectura modular y escalable, y eligió el nivel "modular con clases": clases base, registros y escenas, **sin** type hints ni dataclasses ni bus de eventos. Mantener ese nivel. El código tiene que poder leerlo alguien que aprende: nombres claros, métodos cortos y comentarios que explican el "por qué" y los patrones (State, Registry, Template Method).
+- Cualquier número que el usuario pueda querer tocar va en `config.py`, en la sección "Reglas del juego" (o en `DURACION`).
+- Dependencias sin ciclos: `config` ← `recursos`/`dibujo` ← entidades ← `partida` ← escenas ← `app`. Las entidades reciben `partida` como parámetro (no la importan).
 
 ## Estilo visual: arcade retro (el usuario lo aprecia mucho, no romperlo)
-- Fuente Press Start 2P siempre renderizada con `antialias=False`, en tamaños múltiplos de 8 (16/24/40/56).
-- Colores neón definidos como constantes (`AMARILLO`, `CIAN`, `MAGENTA`, `ROJO`…). Números con 6 dígitos (`numero_arcade`).
-- Partículas: cuadrados alineados a una cuadrícula de 2 px. No se desvanecen con transparencia: cambian de color por etapas según una **paleta**, una lista que va de oscuro a brillante (`FUEGO`, `ORO`, `ESCARCHA`…).
-- Efectos disponibles: líneas CRT (`efecto_crt`), temblor en pasos de 2 px, destello de color, parpadeos duros (`parpadeo`), texto con relieve (`texto_3d`), marcos de doble línea (`marco`) y arcoíris (`color_arcoiris`).
-- Variantes de sprites sin archivos nuevos: `tenir()` (escala de grises + multiplicar color) y `BLEND_RGB_MAX` para el destello blanco.
+- Fuente Press Start 2P, siempre con `antialias=False`, en tamaños múltiplos de 8: `dibujo.CHICA/MEDIA/GRANDE/TITULO` = 16/24/40/56.
+  - `dibujo.texto(pantalla, mensaje, tamaño, color, x, y, sombra, alinear)` recibe el tamaño como número; `recursos.fuente(tamaño)` guarda las fuentes en caché.
+- Colores neón definidos como constantes en `config.py` (`AMARILLO`, `CIAN`, `MAGENTA`, `ROJO`…). Números con 6 dígitos (`dibujo.numero_arcade`).
+- Partículas (`efectos.Efectos`): cuadrados alineados a una cuadrícula de 2 px. No se desvanecen con transparencia: cambian de color por etapas según una **paleta**, una lista que va de oscuro a brillante (`FUEGO`, `ORO`, `ESCARCHA`…).
+- Efectos disponibles:
+  - en `dibujo`: líneas CRT (`efecto_crt`), parpadeos duros (`parpadeo`), texto con relieve (`texto_3d`), marcos de doble línea (`marco`), arcoíris (`color_arcoiris`) y `oscurecer`;
+  - en `Efectos`: temblor en pasos de 2 px y destello de color (`sacudir`, `aplicar_temblor_y_destello`).
+- Variantes de sprites sin archivos nuevos: `recursos.tenir()` (escala de grises + multiplicar color) y `recursos.blanquear()` (`BLEND_RGB_MAX`).
 
 ## Sprites
 El usuario dibuja los sprites; Claude los integra. Todos están en `sprites/`.
@@ -43,134 +57,130 @@ El usuario dibuja los sprites; Claude los integra. Todos están en `sprites/`.
 - Las animaciones son una "hoja" horizontal: cuadros del mismo tamaño, uno al lado del otro y sin separación.
 - Lo que gira con la nave se dibuja mirando hacia arriba.
 
-**Cómo se cargan** (sección RECURSOS):
-- `cargar_sprite(archivo)` devuelve `None` si el archivo no existe; en ese caso se usa el dibujo de respaldo, así que nunca hay que tener todos los sprites para que el juego funcione.
-- `cortar_hoja(hoja, ancho_cuadro)` separa los cuadros.
-- `cuadro_animado(cuadros, ms_por_cuadro, desfase)` elige el cuadro con el reloj real.
-- Las velocidades están en CONFIGURACION: `MS_CUADRO_ENEMIGO`, `MS_CUADRO_MONEDA` y `MS_CUADRO_ESCUDO`.
+**Cómo se cargan** (`recursos.py`, siempre con caché):
+- `sprite(archivo)` devuelve `None` si no existe y quien lo pidió usa su dibujo de respaldo; `sprite_obligatorio()` es solo para `nave.png`.
+- `hoja(archivo, ancho_cuadro)` devuelve la lista de cuadros (o `None`).
+- `cuadro_animado(cuadros, ms_por_cuadro, desfase)` elige el cuadro según el reloj real.
+- Las velocidades de las animaciones están en `config.py`: `MS_CUADRO_ENEMIGO`, `MS_CUADRO_MONEDA`, `MS_CUADRO_ESCUDO` y `MS_CUADRO_JEFE`.
 
 ### Sprites que ya existen
 | Archivo | Tamaño | Cuadros | Dónde se usa | Respaldo si falta |
 |---|---|---|---|---|
-| `nave.png` | 50x50 | 1 | `jugador_img` (mira hacia arriba); también `nave_icono` (vidas del HUD, 25x25) y `nave_fantasma_img` (dash) | obligatorio |
-| `perseguidor.png` | 80x40 | 2 de 40x40 | `ENEMIGO_CUADROS["perseguidor"]`; también el ícono "ESQUIVA" en Inicio | `enemigo_respaldo(ROJO)`: cuadrado con dos ojos |
-| `rebotador.png` | 80x40 | 2 de 40x40 | `ENEMIGO_CUADROS["rebotador"]` | `enemigo_respaldo(AMARILLO)` |
-| `embestidor.png` | 80x40 | 2 de 40x40 | `ENEMIGO_CUADROS["embestidor"]` | `enemigo_respaldo(MAGENTA)` |
-| `embestidor_carga.png` | 40x40 | 1 | `embestidor_carga_img`: embestidor en la fase "apuntar", fijo (la línea roja ya parpadea) | parpadeo con el primer cuadro en blanco (`embestidor_blanco_img`) |
-| `moneda_giro.png` | 120x20 | 6 de 20x20 | `MONEDA_CUADROS`, con `imagen_moneda()` (en el juego y en Inicio) | elipse amarilla que se angosta |
-| `powerups.png` | 150x30 | 5 de 30x30 | `CAPSULAS`, con `dibujar_capsula()`. Orden: escudo, hielo, vida, imán, doble (el mismo de `POWERUPS`) | cuadro con la letra |
-| `escudo.png` | 152x76 | 2 de 76x76 | `ESCUDO_CUADROS`: burbuja centrada en la nave, en `dibujar_nave()`. Tiene píxeles semitransparentes (el brillo); está bien así | círculo cian |
-| `nebulosa.png` | 256x192 | 1 | fondo con paralaje, 2 copias (la segunda volteada) | no se dibuja |
-| `planeta_chico.png` | 32x32 | 1 | fondo con paralaje, 2 copias | no se dibuja |
-| `planeta_grande.png` | 96x96 | 1 | fondo con paralaje, 1 copia | no se dibuja |
-| `jefe.png` | 720x120 | 6 de 120x120, de a pares: flotar (1-2), atacar (3-4), cansado (5-6, núcleo a la vista) | `JEFE_ANIMACION[animacion]`, con sus variantes `JEFE_CONGELADO` y `JEFE_BLANCO`. Si la hoja trae 2 cuadros, se usan para todo | `jefe_respaldo(color_nucleo)` |
+| `nave.png` | 50x50 | 1 | `nave.imagen("nave")` (mira hacia arriba); también `"icono"`/`"icono_vacio"` (vidas del HUD, 25x25) y `"fantasma"` (dash) | obligatorio |
+| `perseguidor.png`, `rebotador.png`, `embestidor.png` | 80x40 | 2 de 40x40 | `Enemigo.cuadros()` (por `tipo + ".png"`); el perseguidor también es el ícono "ESQUIVA" en Inicio | `enemigo_respaldo(color)`: cuadrado con dos ojos |
+| `embestidor_carga.png` | 40x40 | 1 | `Embestidor.dibujar_cuerpo()` en la fase "apuntar" | parpadeo con el primer cuadro en blanco |
+| `moneda_giro.png` | 120x20 | 6 de 20x20 | `moneda.imagen_moneda()` (en el juego y en Inicio) | elipse amarilla que se angosta |
+| `powerups.png` | 150x30 | 5 de 30x30 | `PowerUp.dibujar_capsula()` según `cuadro_sprite` (escudo 0, hielo 1, vida 2, imán 3, doble 4). Turbo y recarga no tienen | cuadro con la letra |
+| `escudo.png` | 152x76 | 2 de 76x76 | burbuja en `Nave.dibujar()`. Tiene píxeles semitransparentes (el brillo); está bien así | círculo cian |
+| `nebulosa.png`, `planeta_chico.png`, `planeta_grande.png` | 256x192 / 32x32 / 96x96 | 1 | `Fondo` (paralaje) | no se dibujan |
+| `jefe.png` | 720x120 | 6 de 120x120, de a pares: flotar, atacar, cansado | `JefeOjo.cargar_animaciones()`; `Jefe.animaciones()` arma las variantes congelada y blanca. Con 2 cuadros se usan para todo | `jefe_respaldo(color_nucleo)` |
 
-La llama del motor son partículas (`estela_nave()`), y el usuario prefiere que siga así: no proponer un sprite de propulsor.
-
-Los enemigos congelados (`ENEMIGO_CONGELADO[tipo]`) se generan con `tenir(primer cuadro, HIELO)`, así que no necesitan sprite. Cada enemigo tiene `desfase`, para que no se animen todos a la vez.
-
-No hay sprites pendientes. El usuario solo quiso dibujar el jefe: no proponer sprites nuevos.
+La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere que siga así: no proponer un sprite de propulsor. Los enemigos congelados se generan con `tenir(..., HIELO)`. No hay sprites pendientes y el usuario solo quiso dibujar el jefe: no proponer sprites nuevos.
 
 - **Trampa:** en Press Start 2P la "É" mayúscula se dibuja como "é" pequeña. Por eso se escribe "RECORD" sin tilde. "¡" y los números funcionan bien.
 - **Trampa:** en este Windows `SysFont("Arial")` carga **Arial Narrow**.
 
 ## Arquitectura
-- **Máquina de estados** en la variable `estado`: `Inicio → Listo → Jugando ⇄ Pausa → Explosion → Iniciales (solo si entra al top 5) → Fin → Listo`. Cada estado es un bloque `if estado == ...:` dentro del bucle principal que termina con `mostrar(); tick(60); continue`. "Jugando" es el código que queda al final del bucle.
-  - `Opciones` se abre desde Inicio (menú JUGAR / OPCIONES con IZQ/DER, `opcion_inicio`) o desde Pausa (tecla O). Al salir (ESC o VOLVER) vuelve a `volver_a`. Las filas están en la lista `filas`: RESOLUCION, VOLUMEN, MUSICA, EFECTOS, AVISO JEFE y VOLVER (`opcion_menu` es la elegida). Van cada 45 px (`fila_y = 230 + i * 45`); con una fila más ya no entran en el marco (de 190 a 480).
-    - IZQ/DER llaman a `cambiar_opcion(fila, ±1)`, que aplica el cambio al instante y guarda `config.json`. ENTER también prende y apaga MUSICA, EFECTOS y AVISO JEFE.
-    - Para agregar una opción: sumarla a `filas`, dibujar su valor en el `if` del bloque Opciones, manejarla en `cambiar_opcion()` y guardarla en `cargar_config()`/`guardar_config()`.
-- **Sonido:** los efectos están en la lista `efectos_sonido`, sin `musica_fondo`. `aplicar_volumen()` usa `set_volume(volumen / VOLUMEN_MAX)`. Desactivar la música o los efectos los pone en volumen 0, pero siguen sonando en silencio, así la música retoma donde iba. Todo efecto nuevo tiene que sumarse a `efectos_sonido`.
-- **Opciones guardadas:** `cargar_config()` llena `resolucion_actual`, `volumen`, `musica_activa`, `efectos_activos` y `aviso_jefe`. Si falta una clave, usa el valor de fábrica; si el archivo está dañado, usa todos los de fábrica.
-  - `dibujar_opcion()` dibuja una opción de menú: la elegida va en amarillo con una flecha que parpadea.
-- **Ventana:** `pantalla` es un lienzo de 800x600 (`Surface`), no la ventana. La ventana real es `ventana`, y `mostrar()` escala el lienzo sin suavizar, centrado y con barras negras si hace falta, y después hace `flip()`.
-  - Siempre hay que dibujar en `pantalla` y llamar a `mostrar()`, nunca a `pygame.display.flip()` directo.
-  - `resoluciones` es `RESOLUCIONES` filtrada según la altura del monitor (con 80 px de margen); "COMPLETA" siempre está.
-  - La resolución se cambia desde Opciones con `aplicar_resolucion()`.
-  - **Trampa:** al salir de FULLSCREEN, el primer `set_mode((ancho, alto))` deja la ventana en su tamaño anterior. Por eso `aplicar_resolucion()` lo repite si el tamaño no coincide.
-- **Dos relojes, no mezclarlos:**
-  - `tiempo_juego` avanza `1000/60` por fotograma, solo en Jugando. Lo usan todos los temporizadores de juego (`*_hasta`, `proximo_powerup`, combo, dash, `aparece_en` de enemigos, `tiempo_moneda`/`tiempo_golpe`). Así la pausa, READY y el hit-stop no los gastan.
-  - `pygame.time.get_ticks()` es el reloj real. Solo se usa para parpadeos y animaciones visuales, y para `tiempo_menu`, que mide la duración de pantallas como READY, la explosión y el conteo del Game Over.
-- **Teclado:** las acciones de un solo toque (ENTER, ESPACIO, P/ESC, letras de las iniciales) se leen de la lista `teclas_pulsadas`, que se llena con los `KEYDOWN` del fotograma. El movimiento usa `pygame.key.get_pressed()`.
-- **Mando de Xbox** (sección MANDO): `evento_mando()` traduce los botones, la cruceta y el stick izquierdo a teclas falsas dentro de `teclas_pulsadas`, así menús, pausa e iniciales funcionan sin cambios. Los botones se traducen con `BOTONES_MANDO` (CONFIGURACION): A = ENTER, X = ESPACIO (dash), B = ESC (ignorado en Jugando para no pausar sin querer), Menú = P y Vista = O.
-  - El stick cuenta como tecla solo cuando recién se inclina más allá de `ZONA_MUERTA` (`stick_antes`).
-  - En Jugando, si no hay flechas apretadas, el movimiento sale de `direccion_mando()`. La cruceta va en 8 direcciones; el stick, en **cualquier ángulo** y siempre a velocidad máxima: los valores del eje se normalizan, igual que con las flechas. La zona muerta del stick es circular (`ZONA_MUERTA_NAVE = 0.25`, más chica que la de los menús).
-  - `mandos` se llena con `JOYDEVICEADDED`, que pygame manda también por los mandos ya conectados, y se vacía con `JOYDEVICEREMOVED`.
-  - `ayuda(teclado, mando)` elige el texto de ayuda según `hay_mando()`.
-  - `vibrar(suave, fuerte, ms)` se llama en `danar_jugador()` (escudo, vida y muerte), en `golpear_jefe()` y en `jefe_explota()`.
-  - El mando del usuario (Xbox Series X en Windows) da este mapeo de SDL: A=b0, B=b1, X=b2, Vista=b6, Menú=b7, cruceta=hat 0, stick izquierdo=ejes 0/1.
-  - Para probar sin el mando: postear `JOYBUTTONDOWN`/`JOYHATMOTION`/`JOYAXISMOTION` con `instance_id` y meter un objeto falso en `g["mandos"]` con `get_numhats`, `get_hat`, `get_numaxes`, `get_axis` y `rumble`. Antes hay que vaciar `g["mandos"]`, para que el mando real no vibre.
-- **Pausa automática:** con `WINDOWFOCUSLOST` (bucle de eventos) o al desconectarse un mando que estaba en `mandos` (`evento_mando()`), estando en Listo o Jugando, se marca `pausa_automatica = True`. Jugando la usa como si se hubiera apretado P. Si pasa durante READY, pausa en el primer fotograma de juego.
-- **Hit-stop:** mientras `congelar_frames > 0`, el bucle solo hace flip, sin actualizar ni redibujar.
-- **Dibujo del juego:** `dibujar_escena(con_nave)` dibuja todo y se reutiliza en Listo, Jugando y Explosion. La pausa muestra una captura (`captura_pausa`) oscurecida.
-- **Fondo con paralaje** (`dibujar_fondo()`, se usa en todas las pantallas): primero `objetos_fondo` (nebulosas, planetas chicos y el grande, de lejos a cerca), después las estrellas.
-  - Cada capa cae a `0.6 * profundidad` px por fotograma. Solo en Jugando se corre además `-vx/-vy * REACCION_PARALAJE * profundidad`.
-  - La profundidad está en `PROFUNDIDAD` (0.15 / 0.3 / 0.6); las estrellas usan su velocidad (1 a 3).
-  - Lo que sale por un costado entra por el otro; lo que sale por arriba o por abajo vuelve por el lado opuesto en una x al azar.
-  - Para agregar otro objeto: `agregar_objeto_fondo(archivo, x, y, voltear)` y su profundidad en `PROFUNDIDAD`.
-  - Paleta del fondo: ningún canal por encima de ~110, nada de colores neón ni grises claros, para que no se confunda con enemigos, monedas o power-ups.
-- **Nave:** física con inercia (`aceleracion`, `friccion`, velocidad máxima 5, diagonal normalizada) y giro suavizado hacia el ángulo de las teclas (0 = arriba, 90 = izquierda; `atan2(-dx, -dy)`).
-  - `inclinacion` angosta el sprite al girar.
-  - Flota a pasos de 2 px cuando está casi quieta.
-  - Al ser golpeada recibe un empujón (`empujon`) y queda invulnerable 1.5 s (parpadea).
-  - **Dash con buffer:** apretar el dash guarda `dash_pedido_en`, y el dash sale si `ahora - dash_pedido_en <= BUFFER_DASH` y ya se recargó. Cuando se recarga, la nave hace un destello cian chico, una sola vez por recarga (`dash_avisado`).
-- **Zonas del HUD:** `ZONAS_HUD` (sección JUEGO) tiene los rectángulos que ocupa el HUD: la franja de arriba (y < 100), la de abajo (y ≥ 530) y la columna de power-ups activos (abajo a la izquierda). `posicion_libre(ancho, alto)` elige una posición al azar fuera de esas zonas. Si el HUD cambia de lugar o crece, hay que actualizar `ZONAS_HUD`.
-- **Moneda nueva:** `lugar_moneda()` usa `posicion_libre()` y además pide estar a entre `MONEDA_DISTANCIA_MIN` y `MONEDA_DISTANCIA_MAX` (120–450 px) de la nave, a más de 60 px de cada enemigo y lejos del cuerpo del jefe. Prueba hasta 200 lugares. Con 450 px como máximo, siempre se llega antes de que se corte el combo (`COMBO_TIEMPO`).
-- **Choques:**
-  - Para recoger cosas (monedas, power-ups, enemigos congelados y el núcleo del jefe con el dash) se usa la caja grande de 50×50 (`caja_jugador`) contra `Enemigo.caja()` (32×32), entre otras.
-  - El **daño usa círculos**, que no cambian con el giro de la nave: `nave_toca_circulo(cx, cy, radio)` con `RADIO_NAVE = 11` contra `RADIO_ENEMIGO = 15` y `RADIO_BALA = 4`, y `nave_toca_rect(rect)` para el cuerpo del jefe (punto más cercano del rectángulo).
-- **Enemigos:** la lista `enemigos` contiene objetos `Enemigo` de tres tipos:
-  - `perseguidor`: persigue con inercia.
-  - `rebotador`: va en línea recta y rebota en los bordes.
-  - `embestidor`: pasa por las fases `acercarse → apuntar` (0.6 s, línea roja punteada y sprite de carga) `→ cargar` (0.5 s en línea recta).
-    - En `acercarse` solo te sigue si estás a menos de `RANGO_EMBESTIDOR` (250 px). Si no, deambula a 0.5 px por fotograma según `self.rumbo`, que cambia al azar (1% por fotograma) y apunta al centro cuando toca un borde.
-    - Solo pasa a `apuntar` si estás dentro del rango; si `fase_hasta` ya pasó, embiste apenas entrás. Una vez que apunta, la embestida sigue aunque te alejes.
-  - Cada tipo tiene su sprite animado (ver "Sprites").
-  - **Separación:** el perseguidor y el embestidor en `acercarse` llaman a `Enemigo.separarse()`. Esa función los empuja lejos de cualquier enemigo activo a menos de `SEPARACION_ENEMIGOS` (50 px), con más fuerza cuanto más cerca (`FUERZA_SEPARACION`). Sin esto, los perseguidores terminaban fusionados en el mismo punto a los ~10 s, porque todos siguen a la nave de la misma forma. El rebotador no la usa: va en línea recta.
-  - Al aparecer o reaparecer, cada uno muestra una "X" durante `AVISO_APARICION` y en ese tiempo no hace daño.
-  - Se agrega uno según `ENEMIGOS_POR_NIVEL`; el nivel sube cada `MONEDAS_POR_NIVEL` monedas. Son 5 hasta el primer jefe.
-  - Después de cada jefe vencido, cuando vuelven los enemigos guardados, se suma uno de `ENEMIGOS_POR_JEFE` (embestidor, perseguidor, rebotador, rotando) hasta `ENEMIGOS_MAX = 8`.
-- **Jefe** (sección JEFE; variables globales `jefe_*`, sin clase): aparece en `subir_nivel()` cuando `nivel % JEFE_CADA_NIVELES == 0`.
-  - `iniciar_jefe()` hace explotar a los enemigos y los pasa a `enemigos_guardados`. Vuelven con `reaparecer()` desde el bucle de Jugando, recién cuando termina el cartel "¡JEFE VENCIDO!" (`CARTEL_JEFE` ms después de `jefe_explota()`). Así el cartel no tapa la "X" de aviso.
-  - Fases (`jefe_fase`): `entrar` (baja hasta y=70 con el cartel "¡CUIDADO!") → `flotar` (`JEFE_FLOTAR` ms de lado a lado) → `atacar` → `cansado` (`JEFE_CANSADO` ms) → `flotar`… y `morir` (2 s) al llegar a 0 de vida. Se cambia de fase con `cambiar_fase_jefe(fase, duracion)`.
-  - `atacar` se carga 0.7 s y tira `JEFE_RAFAGAS` ráfagas desde el ojo (`disparar_jefe()`), turnándose entre `abanico` (hacia la nave) y `anillo` (con un giro distinto por ráfaga). Los ángulos y la rapidez salen de `direcciones_ataque()`, que usan tanto el disparo como el aviso.
-  - **Aviso del ataque** (`dibujar_aviso_ataque()`, desde `dibujar_jefe()`): durante la carga (`jefe_rafagas == JEFE_RAFAGAS`), si `aviso_jefe` está activo y el jefe no está congelado, el abanico muestra líneas punteadas rojas hacia la nave y el anillo rayitas magenta cortas en la dirección de cada bala. Parpadea con `parpadeo(100)`. Se desactiva en Opciones → AVISO JEFE.
-  - Las balas están en `balas` (`[x, y, vx, vy]`) y se dibujan con `dibujar_balas()`.
-  - Daño al jefe: solo con el dash contra `caja_nucleo_jefe()` mientras está `cansado` (`golpear_jefe()`, que hace rebotar la nave y le da 0.8 s de invulnerabilidad). Durante `cansado` aparece "¡DASH!" debajo del jefe.
-  - Daño al jugador: las balas (círculos) y `caja_cuerpo_jefe()` (con `nave_toca_rect`), que se revisan en `revisar_choques_jefe(caja_jugador)`. El dash y la invulnerabilidad los atraviesan.
-  - Hielo: al recogerlo rompe todas las balas. Con `jefe_congelado()` (no aplica en `entrar` ni en `morir`), el jefe no se mueve, no ataca, no hace daño y su fase no avanza.
-  - Vida: `JEFE_VIDA + jefes_vencidos`. Bonus: `JEFE_PUNTOS * jefes_vencidos`. Las balas son más y más rápidas con cada jefe vencido.
-  - Durante la pelea las monedas dan puntos pero no cuentan para subir de nivel. La barra del jefe va abajo al centro (`dibujar_barra_jefe()`) y, al vencerlo, aparece el cartel "¡JEFE VENCIDO!" (`tiempo_cartel_jefe`, dura `CARTEL_JEFE`).
-- **Daño al jugador:** siempre pasar por `danar_jugador(golpe_x, golpe_y)` (enemigos, jefe y balas). Si hay escudo, lo rompe y da 0.5 s de invulnerabilidad; si no, quita una vida y, con 0 vidas, pasa a `Explosion`.
-- **Puntos:** siempre pasar por `sumar_puntos(base)`, que aplica "doble" y detecta cuándo se supera el récord. El combo usa `multiplicador_combo() = min(1 + combo // 3, 5)`.
-- **Power-ups:** el diccionario `POWERUPS` guarda por tipo (letra, color, nombre, descripción); la duración está en `DURACION`. Hay uno en pantalla a la vez (`powerup_tipo`), aparece cada 8–13 s y **cae** desde arriba de la pantalla (`py = -15`, con `px` al azar entre 30 y 770) a `VELOCIDAD_POWERUP` px por fotograma. Si no lo recogés, desaparece al pasar `py > 615` (con 1.5 tarda ~7 s). Tipos:
-  - escudo: aguanta un golpe;
-  - hielo: congela a todos los enemigos, y tocarlos da +5;
-  - vida: solo aparece si falta alguna;
-  - imán;
-  - doble;
-  - turbo (`turbo_activo`, velocidad máxima `TURBO_VELOCIDAD`) y recarga (`recarga_activa`, el dash se recarga en `RECARGA_RAPIDA` vía `recarga_dash()`): no están en `DURACION`, **duran hasta perder una vida** (se apagan en `danar_jugador()`; si el escudo aguanta el golpe, siguen). Solo aparecen si no están activos. No tienen cuadro en `powerups.png`, así que usan el cuadro con letra (T y R).
-- **Récords:** `cargar_records()` lee `records.json`. Si no existe, lo crea con `[]`; si está dañado, empieza con la tabla vacía (se sobrescribe al guardar). `agregar_record()` ordena la tabla, deja 5 filas y guarda. Si se cierra la ventana en la pantalla de iniciales, el récord se guarda igual.
 
-## Cómo probar sin ventana (patrón usado en sesiones anteriores)
-1. **No probar en la carpeta real.** El juego escribe `records.json` y `config.json`, así que hay que copiar `main.py sprites efectos fuentes` a una carpeta del scratchpad y correr ahí.
-2. El script de prueba:
-   - pone `SDL_VIDEODRIVER=dummy`;
-   - reemplaza `pygame.display.flip` por una función "hook" que se ejecuta una vez por fotograma;
-   - reemplaza `pygame.key.get_pressed` para simular teclas mantenidas;
-   - envía teclas de un toque con `pygame.event.post(Event(KEYDOWN, key=...))`;
-   - ejecuta el juego con `exec(compile(open("main.py").read(), ...), g)`, con `"__file__"` definido dentro de `g`.
-3. Desde el hook se leen y modifican las variables globales del juego a través de `g` (por ejemplo, llamar a `g["reiniciar_partida"]()` o mover enemigos), y se guardan capturas con `pygame.image.save(pygame.display.get_surface(), ...)` para revisarlas.
-4. Filtrar la salida con `grep -a`: los textos con "¡" hacen que grep la trate como binaria.
-5. Las pruebas corren en tiempo real (60 FPS). Considerarlo al elegir los números de fotograma.
-6. Con el driver dummy, el escritorio mide 1024x768, así que `resoluciones` queda solo en 800x600 y COMPLETA. Para probar las otras, hay que asignar `g["resoluciones"] = list(g["RESOLUCIONES"])` desde el hook. `pygame.display.get_surface()` es la ventana ya escalada; `g["pantalla"]` es el lienzo de 800x600.
+### App y escenas (patrón State)
+- `App` crea una sola vez los servicios: `ventana`, `opciones`, `sonidos`, `records`, `entrada`, `fondo`, `efectos`, más `pantalla` (el lienzo de 800x600).
+- `paso()` es un frame: `entrada.procesar(eventos)` → `escena.actualizar(entrada)` → `escena.dibujar(pantalla)` → `ventana.mostrar(pantalla)`. `ejecutar()` repite `paso()` + `tick(60)`.
+- `App.ahora()` es el reloj real; los tests lo reemplazan. `App(carpeta_datos=..., usar_mandos=...)` también se usa en los tests.
+- Cada escena hereda de `escenas/base.Escena`:
+  - `actualizar` cambia el estado o pasa a otra escena con `self.app.cambiar_escena(...)`; `dibujar` solo dibuja.
+  - `al_cerrar()` se llama si se cierra la ventana; Iniciales guarda el récord ahí.
+  - `tiempo_en_escena()` cuenta con el reloj real y sirve para READY (1.6 s), la explosión (1.5 s) y el Game Over (ENTER se ignora 0.8 s).
+  - `dibujar_partida(pantalla, partida, con_nave, paralaje)` dibuja el fondo y la partida.
+- Flujo: `Inicio → Listo → Juego ⇄ Pausa ⇄ Opciones`, y `Juego → Explosion → Iniciales (si entra al top 5) → Fin → Listo`. `App.nueva_partida()` reinicia los efectos, crea una `Partida`, suena "seleccion", arranca la música y pasa a `Listo`.
+- Hay escenas que guardan otras escenas: `Opciones(volver_a=escena)` y `Pausa(escena_juego, captura)`, así al volver se retoma la misma instancia.
+- **Hit-stop:** mientras `partida.congelar_frames > 0`, Juego y Explosion no actualizan ni dibujan (`saltar_dibujo`). `Juego.actualizar` revisa primero `partida.termino`, después el hit-stop y después la pausa.
+
+### Partida (`partida.py`)
+- Contiene todo el estado de una partida: `nave`, `vidas`, `puntaje`, `combo`, `nivel`, `moneda`, `capsula`, `activos` (tipo → ms en que termina; `math.inf` para los que duran hasta perder una vida), `enemigos`, `enemigos_guardados`, `jefe` (`None` si no hay pelea), `balas`, `tiempo`, `congelar_frames`, `pausa_pendiente` y `termino`.
+- Los servicios le llegan por parámetro (`efectos`, `sonidos`, `entrada` para vibrar, `records` y `opciones`, que se leen en vivo).
+- **Dos relojes, no mezclarlos:**
+  - `partida.tiempo` avanza `MS_POR_FRAME` solo en `actualizar()` y lo usan todos los temporizadores de juego.
+  - `pygame.time.get_ticks()` es el reloj real: solo para parpadeos y animaciones.
+- Reglas (siempre pasar por ellas):
+  - `danar_jugador(x, y)`: si hay escudo, lo rompe y da 0.5 s de invulnerabilidad. Si no, quita una vida, corta el combo y saca los power-ups que duran hasta perder una vida (con textos "-TURBO"…). Con 0 vidas, marca `termino`.
+  - `sumar_puntos(base)`: aplica DOBLE y detecta cuándo se supera el récord.
+  - `subir_nivel()`, `iniciar_jefe()` y `jefe_vencido()`.
+- Consultas: `activo(tipo)`, `restante(tipo)`, `activar(tipo, duracion)`, `desactivar(tipo)`, `vel_max()` (turbo), `recarga_dash()` (recarga), `factor_velocidad()` y `multiplicador_combo() = min(1 + combo // 3, COMBO_MAXIMO)`.
+- Orden de `actualizar(dx, dy, pidio_dash)`: tiempo → nave → corte del combo → imán → moneda → power-ups → devolver enemigos guardados → enemigos (mover y choques) → jefe (balas, fases y choques) → estela → brillo de la moneda → efectos.
+
+### Entrada (`entrada.py`)
+- Teclado y mando se convierten en **acciones**: `ACEPTAR`, `VOLVER`, `PAUSA`, `OPCIONES`, `DASH`, `ARRIBA`, `ABAJO`, `IZQUIERDA` y `DERECHA`.
+  - Las acciones de un toque quedan en `entrada.acciones` (en orden) y se consultan con `pulso(accion)`.
+  - El movimiento sale de `direccion()`: primero las flechas; si no hay, el mando (cruceta en 8 direcciones, o stick en **cualquier ángulo** con zona muerta circular `ZONA_MUERTA_NAVE`).
+- `TECLAS`: ESC dispara `VOLVER` y `PAUSA`. `BOTONES`: A = aceptar, X = dash, B = volver (solo eso, así B no pausa el juego), Menú = pausa y Vista = opciones.
+- El stick cuenta como un toque solo cuando recién se inclina más allá de `ZONA_MUERTA` (`stick_antes`).
+- Banderas del frame: `cerrar`, `foco_perdido` y `mando_desconectado` (solo si el mando estaba en `mandos`). Listo y Juego las convierten en `partida.pausa_pendiente`: es la pausa automática.
+- `hay_mando()` y `ayuda(texto_teclado, texto_mando)` eligen los textos de ayuda. `vibrar(suave, fuerte, ms)` se usa al romperse el escudo, al perder una vida, al morir, al golpear al jefe y cuando el jefe explota.
+- El mando del usuario (Xbox Series X en Windows) da este mapeo de SDL: A=b0, B=b1, X=b2, Vista=b6, Menú=b7, cruceta=hat 0, stick=ejes 0/1.
+
+### Entidades
+- **Nave** (`nave.py`): física con inercia (`NAVE_*`), diagonal normalizada y giro suavizado (0 = arriba, 90 = izquierda, `atan2(-dx, -dy)`). Además:
+  - Inclinación al girar; flota 2 px cuando está casi quieta.
+  - **Dash con buffer:** `dash_pedido_en` + `BUFFER_DASH`, y un destello cian una sola vez cuando se recarga (`dash_avisado`).
+  - Choques: `caja_recoger()` (50x50, para recoger cosas), `toca_circulo()` y `toca_rect()` (daño con `RADIO_NAVE = 11`), `atraviesa(t)` (dash o invulnerable) y `empujon()`.
+- **Moneda** (`moneda.py`): `lugar_para_moneda(partida)` busca un lugar con `hud.posicion_libre()` a entre `MONEDA_DISTANCIA_MIN` y `MONEDA_DISTANCIA_MAX` de la nave, a más de 60 px de cada enemigo y lejos del jefe (hasta 200 intentos).
+- **Zonas del HUD** (`hud.ZONAS_HUD`): la franja de arriba (y < 100), la de abajo (y ≥ 530) y la columna de power-ups activos. Si el HUD cambia, hay que actualizarlas.
+- **Enemigos** (`enemigos/`), registro `TIPOS_ENEMIGO` con `@registrar_enemigo` y `crear_enemigo(tipo, partida)`:
+  - La base resuelve:
+    - la aparición lejos de la nave (`DISTANCIA_APARICION`), con una "X" de aviso durante `AVISO_APARICION` en la que no hace daño;
+    - el congelado (sprite azul y "+5"; tocarlo con la caja grande da puntos);
+    - los bordes (`rebota_en_bordes`), la animación con `desfase` y `separarse()`.
+  - Las subclases escriben `mover()`, y si hace falta `al_aparecer()`, `paso()` y `dibujar_cuerpo()`.
+  - `perseguidor`: inercia y se separa de los demás.
+  - `rebotador`: diagonal y rebota; se acelera con `factor_velocidad()`.
+  - `embestidor`: `acercarse → apuntar (0.6 s, línea roja) → cargar (0.5 s)`. Solo te sigue y embiste dentro de `RANGO_EMBESTIDOR`; si no, deambula con `rumbo`.
+  - **Separación:** los que persiguen se alejan entre sí a menos de `SEPARACION_ENEMIGOS`, con fuerza `FUERZA_SEPARACION`. Sin esto, se fusionaban a los ~10 s.
+  - Progresión: `ENEMIGOS_INICIALES`, `ENEMIGOS_POR_NIVEL` y, después de cada jefe, uno de `ENEMIGOS_POR_JEFE` hasta `ENEMIGOS_MAX`.
+- **Jefes** (`jefes/`), registro `TIPOS_JEFE`; el que sale lo decide `ORDEN_JEFES[jefes_vencidos % len]`:
+  - La base resuelve las fases `entrar` (baja hasta y=70 con "¡CUIDADO!") y `morir` (2 s, después llama a `partida.jefe_vencido()`). También: la vida (`JEFE_VIDA + jefes_vencidos`), el congelado (no aplica en entrar ni en morir; corre `fase_hasta`), `recibir_golpe()`, `explotar()`, las variantes de sprite, "¡DASH!" cuando `puede_recibir_golpe()` y las cajas `caja_cuerpo()` y `caja_nucleo()`.
+  - `JefeOjo` (`ojo.py`): `flotar` (`JEFE_FLOTAR`) → `atacar` (carga 0.7 s y `JEFE_RAFAGAS` ráfagas, turnando abanico y anillo) → `cansado` (`JEFE_CANSADO`) → `flotar`.
+    - `direcciones_ataque()` la usan tanto el disparo como el **aviso** (`dibujar_aviso_ataque`, apagable con `opciones.aviso_jefe`).
+  - Daño al jefe: dash contra `caja_nucleo()` mientras puede recibir golpe (`Partida._choques_jefe`). La nave rebota y queda 0.8 s invulnerable.
+  - Daño a la nave: las balas (círculo) y el cuerpo (`toca_rect`).
+  - Durante la pelea las monedas no suben de nivel. Al vencerlo: bonus `JEFE_PUNTOS * jefes_vencidos` y el cartel "¡JEFE VENCIDO!" (`CARTEL_JEFE`). Los enemigos guardados vuelven recién cuando se va el cartel.
+- **Power-ups** (`powerups/`), registro `TIPOS_POWERUP`; el orden de `tipos.py` es el del HUD y del panel de inicio:
+  - `duracion`: ms (escudo, hielo, imán, doble; valores en `DURACION`), `HASTA_PERDER_VIDA` (turbo, recarga) o `None` (vida, instantáneo).
+  - `disponible(partida)`: vida solo si falta alguna; los permanentes, solo si no están activos.
+  - `al_recoger()`: el hielo además rompe las balas y hace explotar escarcha.
+  - `Capsula`: aparece cada `ESPERA_POWERUP` (la primera a los `PRIMER_POWERUP`), **cae** desde y=-15 en una x al azar a `VELOCIDAD_POWERUP` y se va al pasar y > 615.
+  - Los efectos se consultan con `partida.activo(tipo)`: escudo en `danar_jugador`, hielo congela, imán atrae la moneda, doble en `sumar_puntos`, turbo en `vel_max` y recarga en `recarga_dash`.
+
+### Servicios
+- **Opciones** (`escenas/opciones.py` + `guardado.Opciones`):
+  - `FILAS` = RESOLUCION, VOLUMEN, MUSICA, EFECTOS, AVISO JEFE y VOLVER, cada 45 px (`230 + i * 45`; con una fila más ya no entran en el marco de 190 a 480).
+  - IZQ/DER cambian el valor con `_cambiar()`, que lo aplica al instante y lo guarda. ENTER cambia los `INTERRUPTORES`.
+  - Para agregar una opción: sumarla a `FILAS`, dibujarla en `_dibujar_valor`, manejarla en `_cambiar` y guardarla en `guardado.Opciones`.
+- **Guardado:** `TablaRecords` (`filas`, `maximo`, `entra()`, `agregar()` → posición) y `Opciones`.
+  - Si el archivo no existe, se crea; si está dañado, se usan los valores de fábrica.
+  - Si no se puede escribir, el juego sigue (`_escribir_json` ignora `OSError`).
+- **Sonido:** `Sonidos.reproducir(nombre)`, `empezar_musica()`/`parar_musica()`, `pausar_todo()`/`reanudar_todo()` y `aplicar_volumen(opciones)`.
+  - Si no hay audio o falta un archivo, ese sonido no suena.
+  - Desactivar la música o los efectos los deja en volumen 0, así la música retoma donde iba. Para agregar un sonido: sumarlo a `ARCHIVOS`.
+- **Ventana:** el lienzo es `app.pantalla` y `Ventana.mostrar()` lo escala sin suavizar, centrado y con barras negras.
+  - `resoluciones` se filtra según la altura del monitor; "COMPLETA" siempre está.
+  - **Trampa:** al salir de FULLSCREEN, el primer `set_mode` deja el tamaño anterior; `aplicar()` lo repite.
+- **Fondo** (`Fondo.mover_y_dibujar(pantalla, empuje_x, empuje_y)`): objetos (`PROFUNDIDAD`) y estrellas. Caen a `0.6 * profundidad` y, solo en Juego, se corren con el paralaje (`-v * REACCION_PARALAJE`). Paleta: ningún canal por encima de ~110.
+
+## Tests (`tests/`)
+- `conftest.py`:
+  - pone los drivers dummy;
+  - fixture `app` (datos en `tmp_path`, `usar_mandos=False`, reloj falso `app.reloj_falso` y teclas mantenidas en el conjunto `app.teclas`);
+  - fixture `partida` (recién creada, sin enemigos, sin power-ups y con la moneda lejos).
+- `ayudas.py`: `avanzar(app, frames)` (frames completos de la App, sin esperar), `tecla(K)`, `boton(n)` y `jugar(partida, frames, dx, dy, dash)` (solo la lógica).
+- Se verificó que los tests detectan bugs inyectados a propósito (combo, hitbox y rango del embestidor).
+- Para inspeccionar algo visual, sacar una captura de `app.pantalla` con `pygame.image.save` desde un script en el scratchpad que use `App(carpeta_datos=<scratchpad>)`. Filtrar la salida con `grep -a`, porque "¡" hace que grep la trate como binaria.
 
 ## Ideas pendientes (propuestas, aún sin hacer)
 - Estadísticas al final de la partida (monedas, enemigos destruidos, tiempo); por ahora solo se muestra el mejor combo.
-- Logros simples, tecla M como atajo para silenciar (el silencio ya existe en Opciones), música más intensa según el nivel.
-- Dividir en archivos (`config.py`, `efectos.py`, `pantallas.py`), clases para el jugador y las partículas, delta time.
-- Transiciones retro entre pantallas. Tecla F11 como atajo a la pantalla completa (esta ya existe en Opciones).
-- Del análisis de gameplay (propuestas que el usuario no eligió todavía):
-  - limitar la velocidad de los enemigos por debajo de la de la nave (el perseguidor la supera desde el nivel 11);
+- Logros, tecla M para silenciar, música más intensa según el nivel, transiciones retro entre pantallas y F11 para pantalla completa.
+- Delta time (hoy todo va por frame a 60 FPS fijos).
+- Del análisis de gameplay (no elegidas todavía):
+  - tope de velocidad de los enemigos por debajo de la nave (el perseguidor la supera desde el nivel 11);
   - frenar más rápido al cambiar de dirección;
   - roce (graze) con puntos;
   - HUD que se oscurece si hay algo debajo.
