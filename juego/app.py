@@ -1,8 +1,9 @@
 """
 App: crea todos los servicios del juego y corre el bucle principal.
 
-Servicios (se crean una sola vez y las escenas los usan con self.app.<servicio>):
+Servicios (las escenas los usan con self.app.<servicio>):
     ventana, opciones, sonidos, records, entrada, fondo, efectos
+    (pantalla y fondo se vuelven a crear si cambia el formato: ver aplicar_formato)
 
 En cada frame: lee la entrada -> la escena actual se actualiza -> se dibuja -> se muestra.
 """
@@ -10,7 +11,8 @@ import os
 
 import pygame
 
-from juego.config import CARPETA, ANCHO, ALTO, FPS, NOMBRE_CONFIG, NOMBRE_RECORDS
+from juego import lienzo
+from juego.config import CARPETA, FPS, NOMBRE_CONFIG, NOMBRE_RECORDS
 from juego.ventana import Ventana
 from juego.guardado import Opciones, TablaRecords
 from juego.sonido import Sonidos
@@ -29,19 +31,28 @@ class App:
         pygame.display.set_caption("Caza Monedas")
 
         self.ventana = Ventana()
-        self.opciones = Opciones(os.path.join(carpeta_datos, NOMBRE_CONFIG), self.ventana.nombres())
-        self.ventana.aplicar(self.opciones.resolucion)
+        self.opciones = Opciones(os.path.join(carpeta_datos, NOMBRE_CONFIG))
         self.sonidos = Sonidos()
         self.sonidos.aplicar_volumen(self.opciones)
         self.records = TablaRecords(os.path.join(carpeta_datos, NOMBRE_RECORDS))
         self.entrada = Entrada(usar_mandos)
-        self.fondo = Fondo()
         self.efectos = Efectos()
-
-        self.pantalla = pygame.Surface((ANCHO, ALTO))   # lienzo donde se dibuja todo
+        self.aplicar_formato()          # crea el lienzo (pantalla), el fondo y abre la ventana
         self.reloj = pygame.time.Clock()
         self.ejecutando = True
         self.escena = Inicio(self)
+
+    def aplicar_formato(self):
+        # 4:3 o 16:9: cambia el ancho del lienzo, arma un fondo nuevo para ese ancho
+        # y abre la ventana con una resolucion de ese formato
+        lienzo.cambiar(self.opciones.formato)
+        self.pantalla = pygame.Surface(lienzo.tamano())     # lienzo donde se dibuja todo
+        self.fondo = Fondo()
+        nombres = self.ventana.nombres()
+        if self.opciones.resolucion not in nombres:
+            # La pantalla completa existe en los dos formatos; si no, la primera ventana
+            self.opciones.resolucion = nombres[0]
+        self.ventana.aplicar(self.opciones.resolucion)
 
     def ahora(self):
         # Reloj real en milisegundos (los tests lo reemplazan para no tener que esperar)

@@ -19,14 +19,15 @@ class Pausa(Escena):
             self.app.cambiar_escena(self.escena_juego)
         elif entrada.pulso(OPCIONES):
             self.app.sonidos.reproducir("seleccion")
-            self.app.cambiar_escena(Opciones(self.app, volver_a=self))
+            self.app.cambiar_escena(Opciones(self.app, volver_a=self, en_partida=True))
 
-    def dibujar(self, pantalla):
-        pantalla.blit(self.captura, (0, 0))
-        dibujo.oscurecer(pantalla, FONDO, 160)
+    def dibujar(self, pantalla_completa):
+        pantalla_completa.blit(self.captura, (0, 0))
+        dibujo.oscurecer(pantalla_completa, FONDO, 160)
+        pantalla = dibujo.zona_central(pantalla_completa)
         dibujo.texto_3d(pantalla, "PAUSA", TITULO, CIAN, (0, 70, 110), 270)
         ayuda = self.app.entrada.ayuda
         if dibujo.parpadeo():
             texto(pantalla, ayuda("P PARA SEGUIR", "MENU PARA SEGUIR"), CHICA, BLANCO, 400, 350)
         texto(pantalla, ayuda("O OPCIONES", "VISTA OPCIONES"), CHICA, GRIS, 400, 385)
-        dibujo.efecto_crt(pantalla)
+        dibujo.efecto_crt(pantalla_completa)

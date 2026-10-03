@@ -12,7 +12,7 @@ import random
 
 import pygame
 
-from juego import recursos, dibujo
+from juego import recursos, dibujo, lienzo
 from juego.config import (MAGENTA, GRIS, ROJO, AMARILLO, BLANCO, ORO, EMBESTIDA, MS_POR_FRAME,
                           JEFE_FLOTAR, JEFE_CANSADO, JEFE_RAFAGAS)
 from juego.jefes.base import Jefe, registrar_jefe, TAMANO
@@ -70,8 +70,10 @@ class JefeOjo(Jefe):
     def actualizar_fase(self, partida):
         ahora = partida.tiempo
         if self.fase == "flotar":
-            # Va de lado a lado (se acerca de a poco al punto, asi no da saltos)
-            objetivo_x = 340 + math.sin(ahora / 700) * 260
+            # Va de lado a lado, dejando 80 px a cada costado (se acerca de a poco al punto,
+            # asi no da saltos). En 4:3 recorre de 80 a 600; en 16:9, todo el ancho igual
+            centro = (lienzo.ancho - TAMANO) / 2
+            objetivo_x = centro + math.sin(ahora / 700) * (centro - 80)
             self.x += (objetivo_x - self.x) * 0.05
             if ahora > self.fase_hasta:
                 self.ataque = "anillo" if self.ataque == "abanico" else "abanico"

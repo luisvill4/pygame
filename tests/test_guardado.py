@@ -3,8 +3,6 @@ import json
 
 from juego.guardado import TablaRecords, Opciones
 
-NOMBRES = ["800x600", "COMPLETA"]
-
 
 def test_records_si_no_existe_lo_crea(tmp_path):
     archivo = tmp_path / "records.json"
@@ -36,24 +34,35 @@ def test_records_sin_poder_escribir_no_se_cae(tmp_path):
 
 
 def test_opciones_de_fabrica_y_claves_que_faltan(tmp_path):
+    # Un config.json viejo (sin "formato" ni "aviso_jefe") sigue sirviendo
     archivo = tmp_path / "config.json"
     archivo.write_text(json.dumps({"volumen": 4, "resolucion": "COMPLETA"}))
-    opciones = Opciones(str(archivo), NOMBRES)
-    assert opciones.volumen == 4 and opciones.resolucion == 1
+    opciones = Opciones(str(archivo))
+    assert opciones.volumen == 4 and opciones.resolucion == "COMPLETA"
+    assert opciones.formato == "4:3"
     assert opciones.musica and opciones.efectos and opciones.aviso_jefe
 
 
 def test_opciones_dañadas_usan_las_de_fabrica(tmp_path):
     archivo = tmp_path / "config.json"
     archivo.write_text("[1, 2")
-    opciones = Opciones(str(archivo), NOMBRES)
-    assert opciones.volumen == 10 and opciones.resolucion == 0
+    opciones = Opciones(str(archivo))
+    assert opciones.volumen == 10 and opciones.resolucion is None and opciones.formato == "4:3"
+
+
+def test_formato_invalido_usa_4_3(tmp_path):
+    archivo = tmp_path / "config.json"
+    archivo.write_text(json.dumps({"formato": "21:9"}))
+    assert Opciones(str(archivo)).formato == "4:3"
 
 
 def test_opciones_se_guardan(tmp_path):
     archivo = tmp_path / "config.json"
-    opciones = Opciones(str(archivo), NOMBRES)
+    opciones = Opciones(str(archivo))
     opciones.aviso_jefe = False
+    opciones.formato = "16:9"
     opciones.guardar()
-    assert json.loads(archivo.read_text())["aviso_jefe"] is False
-    assert Opciones(str(archivo), NOMBRES).aviso_jefe is False
+    guardado = json.loads(archivo.read_text())
+    assert guardado["aviso_jefe"] is False and guardado["formato"] == "16:9"
+    otra_vez = Opciones(str(archivo))
+    assert otra_vez.aviso_jefe is False and otra_vez.formato == "16:9"

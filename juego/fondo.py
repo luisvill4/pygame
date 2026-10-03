@@ -10,8 +10,8 @@ import random
 
 import pygame
 
-from juego import recursos
-from juego.config import ANCHO, ALTO, FONDO, PROFUNDIDAD
+from juego import recursos, lienzo
+from juego.config import ALTO, ANCHO_MENU, FONDO, PROFUNDIDAD
 
 
 class ObjetoFondo:
@@ -21,18 +21,20 @@ class ObjetoFondo:
 
 class Fondo:
     def __init__(self):
+        # El fondo se arma para el ancho actual (al cambiar el formato se crea uno nuevo)
+        escala = lienzo.ancho / ANCHO_MENU
         # Estrellas: [x, y, velocidad]; las rapidas son mas grandes, brillantes y cercanas
         self.estrellas = []
-        for _ in range(90):
-            self.estrellas.append([random.randint(0, ANCHO), random.randint(0, ALTO),
+        for _ in range(round(90 * escala)):
+            self.estrellas.append([random.randint(0, lienzo.ancho), random.randint(0, ALTO),
                                    random.choice([1, 1, 1, 2, 2, 3])])
         # Nebulosas y planetas, en orden de dibujo: primero lo mas lejano
         self.objetos = []
-        self.agregar("nebulosa", 40, 60)
-        self.agregar("nebulosa", 480, 360, voltear=True)
-        self.agregar("planeta_chico", 660, 140)
-        self.agregar("planeta_chico", 150, 470)
-        self.agregar("planeta_grande", 520, 250)
+        self.agregar("nebulosa", 40 * escala, 60)
+        self.agregar("nebulosa", 480 * escala, 360, voltear=True)
+        self.agregar("planeta_chico", 660 * escala, 140)
+        self.agregar("planeta_chico", 150 * escala, 470)
+        self.agregar("planeta_grande", 520 * escala, 250)
 
     def agregar(self, nombre, x, y, voltear=False):
         # Si falta el sprite, simplemente no se agrega
@@ -51,29 +53,29 @@ class Fondo:
             objeto.y += (0.6 + empuje_y) * objeto.profundidad
             # Si sale por un costado entra por el otro
             if objeto.x < -ancho:
-                objeto.x = ANCHO
-            elif objeto.x > ANCHO:
+                objeto.x = lienzo.ancho
+            elif objeto.x > lienzo.ancho:
                 objeto.x = -ancho
             # Si sale por arriba o por abajo vuelve por el otro lado, en otro lugar
             if objeto.y > ALTO:
-                objeto.x = random.randint(-ancho // 2, ANCHO - ancho // 2)
+                objeto.x = random.randint(-ancho // 2, lienzo.ancho - ancho // 2)
                 objeto.y = -alto
             elif objeto.y < -alto:
-                objeto.x = random.randint(-ancho // 2, ANCHO - ancho // 2)
+                objeto.x = random.randint(-ancho // 2, lienzo.ancho - ancho // 2)
                 objeto.y = ALTO
 
         for estrella in self.estrellas:
             estrella[0] += empuje_x * estrella[2]
             estrella[1] += (0.6 + empuje_y) * estrella[2]
             if estrella[0] < 0:
-                estrella[0] += ANCHO
-            elif estrella[0] > ANCHO:
-                estrella[0] -= ANCHO
+                estrella[0] += lienzo.ancho
+            elif estrella[0] > lienzo.ancho:
+                estrella[0] -= lienzo.ancho
             if estrella[1] > ALTO:
-                estrella[0] = random.randint(0, ANCHO)
+                estrella[0] = random.randint(0, lienzo.ancho)
                 estrella[1] = 0
             elif estrella[1] < 0:
-                estrella[0] = random.randint(0, ANCHO)
+                estrella[0] = random.randint(0, lienzo.ancho)
                 estrella[1] = ALTO
 
     def dibujar(self, pantalla):

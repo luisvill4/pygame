@@ -5,32 +5,38 @@ HUD: el marcador que se dibuja encima del juego.
 - Abajo: power-ups activos (izquierda), barra del jefe (centro), dash y nivel (derecha).
 - Carteles: "NIVEL X" y "¡JEFE VENCIDO!".
 
-ZONAS_HUD son los rectangulos que ocupa el HUD: ahi no aparecen monedas.
+Lo de la izquierda se ancla al borde izquierdo, lo de la derecha al borde derecho y
+lo del centro al centro, asi el HUD se acomoda solo al formato (4:3 o 16:9).
+
+zonas_hud() son los rectangulos que ocupa el HUD: ahi no aparecen monedas.
 Si el HUD cambia de lugar o crece, hay que actualizarlas.
 """
 import random
 
 import pygame
 
-from juego import dibujo, nave
+from juego import dibujo, nave, lienzo
 from juego.dibujo import texto, CHICA, GRANDE
-from juego.config import (ANCHO, ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA,
+from juego.config import (ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA,
                           VIDAS_MAX, COMBO_TIEMPO, CARTEL_JEFE)
 from juego.powerups import TIPOS_POWERUP
 
-ZONAS_HUD = [
-    pygame.Rect(0, 0, 800, 100),        # arriba: puntos, combo, record y vidas
-    pygame.Rect(0, 530, 800, 70),       # abajo: dash, nivel y barra del jefe
-    pygame.Rect(0, 430, 180, 170),      # abajo a la izquierda: power-ups activos
-]
+
+def zonas_hud():
+    return [
+        pygame.Rect(0, 0, lienzo.ancho, 100),       # arriba: puntos, combo, record y vidas
+        pygame.Rect(0, 530, lienzo.ancho, 70),      # abajo: dash, nivel y barra del jefe
+        pygame.Rect(0, 430, 180, 170),              # abajo a la izquierda: power-ups activos
+    ]
 
 
 def posicion_libre(ancho, alto):
     # Esquina de arriba a la izquierda, al azar, de algo que no tape el HUD
+    zonas = zonas_hud()
     while True:
-        nueva_x = random.randint(0, ANCHO - ancho)
+        nueva_x = random.randint(0, lienzo.ancho - ancho)
         nueva_y = random.randint(0, ALTO - alto)
-        if pygame.Rect(nueva_x, nueva_y, ancho, alto).collidelist(ZONAS_HUD) == -1:
+        if pygame.Rect(nueva_x, nueva_y, ancho, alto).collidelist(zonas) == -1:
             return nueva_x, nueva_y
 
 
@@ -64,29 +70,32 @@ def _marcador(pantalla, partida):
         restante = max(0, 1 - (ahora - partida.ultima_moneda) / COMBO_TIEMPO)
         pantalla.fill(AMARILLO, (20, 86, int(128 * restante), 4))
 
+    centro = lienzo.centro_x()
+    derecha = lienzo.ancho - 20
+
     # Record (centro): se actualiza en vivo si lo estas superando
-    texto(pantalla, "RECORD", CHICA, ROJO, 400, 22)
+    texto(pantalla, "RECORD", CHICA, ROJO, centro, 22)
     if partida.puntaje > partida.puntaje_maximo:
-        texto(pantalla, dibujo.numero_arcade(partida.puntaje), CHICA, AMARILLO, 400, 46)
+        texto(pantalla, dibujo.numero_arcade(partida.puntaje), CHICA, AMARILLO, centro, 46)
     else:
-        texto(pantalla, dibujo.numero_arcade(partida.puntaje_maximo), CHICA, BLANCO, 400, 46)
+        texto(pantalla, dibujo.numero_arcade(partida.puntaje_maximo), CHICA, BLANCO, centro, 46)
 
     # Nivel y dash (abajo a la derecha)
-    texto(pantalla, "NIVEL " + str(partida.nivel), CHICA, AMARILLO, 780, 575, alinear="derecha")
+    texto(pantalla, "NIVEL " + str(partida.nivel), CHICA, AMARILLO, derecha, 575, alinear="derecha")
     if ahora >= partida.nave.dash_listo:
-        texto(pantalla, "DASH", CHICA, CIAN, 780, 545, alinear="derecha")
+        texto(pantalla, "DASH", CHICA, CIAN, derecha, 545, alinear="derecha")
     else:
-        texto(pantalla, "DASH", CHICA, GRIS, 780, 545, alinear="derecha")
+        texto(pantalla, "DASH", CHICA, GRIS, derecha, 545, alinear="derecha")
         # max(0, ...) por si RECARGA cambia a mitad de una recarga
         cargado = max(0, 1 - (partida.nave.dash_listo - ahora) / partida.recarga_dash())
-        pantalla.fill(CIAN, (716, 557, int(64 * cargado), 3))
+        pantalla.fill(CIAN, (derecha - 64, 557, int(64 * cargado), 3))
 
     # Vidas (derecha): parpadean despues de recibir un golpe
-    texto(pantalla, "VIDAS", CHICA, ROJO, 780, 22, alinear="derecha")
+    texto(pantalla, "VIDAS", CHICA, ROJO, derecha, 22, alinear="derecha")
     if ahora - partida.tiempo_golpe < 800 and dibujo.parpadeo(80):
         return
     for i in range(VIDAS_MAX):
-        icono_x = 780 - VIDAS_MAX * 28 + 3 + i * 28
+        icono_x = derecha - VIDAS_MAX * 28 + 3 + i * 28
         icono = nave.imagen("icono") if i < partida.vidas else nave.imagen("icono_vacio")
         pantalla.blit(icono, (icono_x, 34))
 
@@ -108,10 +117,11 @@ def _activos(pantalla, partida):
 
 def _barra_jefe(pantalla, jefe):
     # Abajo al centro: un bloque por cada golpe que le queda
-    texto(pantalla, "JEFE", CHICA, ROJO, 318, 575, alinear="derecha")
+    centro = lienzo.centro_x()
+    texto(pantalla, "JEFE", CHICA, ROJO, centro - 82, 575, alinear="derecha")
     ancho_bloque = 200 // jefe.vida_max
     for i in range(jefe.vida_max):
-        bloque = pygame.Rect(330 + i * ancho_bloque, 567, ancho_bloque - 4, 16)
+        bloque = pygame.Rect(centro - 70 + i * ancho_bloque, 567, ancho_bloque - 4, 16)
         if i < jefe.vida:
             pantalla.fill(MAGENTA, bloque)
         else:

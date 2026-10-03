@@ -21,8 +21,8 @@ import random
 
 import pygame
 
-from juego import recursos, dibujo
-from juego.config import (BLANCO, HIELO, AVISO_APARICION, DISTANCIA_APARICION, MS_CUADRO_ENEMIGO,
+from juego import recursos, dibujo, lienzo
+from juego.config import (ALTO, BLANCO, HIELO, AVISO_APARICION, DISTANCIA_APARICION, MS_CUADRO_ENEMIGO,
                           PUNTOS_ENEMIGO_CONGELADO, SEPARACION_ENEMIGOS, FUERZA_SEPARACION)
 
 TAMANO = 40
@@ -47,7 +47,7 @@ def crear_enemigo(tipo, partida):
 def lugar_lejos_de_la_nave(nave):
     # Un lugar al azar lejos de la nave (y fuera del marcador de arriba)
     while True:
-        nuevo_x = random.randint(0, 760)
+        nuevo_x = random.randint(0, lienzo.ancho - TAMANO)
         nuevo_y = random.randint(70, 560)
         if math.hypot(nuevo_x - nave.x, nuevo_y - nave.y) > DISTANCIA_APARICION:
             return nuevo_x, nuevo_y
@@ -144,12 +144,12 @@ class Enemigo:
         return 1
 
     def _bordes(self):
-        if self.x < 0 or self.x > 800 - TAMANO:
+        if self.x < 0 or self.x > lienzo.ancho - TAMANO:
             self.vx = -self.vx if self.rebota_en_bordes else 0
-        if self.y < 0 or self.y > 600 - TAMANO:
+        if self.y < 0 or self.y > ALTO - TAMANO:
             self.vy = -self.vy if self.rebota_en_bordes else 0
-        self.x = max(0, min(self.x, 800 - TAMANO))
-        self.y = max(0, min(self.y, 600 - TAMANO))
+        self.x = max(0, min(self.x, lienzo.ancho - TAMANO))
+        self.y = max(0, min(self.y, ALTO - TAMANO))
 
     def separarse(self, partida):
         # Se aleja de los otros enemigos que tiene muy cerca (mas fuerte mientras mas cerca),

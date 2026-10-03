@@ -9,7 +9,7 @@ import random
 
 import pygame
 
-from juego import recursos
+from juego import recursos, lienzo
 from juego.hud import posicion_libre
 from juego.config import (AMARILLO, ORO, IMANTADO, MS_CUADRO_MONEDA,
                           MONEDA_DISTANCIA_MIN, MONEDA_DISTANCIA_MAX)
@@ -29,8 +29,9 @@ def imagen_moneda():
 
 
 class Moneda:
-    def __init__(self, x=400, y=300):
-        self.x, self.y = x, y       # esquina de arriba a la izquierda
+    def __init__(self):
+        # Empieza en el centro de la pantalla; (x, y) es su esquina de arriba a la izquierda
+        self.x, self.y = lienzo.centro_x(), 300
 
     def centro(self):
         return self.x + TAMANO / 2, self.y + TAMANO / 2

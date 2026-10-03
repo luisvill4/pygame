@@ -39,8 +39,10 @@ class Iniciales(Escena):
         # Si se cierra la ventana aca, el record se guarda igual
         self.app.records.agregar("".join(self.letras), self.partida.puntaje)
 
-    def dibujar(self, pantalla):
-        self.app.fondo.mover_y_dibujar(pantalla)
+    def dibujar(self, pantalla_completa):
+        # Fondo en todo el ancho; el resto en la zona central de 800x600
+        self.app.fondo.mover_y_dibujar(pantalla_completa)
+        pantalla = dibujo.zona_central(pantalla_completa)
         filas = self.app.records.filas
         if not filas or self.partida.puntaje > filas[0]["puntos"]:
             dibujo.texto_3d(pantalla, "NUEVO RECORD", GRANDE, dibujo.color_arcoiris(), MAGENTA, 110, 4)
@@ -67,4 +69,4 @@ class Iniciales(Escena):
         texto(pantalla, "ARRIBA/ABAJO: LETRA", CHICA, GRIS, 400, 460)
         texto(pantalla, self.app.entrada.ayuda("ENTER: ACEPTAR   IZQ: VOLVER", "A: ACEPTAR   IZQ: VOLVER"),
               CHICA, GRIS, 400, 490)
-        dibujo.efecto_crt(pantalla)
+        dibujo.efecto_crt(pantalla_completa)

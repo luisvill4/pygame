@@ -3,8 +3,9 @@ Balas (las dispara el jefe): siguen derecho y desaparecen al salir de la pantall
 """
 import random
 
+from juego import lienzo
 from juego.dibujo import parpadeo
-from juego.config import ANCHO, ALTO, MAGENTA, ROJO, BLANCO, EMBESTIDA
+from juego.config import ALTO, MAGENTA, ROJO, BLANCO, EMBESTIDA
 
 
 class Bala:
@@ -17,7 +18,7 @@ class Bala:
         # Devuelve False si salio de la pantalla (hay que borrarla)
         self.x += self.vx
         self.y += self.vy
-        if self.x < -20 or self.x > ANCHO + 20 or self.y < -20 or self.y > ALTO + 20:
+        if self.x < -20 or self.x > lienzo.ancho + 20 or self.y < -20 or self.y > ALTO + 20:
             return False
         if random.random() < 0.3:
             efectos.particula(self.x, self.y, 0, 0, EMBESTIDA, 8, 2)

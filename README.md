@@ -18,6 +18,8 @@ python main.py
 | Opciones (en pausa) | O | Vista (⧉) |
 | Volver | Esc | B |
 
+En **Opciones → FORMATO** se elige entre 4:3 (800x600) y 16:9 (1066x600, un campo de juego más ancho). Se cambia desde el menú de inicio, no en medio de una partida.
+
 ## Cómo correr los tests
 
 ```

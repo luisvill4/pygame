@@ -8,9 +8,9 @@ import math
 
 import pygame
 
-from juego import recursos
+from juego import recursos, lienzo
 from juego.dibujo import parpadeo
-from juego.config import (ANCHO, ALTO, CIAN, ENERGIA, MS_CUADRO_ESCUDO, NAVE_ACELERACION,
+from juego.config import (ALTO, CIAN, ENERGIA, MS_CUADRO_ESCUDO, NAVE_ACELERACION,
                           NAVE_FRICCION, NAVE_VELOCIDAD_GIRO, DASH_FUERZA, DASH_DURACION,
                           BUFFER_DASH, RADIO_NAVE)
 
@@ -126,11 +126,11 @@ class Nave:
                 self.fantasmas.remove(fantasma)
 
         # Limites de la pantalla (al chocar con un borde se pierde esa velocidad)
-        if self.x < 0 or self.x > ANCHO - TAMANO:
+        if self.x < 0 or self.x > lienzo.ancho - TAMANO:
             self.vx = 0
         if self.y < 0 or self.y > ALTO - TAMANO:
             self.vy = 0
-        self.x = max(0, min(self.x, ANCHO - TAMANO))
+        self.x = max(0, min(self.x, lienzo.ancho - TAMANO))
         self.y = max(0, min(self.y, ALTO - TAMANO))
 
     def _dash(self, tiempo, dx, dy, pidio_dash, recarga_dash, efectos):

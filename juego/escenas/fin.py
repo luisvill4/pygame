@@ -3,7 +3,7 @@ import random
 
 import pygame
 
-from juego import dibujo
+from juego import dibujo, lienzo
 from juego.dibujo import texto, CHICA, MEDIA, GRANDE, TITULO
 from juego.config import (ROJO, AMARILLO, CIAN, BLANCO, GRIS, FUEGO, ORO, ESCARCHA, ENERGIA, CORAZON)
 from juego.entrada import ACEPTAR
@@ -26,14 +26,16 @@ class Fin(Escena):
         # Nuevo record: fuegos artificiales cuando termina de contar
         if self.fila_nueva == 0 and self.contador() == self.partida.puntaje and random.random() < 0.05:
             paleta = random.choice([FUEGO, ORO, ESCARCHA, ENERGIA, CORAZON])
-            self.app.efectos.explosion(random.randint(80, 720), random.randint(80, 560), paleta, 40, 6)
+            self.app.efectos.explosion(random.randint(80, lienzo.ancho - 80), random.randint(80, 560), paleta, 40, 6)
         # ENTER se ignora el primer momento (para no saltear esta pantalla sin querer)
         if entrada.pulso(ACEPTAR) and self.tiempo_en_escena() > 800:
             self.app.nueva_partida()
 
-    def dibujar(self, pantalla):
-        self.app.fondo.mover_y_dibujar(pantalla)
-        self.app.efectos.dibujar(pantalla)      # fuegos artificiales detras de todo
+    def dibujar(self, pantalla_completa):
+        # Fondo y fuegos artificiales en todo el ancho; el resto en la zona central de 800x600
+        self.app.fondo.mover_y_dibujar(pantalla_completa)
+        self.app.efectos.dibujar(pantalla_completa)     # fuegos artificiales detras de todo
+        pantalla = dibujo.zona_central(pantalla_completa)
         dibujo.texto_3d(pantalla, "GAME OVER", TITULO, ROJO, (110, 0, 30), 75)
 
         contador = self.contador()
@@ -48,4 +50,4 @@ class Fin(Escena):
 
         if dibujo.parpadeo():
             texto(pantalla, self.app.entrada.ayuda("PRESIONA ENTER", "PRESIONA A"), MEDIA, CIAN, 400, 545)
-        dibujo.efecto_crt(pantalla)
+        dibujo.efecto_crt(pantalla_completa)

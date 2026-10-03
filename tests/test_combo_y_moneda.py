@@ -6,7 +6,7 @@ import pygame
 
 from juego.config import COMBO_TIEMPO, MONEDA_DISTANCIA_MIN, MONEDA_DISTANCIA_MAX, MS_POR_FRAME
 from juego.enemigos import crear_enemigo
-from juego.hud import ZONAS_HUD
+from juego.hud import zonas_hud
 from juego.moneda import lugar_para_moneda
 from tests.ayudas import jugar
 
@@ -70,7 +70,7 @@ def test_lugar_de_la_moneda(partida):
         nave_x, nave_y = partida.nave.centro()
         distancia = math.hypot(x + 10 - nave_x, y + 10 - nave_y)
         assert MONEDA_DISTANCIA_MIN <= distancia <= MONEDA_DISTANCIA_MAX
-        assert pygame.Rect(x, y, 20, 20).collidelist(ZONAS_HUD) == -1
+        assert pygame.Rect(x, y, 20, 20).collidelist(zonas_hud()) == -1
         for enemigo in partida.enemigos:
             enemigo_x, enemigo_y = enemigo.centro()
             assert math.hypot(x + 10 - enemigo_x, y + 10 - enemigo_y) >= 60

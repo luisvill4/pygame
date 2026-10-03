@@ -20,7 +20,7 @@ import random
 
 import pygame
 
-from juego import recursos, dibujo
+from juego import recursos, dibujo, lienzo
 from juego.proyectiles import romper_balas
 from juego.config import (ROJO, CIAN, ORO, FUEGO, ENERGIA, ARCOIRIS, BLANCO, HIELO, EMBESTIDA,
                           MS_POR_FRAME, MS_CUADRO_JEFE, JEFE_VIDA)
@@ -54,7 +54,8 @@ class Jefe:
     fases_congelables = ("flotar", "atacar", "cansado")    # el hielo no lo congela al entrar ni al morir
 
     def __init__(self, partida):
-        self.x, self.y = 340, -130          # esquina de arriba a la izquierda del sprite (120x120)
+        self.x = (lienzo.ancho - TAMANO) // 2   # esquina de arriba a la izquierda del sprite (120x120),
+        self.y = -130                           # centrado y arriba de la pantalla
         self.fase = "entrar"
         self.fase_hasta = 0                 # momento en que termina la fase actual
         self.vida_max = JEFE_VIDA + partida.jefes_vencidos

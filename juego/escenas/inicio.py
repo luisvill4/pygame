@@ -38,8 +38,10 @@ class Inicio(Escena):
                 self.app.sonidos.reproducir("seleccion")
                 self.app.cambiar_escena(Opciones(self.app, volver_a=self))
 
-    def dibujar(self, pantalla):
-        self.app.fondo.mover_y_dibujar(pantalla)
+    def dibujar(self, pantalla_completa):
+        # Fondo en todo el ancho; el menu en la zona central de 800x600
+        self.app.fondo.mover_y_dibujar(pantalla_completa)
+        pantalla = dibujo.zona_central(pantalla_completa)
 
         # Record arriba, como en las maquinas
         texto(pantalla, "RECORD", CHICA, ROJO, 400, 22)
@@ -64,7 +66,7 @@ class Inicio(Escena):
         dibujo.opcion(pantalla, "OPCIONES", MEDIA, 540, 530, self.opcion == 1)
         texto(pantalla, self.app.entrada.ayuda("FLECHAS MOVER  ESPACIO DASH  P PAUSA",
                                                "STICK MOVER  X DASH  MENU PAUSA"), CHICA, GRIS, 400, 572)
-        dibujo.efecto_crt(pantalla)
+        dibujo.efecto_crt(pantalla_completa)
 
     def _dibujar_reglas(self, pantalla):
         moneda = imagen_moneda()

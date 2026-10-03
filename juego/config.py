@@ -19,13 +19,21 @@ def ruta(archivo):
 # ============ PANTALLA ============ #
 # ================================== #
 
-ANCHO, ALTO = 800, 600          # el juego siempre se dibuja en 800x600 (la ventana puede ser mas grande)
+# El juego se dibuja en un lienzo de ALTO = 600 y un ancho que depende del formato
+# (la ventana puede ser mas grande: el lienzo se escala). El ancho actual esta en lienzo.py
+ALTO = 600
+FORMATOS = {"4:3": 800, "16:9": 1066}      # formato -> ancho del lienzo
+ANCHO_MENU = 800                # los menus se dibujan en una zona central de este ancho
 FPS = 60
 MS_POR_FRAME = 1000 / FPS       # cuanto avanza el reloj del juego en cada frame
 
-# Tamaños de ventana (nombre, ancho, alto)
-RESOLUCIONES = [("800x600", 800, 600), ("1200x900", 1200, 900),
-                ("1600x1200", 1600, 1200), ("COMPLETA", 0, 0)]
+# Tamaños de ventana de cada formato (nombre, ancho, alto)
+RESOLUCIONES = {
+    "4:3": [("800x600", 800, 600), ("1200x900", 1200, 900),
+            ("1600x1200", 1600, 1200), ("COMPLETA", 0, 0)],
+    "16:9": [("1066x600", 1066, 600), ("1280x720", 1280, 720), ("1600x900", 1600, 900),
+             ("1920x1080", 1920, 1080), ("COMPLETA", 0, 0)],
+}
 VOLUMEN_MAX = 10                # pasos de la barra de volumen (tambien es el volumen de fabrica)
 
 # Archivos que escribe el juego (se crean solos si no existen)

@@ -8,7 +8,7 @@ Nunca hacen caer el juego:
 """
 import json
 
-from juego.config import VOLUMEN_MAX, FILAS_RECORDS
+from juego.config import VOLUMEN_MAX, FILAS_RECORDS, FORMATOS
 
 
 def _escribir_json(archivo, datos):
@@ -61,14 +61,14 @@ class TablaRecords:
 
 
 class Opciones:
-    # Opciones elegidas en el menu. La resolucion se guarda por nombre ("800x600") y
-    # en memoria es la posicion en la lista de resoluciones disponibles
+    # Opciones elegidas en el menu. La resolucion es su nombre ("800x600"); si no sirve
+    # para el formato o el monitor, la App la cambia por una que si
 
-    def __init__(self, archivo, nombres_resoluciones):
+    def __init__(self, archivo):
         self.archivo = archivo
-        self.nombres_resoluciones = nombres_resoluciones
         # Valores de fabrica
-        self.resolucion = 0
+        self.formato = "4:3"
+        self.resolucion = None      # None = la primera del formato
         self.volumen = VOLUMEN_MAX
         self.musica = True
         self.efectos = True
@@ -80,8 +80,10 @@ class Opciones:
         try:
             with open(self.archivo, encoding="utf-8") as abierto:
                 datos = json.load(abierto)
-            if datos.get("resolucion") in self.nombres_resoluciones:
-                self.resolucion = self.nombres_resoluciones.index(datos["resolucion"])
+            if datos.get("formato") in FORMATOS:
+                self.formato = datos["formato"]
+            if isinstance(datos.get("resolucion"), str):
+                self.resolucion = datos["resolucion"]
             self.volumen = min(max(int(datos.get("volumen", VOLUMEN_MAX)), 0), VOLUMEN_MAX)
             self.musica = bool(datos.get("musica", True))
             self.efectos = bool(datos.get("efectos", True))
@@ -93,7 +95,8 @@ class Opciones:
 
     def guardar(self):
         _escribir_json(self.archivo, {
-            "resolucion": self.nombres_resoluciones[self.resolucion],
+            "formato": self.formato,
+            "resolucion": self.resolucion,
             "volumen": self.volumen,
             "musica": self.musica,
             "efectos": self.efectos,

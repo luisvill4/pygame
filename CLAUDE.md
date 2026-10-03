@@ -5,7 +5,7 @@ Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge moneda
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~70 tests, unos 4 s, sin ventana
+python -m pytest        # ~75 tests, unos 4 s, sin ventana
 ```
 - Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
 - **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json` y `__pycache__`.
@@ -16,6 +16,7 @@ python -m pytest        # ~70 tests, unos 4 s, sin ventana
 main.py                 # App().ejecutar()
 juego/
   config.py             # SOLO valores: colores, paletas, "Reglas del juego", DURACION, mando
+  lienzo.py             # formato actual (4:3 / 16:9) y ancho del lienzo: lienzo.ancho
   app.py                # App: crea los servicios, cambia de escena, bucle (paso() + ejecutar())
   partida.py            # Partida: todo el estado de una partida y sus reglas
   nave.py  moneda.py  proyectiles.py (Bala)
@@ -28,9 +29,17 @@ juego/
 tests/                  # conftest.py (fixtures app/partida), ayudas.py, test_*.py
 sprites/ efectos/ fuentes/   # recursos (ver "Sprites"); efectos/ son los sonidos
 records.json            # top 5 {"nombre", "puntos"}; se crea vacío si no existe
-config.json             # {"resolucion", "volumen" (0-10), "musica", "efectos", "aviso_jefe"}
+config.json             # {"formato", "resolucion", "volumen" (0-10), "musica", "efectos", "aviso_jefe"}
 ```
-El juego se dibuja siempre en un lienzo de 800x600 a 60 FPS (`ANCHO`, `ALTO`, `FPS`). Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
+Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
+
+**Formato (4:3 / 16:9):** el juego se dibuja a 60 FPS en un lienzo de `ALTO = 600` y un ancho que depende del formato (`FORMATOS`: 800 o 1066).
+- **Nunca escribir 800 a mano.** En el juego se usa `lienzo.ancho` y `lienzo.centro_x()`, que se leen en vivo con `from juego import lienzo`; no importar el valor.
+  - Lo de la izquierda se ancla a x=20, lo de la derecha a `lienzo.ancho - 20` y lo central a `centro_x()`.
+- **Los menús** (Inicio, Opciones, Pausa, Iniciales, Fin) dibujan el fondo y el CRT en todo el lienzo, y su contenido en `dibujo.zona_central(pantalla)`: una subsuperficie de 800x600 (`ANCHO_MENU`) centrada, así sus coordenadas no cambian entre formatos.
+  - `texto_3d`, `oscurecer` y `efecto_crt` usan el tamaño de la superficie que reciben.
+- **Cambiar el formato:** `App.aplicar_formato()` llama a `lienzo.cambiar()`, crea `app.pantalla` y un `Fondo` nuevos (estrellas y objetos escalados al ancho) y abre la ventana con una resolución de ese formato (`RESOLUCIONES[formato]`). Si la resolución guardada no existe en el formato, usa la primera; "COMPLETA" existe en los dos.
+  - El formato solo se cambia desde Inicio; desde la Pausa (`Opciones(..., en_partida=True)`) la fila aparece en gris.
 
 ## El usuario y el estilo del código
 - **Todo en español**: la conversación, los nombres de variables, funciones y clases, y los comentarios. El usuario escribe en español informal.
@@ -124,7 +133,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - **Dash con buffer:** `dash_pedido_en` + `BUFFER_DASH`, y un destello cian una sola vez cuando se recarga (`dash_avisado`).
   - Choques: `caja_recoger()` (50x50, para recoger cosas), `toca_circulo()` y `toca_rect()` (daño con `RADIO_NAVE = 11`), `atraviesa(t)` (dash o invulnerable) y `empujon()`.
 - **Moneda** (`moneda.py`): `lugar_para_moneda(partida)` busca un lugar con `hud.posicion_libre()` a entre `MONEDA_DISTANCIA_MIN` y `MONEDA_DISTANCIA_MAX` de la nave, a más de 60 px de cada enemigo y lejos del jefe (hasta 200 intentos).
-- **Zonas del HUD** (`hud.ZONAS_HUD`): la franja de arriba (y < 100), la de abajo (y ≥ 530) y la columna de power-ups activos. Si el HUD cambia, hay que actualizarlas.
+- **Zonas del HUD** (`hud.zonas_hud()`, una función porque dependen del ancho): la franja de arriba (y < 100), la de abajo (y ≥ 530) y la columna de power-ups activos. Si el HUD cambia, hay que actualizarlas.
 - **Enemigos** (`enemigos/`), registro `TIPOS_ENEMIGO` con `@registrar_enemigo` y `crear_enemigo(tipo, partida)`:
   - La base resuelve:
     - la aparición lejos de la nave (`DISTANCIA_APARICION`), con una "X" de aviso durante `AVISO_APARICION` en la que no hace daño;
@@ -151,8 +160,9 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - Los efectos se consultan con `partida.activo(tipo)`: escudo en `danar_jugador`, hielo congela, imán atrae la moneda, doble en `sumar_puntos`, turbo en `vel_max` y recarga en `recarga_dash`.
 
 ### Servicios
-- **Opciones** (`escenas/opciones.py` + `guardado.Opciones`):
-  - `FILAS` = RESOLUCION, VOLUMEN, MUSICA, EFECTOS, AVISO JEFE y VOLVER, cada 45 px (`230 + i * 45`; con una fila más ya no entran en el marco de 190 a 480).
+- **Opciones** (`escenas/opciones.py` + `guardado.Opciones(archivo)`):
+  - `FILAS` = RESOLUCION, FORMATO, VOLUMEN, MUSICA, EFECTOS, AVISO JEFE y VOLVER, cada 40 px (`220 + i * 40`) dentro del marco de 180 a 490. Con una fila más ya no entran.
+  - `opciones.resolucion` es un nombre ("800x600", `None` = la primera) y `opciones.formato` es "4:3" o "16:9".
   - IZQ/DER cambian el valor con `_cambiar()`, que lo aplica al instante y lo guarda. ENTER cambia los `INTERRUPTORES`.
   - Para agregar una opción: sumarla a `FILAS`, dibujarla en `_dibujar_valor`, manejarla en `_cambiar` y guardarla en `guardado.Opciones`.
 - **Guardado:** `TablaRecords` (`filas`, `maximo`, `entra()`, `agregar()` → posición) y `Opciones`.
@@ -162,9 +172,9 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - Si no hay audio o falta un archivo, ese sonido no suena.
   - Desactivar la música o los efectos los deja en volumen 0, así la música retoma donde iba. Para agregar un sonido: sumarlo a `ARCHIVOS`.
 - **Ventana:** el lienzo es `app.pantalla` y `Ventana.mostrar()` lo escala sin suavizar, centrado y con barras negras.
-  - `resoluciones` se filtra según la altura del monitor; "COMPLETA" siempre está.
+  - `resoluciones` (propiedad) son las de `RESOLUCIONES[lienzo.formato]` que caben en el monitor; "COMPLETA" siempre está. `aplicar(nombre)` abre la ventana por nombre.
   - **Trampa:** al salir de FULLSCREEN, el primer `set_mode` deja el tamaño anterior; `aplicar()` lo repite.
-- **Fondo** (`Fondo.mover_y_dibujar(pantalla, empuje_x, empuje_y)`): objetos (`PROFUNDIDAD`) y estrellas. Caen a `0.6 * profundidad` y, solo en Juego, se corren con el paralaje (`-v * REACCION_PARALAJE`). Paleta: ningún canal por encima de ~110.
+- **Fondo** (`Fondo.mover_y_dibujar(pantalla, empuje_x, empuje_y)`): objetos (`PROFUNDIDAD`) y estrellas (90 cada 800 px de ancho). Caen a `0.6 * profundidad` y, solo en Juego, se corren con el paralaje (`-v * REACCION_PARALAJE`). Paleta: ningún canal por encima de ~110.
 
 ## Tests (`tests/`)
 - `conftest.py`:

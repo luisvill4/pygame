@@ -17,7 +17,7 @@ Reglas importantes:
 import math
 import random
 
-from juego import hud
+from juego import hud, lienzo
 from juego.config import (VIDAS_MAX, COMBO_TIEMPO, COMBO_MAXIMO, MONEDAS_POR_NIVEL, MS_POR_FRAME,
                           PUNTOS_ENEMIGO_CONGELADO, RADIO_ENEMIGO, RADIO_BALA, NAVE_VELOCIDAD,
                           TURBO_VELOCIDAD, DASH_RECARGA, RECARGA_RAPIDA, PRIMER_POWERUP, ESPERA_POWERUP,
@@ -128,7 +128,7 @@ class Partida:
             self.sonidos.reproducir("nuevo_record")
             nave_x, nave_y = self.nave.centro()
             self.efectos.anillo(nave_x, nave_y, ARCOIRIS, 40, 7, 4)
-            self.efectos.texto_flotante("¡NUEVO RECORD!", 400, 140, AMARILLO)
+            self.efectos.texto_flotante("¡NUEVO RECORD!", lienzo.centro_x(), 140, AMARILLO)
         return puntos
 
     def subir_nivel(self):
@@ -269,7 +269,7 @@ class Partida:
         ahora = self.tiempo
         if self.capsula is None and ahora > self.proximo_powerup:
             disponibles = [p for p in TIPOS_POWERUP.values() if p.disponible(self)]
-            self.capsula = Capsula(random.choice(disponibles), random.randint(30, 770))
+            self.capsula = Capsula(random.choice(disponibles), random.randint(30, lienzo.ancho - 30))
         if self.capsula is None:
             return
         self.capsula.caer()
