@@ -4,10 +4,14 @@ Proyectiles de los jefes. Todos viven en partida.balas y comparten la misma inte
     mover(partida) -> False si hay que borrarlo (salio de la pantalla o estallo)
     dibujar(pantalla, parpadeo_encendido)
     radio          -> tamaño del circulo que hace daño
+    destruible     -> el dash lo destruye (y da 'puntos'); si no, el dash lo atraviesa
 
-- Bala:  sigue derecho.
-- Misil: lento, te persigue un rato girando de a poco y despues sigue derecho.
-- Mina:  baja frenando, se queda quieta, avisa y estalla en un anillo de balas.
+- Bala:     sigue derecho.
+- Obus:     una bala grande y lenta (se ve venir de lejos).
+- Misil:    te persigue un rato girando de a poco; el dash lo destruye.
+- Mina:     viaja frenando, se queda quieta, avisa y estalla en una cruz de balas.
+- Escombro: un trozo de metal que cae.
+- Onda:     una onda de choque que corre a ras del piso.
 
 Como todos estan en la misma lista, el hielo los rompe, el dash los atraviesa y el
 choque con la nave se revisa igual para todos (Partida._choques_jefe). Es polimorfismo:
@@ -18,17 +22,21 @@ import random
 
 from juego import lienzo
 from juego.dibujo import parpadeo
-from juego.config import (ALTO, MAGENTA, ROJO, BLANCO, AMARILLO, EMBESTIDA, FUEGO, RADIO_BALA,
-                          FORTALEZA_MISIL_GUIADO, FORTALEZA_MINA_ESPERA, MS_POR_FRAME)
+from juego.config import (ALTO, MAGENTA, ROJO, BLANCO, AMARILLO, EMBESTIDA, FUEGO, RADIO_BALA, MS_POR_FRAME)
+
+GRIS_METAL = (90, 100, 150)
+METAL_OSCURO = (44, 48, 86)
 
 
-def fuera_de_pantalla(x, y):
-    return x < -20 or x > lienzo.ancho + 20 or y < -20 or y > ALTO + 20
+def fuera_de_pantalla(x, y, margen=20):
+    return x < -margen or x > lienzo.ancho + margen or y < -margen or y > ALTO + margen
 
 
 class Bala:
     __slots__ = ("x", "y", "vx", "vy")
     radio = RADIO_BALA
+    destruible = False
+    puntos = 0
 
     def __init__(self, x, y, vx, vy):
         self.x, self.y, self.vx, self.vy = x, y, vx, vy
@@ -52,15 +60,40 @@ class Bala:
         pantalla.fill(centro, (bala_x - 2, bala_y - 2, 4, 4))
 
 
-class Misil(Bala):
-    # Te sigue girando de a poco (asi se puede esquivar con una curva cerrada o el dash)
-    __slots__ = ("guiado",)
-    radio = 5
-    giro = 0.045            # radianes por paso que puede corregir el rumbo
+class Obus(Bala):
+    # Grande y lento: un "¡PUM!" que se ve venir
+    __slots__ = ()
+    radio = 8
 
-    def __init__(self, x, y, vx, vy):
+    def mover(self, partida):
+        self.x += self.vx
+        self.y += self.vy
+        if fuera_de_pantalla(self.x, self.y, 30):
+            return False
+        if random.random() < 0.5:
+            partida.efectos.particula(self.x, self.y, -self.vx * 0.2, -self.vy * 0.2, FUEGO, 10, 4)
+        return True
+
+    def dibujar(self, pantalla, encendido):
+        obus_x = int(self.x) // 2 * 2
+        obus_y = int(self.y) // 2 * 2
+        pantalla.fill(ROJO, (obus_x - 8, obus_y - 6, 16, 12))
+        pantalla.fill(ROJO, (obus_x - 6, obus_y - 8, 12, 16))
+        pantalla.fill((255, 140, 0) if encendido else AMARILLO, (obus_x - 4, obus_y - 4, 8, 8))
+        pantalla.fill(BLANCO, (obus_x - 4, obus_y - 4, 4, 4))
+
+
+class Misil(Bala):
+    # Te sigue girando de a poco (se esquiva con una curva cerrada) y el dash lo destruye
+    __slots__ = ("guiado", "giro")
+    radio = 6
+    destruible = True
+    puntos = 5
+
+    def __init__(self, x, y, vx, vy, guiado, giro=0.04):
         super().__init__(x, y, vx, vy)
-        self.guiado = FORTALEZA_MISIL_GUIADO    # ms que le quedan siguiendote
+        self.guiado = guiado        # ms que le quedan siguiendote
+        self.giro = giro            # radianes por paso que puede corregir el rumbo
 
     def mover(self, partida):
         if self.guiado > 0:
@@ -86,29 +119,29 @@ class Misil(Bala):
         # Una cabeza amarilla con la punta hacia donde va
         misil_x = int(self.x) // 2 * 2
         misil_y = int(self.y) // 2 * 2
-        pantalla.fill(ROJO, (misil_x - 5, misil_y - 5, 10, 10))
-        pantalla.fill(AMARILLO if encendido else BLANCO, (misil_x - 3, misil_y - 3, 6, 6))
+        pantalla.fill(ROJO, (misil_x - 6, misil_y - 6, 12, 12))
+        pantalla.fill(AMARILLO if encendido else BLANCO, (misil_x - 4, misil_y - 4, 8, 8))
         rapidez = math.hypot(self.vx, self.vy) or 1
-        punta_x = int(self.x + self.vx / rapidez * 6) // 2 * 2
-        punta_y = int(self.y + self.vy / rapidez * 6) // 2 * 2
+        punta_x = int(self.x + self.vx / rapidez * 8) // 2 * 2
+        punta_y = int(self.y + self.vy / rapidez * 8) // 2 * 2
         pantalla.fill(BLANCO, (punta_x - 2, punta_y - 2, 4, 4))
 
 
 class Mina(Bala):
-    # Baja frenando hasta quedarse quieta; al rato estalla en un anillo de balas
-    __slots__ = ("espera", "rapidez_balas")
+    # Viaja frenando hasta quedarse quieta; al rato estalla en una cruz (+ o x) de balas
+    __slots__ = ("espera", "rapidez_balas", "forma")
     radio = 8
-    cantidad_balas = 8
 
-    def __init__(self, x, y, vx, vy, rapidez_balas):
+    def __init__(self, x, y, vx, vy, rapidez_balas, espera, forma="+"):
         super().__init__(x, y, vx, vy)
-        self.espera = FORTALEZA_MINA_ESPERA     # ms hasta estallar
+        self.espera = espera                # ms hasta estallar
         self.rapidez_balas = rapidez_balas
+        self.forma = forma
 
     def mover(self, partida):
         self.x += self.vx
         self.y += self.vy
-        self.vx *= 0.95         # se va frenando
+        self.vx *= 0.95         # se va frenando: recorre 20 veces su velocidad inicial
         self.vy *= 0.95
         self.espera -= MS_POR_FRAME
         if self.espera <= 0:
@@ -117,24 +150,65 @@ class Mina(Bala):
         return not fuera_de_pantalla(self.x, self.y)
 
     def estallar(self, partida):
-        giro = random.uniform(0, math.pi)
-        for i in range(self.cantidad_balas):
-            direccion = 2 * math.pi * i / self.cantidad_balas + giro
+        giro = 0 if self.forma == "+" else math.pi / 4
+        for i in range(4):
+            direccion = math.pi / 2 * i + giro
             partida.balas.append(Bala(self.x, self.y, math.cos(direccion) * self.rapidez_balas,
                                       math.sin(direccion) * self.rapidez_balas))
         partida.efectos.explosion(self.x, self.y, FUEGO, 16, 4, 3)
         partida.sonidos.reproducir("golpe")
 
     def dibujar(self, pantalla, encendido):
-        # Un rombo con pinches; en el ultimo medio segundo parpadea rapido (aviso)
+        # Un cuadrado con pinches en su forma; en el ultimo medio segundo parpadea rapido (aviso)
         mina_x = int(self.x) // 2 * 2
         mina_y = int(self.y) // 2 * 2
         por_estallar = self.espera < 500
         luz = BLANCO if (parpadeo(60) if por_estallar else encendido) else ROJO
         pantalla.fill(MAGENTA, (mina_x - 6, mina_y - 6, 12, 12))
-        for pinche_x, pinche_y in ((-10, -2), (6, -2), (-2, -10), (-2, 6)):
+        if self.forma == "+":
+            pinches = ((-12, -2), (8, -2), (-2, -12), (-2, 8))
+        else:
+            pinches = ((-10, -10), (6, -10), (-10, 6), (6, 6))
+        for pinche_x, pinche_y in pinches:
             pantalla.fill(MAGENTA, (mina_x + pinche_x, mina_y + pinche_y, 4, 4))
         pantalla.fill(luz, (mina_x - 2, mina_y - 2, 4, 4))
+
+
+class Escombro(Bala):
+    # Un trozo de metal que cae (las cortinas de la Fortaleza)
+    __slots__ = ()
+    radio = 9
+
+    def mover(self, partida):
+        self.x += self.vx
+        self.y += self.vy
+        return not fuera_de_pantalla(self.x, self.y, 30)
+
+    def dibujar(self, pantalla, encendido):
+        escombro_x = int(self.x) // 2 * 2
+        escombro_y = int(self.y) // 2 * 2
+        pantalla.fill(METAL_OSCURO, (escombro_x - 10, escombro_y - 8, 20, 16))
+        pantalla.fill(GRIS_METAL, (escombro_x - 8, escombro_y - 8, 14, 10))
+        pantalla.fill(ROJO if encendido else (255, 140, 0), (escombro_x - 10, escombro_y + 6, 20, 2))
+
+
+class Onda(Bala):
+    # Onda de choque a ras del piso (la Fortaleza al caer)
+    __slots__ = ()
+    radio = 10
+
+    def mover(self, partida):
+        self.x += self.vx
+        if random.random() < 0.6:
+            partida.efectos.particula(self.x, self.y + random.randint(-8, 8), -self.vx * 0.3, -1,
+                                      FUEGO, 14, 4)
+        return not fuera_de_pantalla(self.x, self.y, 30)
+
+    def dibujar(self, pantalla, encendido):
+        onda_x = int(self.x) // 2 * 2
+        onda_y = int(self.y) // 2 * 2
+        for alto, color in ((20, ROJO), (12, (255, 140, 0)), (6, AMARILLO if encendido else BLANCO)):
+            pantalla.fill(color, (onda_x - 4, onda_y - alto // 2, 8, alto))
 
 
 def mover_balas(partida):

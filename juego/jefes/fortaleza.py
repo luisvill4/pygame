@@ -1,24 +1,27 @@
 """
-La Fortaleza: un acorazado gigante (256x128) con 4 cañones destruibles.
+La Fortaleza: un acorazado gigante (256x128) que pelea como una MARCHA MILITAR.
 
-Fases:  entrar -> pelear -> descubrirse -> furia <-> cansado -> morir
+Todo va al ritmo de su pulso (las cuatro lamparitas amarillas del casco marcan el
+compas). Nunca ataca con dos cosas a la vez: cada compas es
 
-- pelear: se mueve despacio de lado a lado y los cañones se turnan para atacar.
-  Cada cañon: listo -> cargando -> disparando -> RECALENTADO -> listo.
-  Recalentado brilla naranja y es el momento de pegarle con el dash.
-  Cada cañon tiene su ataque (y una lucecita de su color para reconocerlo):
-      rafaga  (rojo):     balas hacia la nave
-      misiles (amarillo): misiles lentos que te siguen
-      laser   (cian):     un rayo hacia abajo que barre la pantalla
-      minas   (magenta):  minas que se quedan quietas y estallan en un anillo
-  Con menos cañones, los que quedan atacan mas seguido (FORTALEZA_ESPERA).
-- descubrirse: sin cañones, tiembla y se le cae la coraza.
-- furia: el nucleo dispara en espiral y la Fortaleza se mueve rapido.
-- cansado: el nucleo queda a la vista; ahi se le pega con el dash.
+    reubicarse (2 pulsos) -> cargar (2) -> disparar (a ritmo) -> RECALENTADO (5)
+
+y recalentado es el momento de pegarle con el dash al cañon que disparo.
+Cada cañon tiene su ataque (y una lucecita de su color para reconocerlo):
+    rafaga  (rojo):     3 obuses, uno por pulso: "¡pum, pum, pum!"
+    misiles (amarillo): 2 misiles que te siguen (el dash los destruye y da puntos)
+    laser   (cian):     un rayo que barre la pantalla hacia vos: hay que cruzarlo con el dash
+    minas   (magenta):  2 minas que caen en las X y estallan en cruz, una por pulso
+Con cada cañon roto el pulso se acelera, y con 2 o menos los ataques vienen de a dos.
+
+Sin cañones se le cae la coraza y empieza el baile final:
+    cortinas (escombros que caen con un hueco: busca el hueco) -> apuntar (se pone
+    encima tuyo) -> fijar (se queda quieta un pulso, temblando: ¡salí de abajo!) ->
+    CAER (se desploma hasta el piso y suelta ondas de choque) ->
+    aturdida (nucleo a la vista: ¡DASH!) -> subir -> cortinas...
 
 Los cañones son Partes (ver partes.py): la clase base ya resuelve el golpe con el dash,
-el daño al tocarlos y el cartel "¡DASH!". Aca solo se decide cuando se les puede pegar
-(golpeable) y que pasa al golpearlos o romperlos.
+el daño al tocarlos y la flechita. Aca solo se decide cuando se les puede pegar.
 
 Sprites (opcionales):
     fortaleza.png       1536x128: 6 cuadros de 256x128 de a pares (coraza, furia, cansado)
@@ -32,17 +35,16 @@ import pygame
 
 from juego import recursos, dibujo, lienzo
 from juego.config import (ALTO, ROJO, AMARILLO, CIAN, MAGENTA, BLANCO, HIELO, ORO, FUEGO, ENERGIA, EMBESTIDA,
-                          MS_POR_FRAME, FORTALEZA_VIDA_CANON, FORTALEZA_PUNTOS_CANON, FORTALEZA_ESPERA,
-                          FORTALEZA_CARGA, FORTALEZA_RECALENTADO, FORTALEZA_DISPAROS, FORTALEZA_LASER,
-                          FORTALEZA_FURIA, FORTALEZA_CANSADO, FORTALEZA_BRAZOS, FORTALEZA_ESPIRAL_CADA)
+                          FORTALEZA_VIDA_CANON, FORTALEZA_PUNTOS_CANON, FORTALEZA_PULSOS, FORTALEZA_RECALENTADO,
+                          FORTALEZA_MISIL_GUIADO, FORTALEZA_LASER_VELOCIDAD, FORTALEZA_ATURDIDA)
 from juego.jefes.base import Jefe, registrar_jefe
 from juego.jefes.partes import Parte
-from juego.proyectiles import Bala, Misil, Mina, romper_balas
+from juego.proyectiles import Obus, Misil, Mina, Escombro, Onda, romper_balas
 
 ANCHO, ALTO_FORTALEZA = 256, 128
 LADO_CANON = 32
 
-# Colores del metal (oscuro -> claro) y paletas de sus pedazos y del recalentado
+# Colores del metal (oscuro -> claro) y paletas de sus pedazos, el humo y el recalentado
 BORDE = (16, 16, 36)
 ACERO = (44, 48, 86)
 ACERO_CLARO = (90, 100, 150)
@@ -54,6 +56,7 @@ BRASA = (255, 120, 0)
 # Los 4 cañones, de izquierda a derecha: (x dentro de la Fortaleza, ataque, color de la luz)
 CANONES = [(16, "misiles", AMARILLO), (76, "rafaga", ROJO), (148, "laser", CIAN), (208, "minas", MAGENTA)]
 Y_CANONES = 96          # cuelgan de la parte de abajo del casco
+PULSOS_ATAQUE = {"rafaga": 3, "misiles": 2, "laser": 3, "minas": 2}
 
 
 # ================================== #
@@ -139,16 +142,11 @@ class Canon(Parte):
         super().__init__(dx, Y_CANONES, LADO_CANON, LADO_CANON, FORTALEZA_VIDA_CANON)
         self.ataque = ataque
         self.color = color
-        self.estado = "listo"       # listo -> cargando -> disparando -> recalentado -> listo
-        self.estado_hasta = 0
-        self.disparos = 0           # disparos que le quedan en este ataque
-        self.proximo_disparo = 0
-        self.laser_hasta = 0        # mientras tiempo < laser_hasta, el rayo esta prendido
-        self.laser_prendido = False
+        self.caliente = False       # recalentado: se le puede pegar
         self.objetivos = []         # adonde van a caer las minas (se eligen al cargar, para el aviso)
 
     def golpeable(self, jefe):
-        return self.estado == "recalentado"
+        return self.caliente
 
     def boca(self, jefe):
         # Por donde sale lo que dispara
@@ -157,10 +155,6 @@ class Canon(Parte):
     def caja_laser(self, jefe):
         boca_x, boca_y = self.boca(jefe)
         return pygame.Rect(int(boca_x) - 8, int(boca_y), 16, ALTO - int(boca_y))
-
-    def cambiar_estado(self, estado, duracion, tiempo):
-        self.estado = estado
-        self.estado_hasta = tiempo + duracion
 
     def dibujar(self, pantalla, x, y, jefe, partida):
         if not self.viva():
@@ -177,14 +171,14 @@ class Canon(Parte):
             variante = "blanco"
         elif jefe.congelado(partida):
             variante = "hielo"
-        elif self.estado == "recalentado":
-            # Brilla: alterna entre brasa y blanco, cada vez mas rapido al enfriarse
+        elif self.caliente:
             variante = "brasa" if dibujo.parpadeo(150) else "normal"
         else:
             variante = "normal"
         pantalla.blit(cuadros[variante][indice], (x, y))
         # La lucecita de su color (al cargar parpadea en blanco)
-        luz = BLANCO if self.estado == "cargando" and dibujo.parpadeo(80) else self.color
+        cargando = jefe.fase == "cargar" and jefe.canon_actual() is self
+        luz = BLANCO if cargando and dibujo.parpadeo(80) else self.color
         pantalla.fill(luz, (x + 14, y + 4, 4, 4))
 
 
@@ -195,20 +189,28 @@ class Canon(Parte):
 @registrar_jefe
 class Fortaleza(Jefe):
     tipo = "fortaleza"
+    nombre = "LA FORTALEZA"
+    apodo = "ACORAZADO IMPERIAL"
+    color = ROJO
     ancho = ANCHO
     alto = ALTO_FORTALEZA
     y_final = 56                # un poco mas abajo que el Ojo, para no tapar el HUD
-    fases_congelables = ("pelear", "furia", "cansado")
+    ms_pulso = FORTALEZA_PULSOS[0]
+    fases_congelables = ("reubicarse", "cargar", "disparar", "recalentado",
+                         "cortinas", "apuntar", "fijar", "aturdida", "subir")
 
     def __init__(self, partida):
         super().__init__(partida)
         self.partes = [Canon(dx, ataque, color) for dx, ataque, color in CANONES]
-        self.turno = -1                 # indice del ultimo cañon que ataco (se van turnando)
-        self.proximo_ataque = 0
         self.con_coraza = True
-        self.giro_espiral = 0           # angulo de la espiral (furia)
-        self.sentido = 1                # para que lado gira (cambia en cada furia)
-        self.proximo_disparo = 0
+        self.compas = []                # los cañones que atacan en este compas (1 o 2)
+        self.turno = 0                  # cual de ellos esta cargando/disparando
+        self.ultimo = None              # el ultimo que ataco (para no repetir)
+        self.destino_x = self.x
+        self.barrido = 1                # hacia donde barre el laser (+1 derecha, -1 izquierda)
+        self.laser_prendido = False
+        self.huecos = []                # donde quedan los huecos de las cortinas
+        self.velocidad_caida = 0
 
     @classmethod
     def cargar_animaciones(cls):
@@ -233,12 +235,17 @@ class Fortaleza(Jefe):
         return pygame.Rect(int(self.x) + 104, int(self.y) + 32, 48, 48)
 
     def cajas_danio(self):
-        # Ademas del casco y los cañones, los rayos laser prendidos
-        cajas = super().cajas_danio()
-        for canon in self.partes_vivas():
-            if canon.laser_prendido:
-                cajas.append(canon.caja_laser(self))
+        # El casco en dos cajas que siguen su forma (abajo es mas angosto: asi no te
+        # pega con una esquina que no se ve), los cañones y el rayo laser prendido
+        x, y = int(self.x), int(self.y)
+        cajas = [pygame.Rect(x + 4, y + 6, 248, 62), pygame.Rect(x + 26, y + 68, 204, 32)]
+        cajas += [canon.caja(self) for canon in self.partes_vivas()]
+        if self.laser_prendido:
+            cajas.append(self.canon_actual().caja_laser(self))
         return cajas
+
+    def puede_recibir_golpe(self):
+        return self.fase == "aturdida"
 
     def vida_barra(self):
         # La barra muestra los golpes de los cañones y los del nucleo, todos juntos
@@ -247,207 +254,171 @@ class Fortaleza(Jefe):
         return vida, vida_max
 
     def temblando(self):
-        return self.fase in ("descubrirse", "morir")
+        return self.fase in ("descubrirse", "fijar", "morir")
+
+    def canon_actual(self):
+        return self.compas[self.turno] if self.turno < len(self.compas) else None
 
     def rapidez(self, partida):
-        # Rapidez de sus balas (como las del Ojo)
-        return min(3 + partida.jefes_vencidos * 0.3, 4.5) * partida.reglas["velocidad"]
+        return min(3.2 + partida.jefes_vencidos * 0.2, 4) * partida.reglas["velocidad"]
 
-    # ---------- Fases ----------
+    def x_sobre(self, x_centro):
+        # La x de la Fortaleza para que su centro quede en x_centro (sin salirse)
+        return max(10, min(x_centro - ANCHO / 2, lienzo.ancho - ANCHO - 10))
+
+    # ---------- La marcha (con coraza) ----------
 
     def al_terminar_de_entrar(self, partida):
-        self.cambiar_fase("pelear", 0, partida.tiempo)
-        self.proximo_ataque = partida.tiempo + 800
+        self.empezar_compas(partida)
 
-    def al_congelarse(self):
-        # Congelada, sus temporizadores tampoco corren
-        self.proximo_ataque += MS_POR_FRAME
-        self.proximo_disparo += MS_POR_FRAME
-        for canon in self.partes:
-            canon.estado_hasta += MS_POR_FRAME
-            canon.proximo_disparo += MS_POR_FRAME
-            canon.laser_hasta += MS_POR_FRAME
+    def empezar_compas(self, partida):
+        # Elige quien ataca y se acomoda. Con cada cañon roto el pulso se acelera
+        vivos = self.partes_vivas()
+        self.ms_pulso = FORTALEZA_PULSOS[len(self.partes) - len(vivos)]
+        opciones = [c for c in vivos if c is not self.ultimo] or vivos
+        primero = random.choice(opciones)
+        if len(vivos) >= 3:
+            self.compas = [primero]
+        elif len(vivos) == 2:
+            self.compas = [primero] + [c for c in vivos if c is not primero]
+        else:
+            self.compas = [primero, primero]        # el ultimo cañon ataca dos veces seguidas
+        self.ultimo = self.compas[-1]
+        self.turno = 0
+        nave_x = partida.nave.centro()[0]
+        if primero.ataque == "laser":
+            # Para barrer hacia vos, se pone del otro lado de la pantalla
+            lejos = lienzo.ancho * 0.8 if nave_x < lienzo.ancho / 2 else lienzo.ancho * 0.2
+            self.destino_x = self.x_sobre(lejos)
+        else:
+            self.destino_x = self.x_sobre(nave_x + random.randint(-80, 80))
+        self.cambiar_fase_pulsos("reubicarse", 2, partida.tiempo)
+
+    def empezar_carga(self, partida, pulsos):
+        canon = self.canon_actual()
+        boca_x = canon.boca(self)[0]
+        nave_x, nave_y = partida.nave.centro()
+        if canon.ataque == "laser":
+            self.barrido = 1 if nave_x > boca_x else -1
+        elif canon.ataque == "minas":
+            # Una mina donde estas y otra al azar (asi el aviso las muestra antes)
+            canon.objetivos = [(max(60, min(nave_x, lienzo.ancho - 60)), max(230, min(nave_y, 480))),
+                               (random.randint(60, lienzo.ancho - 60), random.randint(230, 480))]
+        self.cambiar_fase_pulsos("cargar", pulsos, partida.tiempo)
 
     def actualizar_fase(self, partida):
         ahora = partida.tiempo
-        if self.fase == "pelear":
-            self.moverse(ahora, lento=True)
-            if ahora >= self.proximo_ataque:
-                self.elegir_canon(partida)
-            for canon in self.partes:
-                self.actualizar_canon(partida, canon)
+        fase = self.fase
+        if fase == "reubicarse":
+            self.x += (self.destino_x - self.x) * 0.08
+            self.y += (self.y_final - self.y) * 0.1
+            if self.fin_de_fase(ahora):
+                self.empezar_carga(partida, 2)
 
-        elif self.fase == "descubrirse":
-            # Tiembla, echa humo y chispas, y al final se le cae la coraza
-            nucleo_x, nucleo_y = self.centro_nucleo()
-            if random.random() < 0.4:
-                partida.efectos.explosion(nucleo_x + random.randint(-30, 30), nucleo_y + random.randint(-24, 24),
-                                          FUEGO, 8, 3, 3)
-            if random.random() < 0.3:
-                partida.efectos.sacudir(2)
-            if ahora > self.fase_hasta:
-                self.caer_coraza(partida)
+        elif fase == "cargar":
+            self.chispas_de_carga(partida, self.canon_actual())
+            if self.fin_de_fase(ahora):
+                pulsos = PULSOS_ATAQUE[self.canon_actual().ataque]
+                self.cambiar_fase_pulsos("disparar", pulsos, ahora)
 
-        elif self.fase == "furia":
-            self.moverse(ahora, lento=False)
-            if ahora >= self.proximo_disparo:
-                self.disparar_espiral(partida)
-                self.proximo_disparo = ahora + FORTALEZA_ESPIRAL_CADA
-            if ahora > self.fase_hasta:
-                self.cambiar_fase("cansado", FORTALEZA_CANSADO, ahora)
-                nucleo_x, nucleo_y = self.centro_nucleo()
-                partida.efectos.explosion(nucleo_x, nucleo_y, ORO, 20, 4, 3)
+        elif fase == "disparar":
+            # Primero se revisa el final: el paso en que termina la fase es tambien el
+            # comienzo de un pulso nuevo, y no tiene que disparar de mas
+            canon = self.canon_actual()
+            if self.fin_de_fase(ahora):
+                self.laser_prendido = False
+                self.turno += 1
+                if self.turno < len(self.compas):
+                    self.empezar_carga(partida, 1)      # el segundo cañon carga mas rapido
+                else:
+                    self.recalentar(partida)
+            else:
+                if self.nuevo_pulso:
+                    self.disparar(partida, canon, self.pulso)
+                if self.laser_prendido:
+                    self.x = max(10, min(self.x + self.barrido * FORTALEZA_LASER_VELOCIDAD,
+                                         lienzo.ancho - ANCHO - 10))
+                    boca_x = canon.boca(self)[0]
+                    partida.efectos.particula(boca_x + random.randint(-8, 8), random.randint(200, ALTO),
+                                              random.uniform(-2, 2), 0, ENERGIA, 10, 2)
 
-        elif self.fase == "cansado":
-            if random.random() < 0.25:
-                nucleo_x, nucleo_y = self.centro_nucleo()
-                partida.efectos.particula(nucleo_x + random.randint(-20, 20), nucleo_y + random.randint(-20, 20),
-                                          random.uniform(-1, 1), random.uniform(-2, 0), ORO, 12, 2)
-            if ahora > self.fase_hasta:
-                self.empezar_furia(ahora)
+        elif fase == "recalentado":
+            # Quieta y un poco hundida: el momento de pegarle
+            self.y += (self.y_final + 10 - self.y) * 0.1
+            for canon in self.compas:
+                if canon.caliente and random.random() < 0.3:
+                    boca_x, boca_y = canon.boca(self)
+                    partida.efectos.particula(boca_x + random.randint(-12, 12), boca_y - random.randint(4, 28),
+                                              0, -1, FUEGO, 16, 2)
+            sin_calientes = not any(c.caliente and c.viva() for c in self.compas)
+            if self.fin_de_fase(ahora) or sin_calientes:
+                for canon in self.compas:
+                    canon.caliente = False
+                self.empezar_compas(partida)
 
-    def moverse(self, ahora, lento):
-        # De lado a lado, acercandose de a poco al punto (asi no da saltos)
-        centro = (lienzo.ancho - ANCHO) / 2
-        if lento:
-            objetivo_x = centro + math.sin(ahora / 1400) * (centro - 30)
-            self.x += (objetivo_x - self.x) * 0.03
         else:
-            objetivo_x = centro + math.sin(ahora / 500) * (centro - 20)
-            self.x += (objetivo_x - self.x) * 0.06
+            self.actualizar_baile_final(partida)
 
-    def empezar_furia(self, ahora):
-        self.sentido = -self.sentido
-        self.proximo_disparo = ahora
-        self.cambiar_fase("furia", FORTALEZA_FURIA, ahora)
+        self.humo_de_canones(partida)
 
-    def al_recibir_golpe(self, partida):
-        self.empezar_furia(partida.tiempo)
+    def chispas_de_carga(self, partida, canon):
+        if random.random() < 0.5:
+            boca_x, boca_y = canon.boca(self)
+            chispa_x = boca_x + random.randint(-24, 24)
+            chispa_y = boca_y + random.randint(-10, 30)
+            partida.efectos.particula(chispa_x, chispa_y, (boca_x - chispa_x) * 0.1, (boca_y - chispa_y) * 0.1,
+                                      [(40, 40, 60), canon.color, BLANCO], 12, 2)
 
-    # ---------- Cañones ----------
-
-    def elegir_canon(self, partida):
-        # El proximo cañon (en orden) que este sano y listo empieza a cargar
-        ahora = partida.tiempo
-        vivos = self.partes_vivas()
-        for paso in range(1, len(self.partes) + 1):
-            indice = (self.turno + paso) % len(self.partes)
-            canon = self.partes[indice]
-            if canon.viva() and canon.estado == "listo":
-                self.turno = indice
-                self.empezar_carga(partida, canon)
-                self.proximo_ataque = ahora + FORTALEZA_ESPERA[len(vivos)]
-                return
-        self.proximo_ataque = ahora + 200       # todos ocupados: prueba en un rato
-
-    def empezar_carga(self, partida, canon):
-        canon.cambiar_estado("cargando", FORTALEZA_CARGA, partida.tiempo)
-        if canon.ataque == "minas":
-            # Las minas ya saben adonde van a caer (asi el aviso las muestra)
-            disparos = FORTALEZA_DISPAROS["minas"][0]
-            canon.objetivos = [(random.randint(60, lienzo.ancho - 60), random.randint(260, 500))
-                               for _ in range(disparos)]
-
-    def actualizar_canon(self, partida, canon):
-        ahora = partida.tiempo
-        if not canon.viva():
-            # Restos humeantes
-            if random.random() < 0.08:
+    def humo_de_canones(self, partida):
+        for canon in self.partes:
+            if canon.viva() and canon.vida == canon.vida_max:
+                continue
+            if random.random() < (0.08 if not canon.viva() else 0.05):
                 boca_x, boca_y = canon.boca(self)
                 partida.efectos.particula(boca_x + random.randint(-8, 8), boca_y - 20, 0, -1, HUMO, 30, 4)
-            return
-        boca_x, boca_y = canon.boca(self)
-        if canon.vida < canon.vida_max and random.random() < 0.05:
-            partida.efectos.particula(boca_x + random.randint(-10, 10), boca_y - 24, 0, -0.8, HUMO, 24, 2)
 
-        if canon.estado == "cargando":
-            if random.random() < 0.5:
-                # Chispas de su color que se juntan en la boca
-                chispa_x = boca_x + random.randint(-24, 24)
-                chispa_y = boca_y + random.randint(-10, 30)
-                partida.efectos.particula(chispa_x, chispa_y, (boca_x - chispa_x) * 0.1, (boca_y - chispa_y) * 0.1,
-                                          [(40, 40, 60), canon.color, BLANCO], 12, 2)
-            if ahora >= canon.estado_hasta:
-                canon.disparos = FORTALEZA_DISPAROS[canon.ataque][0]
-                canon.proximo_disparo = ahora
-                canon.cambiar_estado("disparando", 0, ahora)
+    def recalentar(self, partida):
+        for canon in self.compas:
+            if canon.viva():
+                canon.caliente = True
+                boca_x, boca_y = canon.boca(self)
+                partida.efectos.explosion(boca_x, boca_y - 14, FUEGO, 10, 3, 3)
+        self.cambiar_fase_pulsos("recalentado", FORTALEZA_RECALENTADO, partida.tiempo)
 
-        elif canon.estado == "disparando":
-            if canon.laser_prendido:
-                if random.random() < 0.6:
-                    partida.efectos.particula(boca_x + random.randint(-8, 8), random.randint(int(boca_y), ALTO),
-                                              random.uniform(-2, 2), 0, ENERGIA, 10, 2)
-                if ahora >= canon.laser_hasta:
-                    canon.laser_prendido = False
-                    self.recalentar(partida, canon)
-            elif canon.disparos > 0:
-                if ahora >= canon.proximo_disparo:
-                    self.disparar(partida, canon)
-                    canon.disparos -= 1
-                    canon.proximo_disparo = ahora + FORTALEZA_DISPAROS[canon.ataque][1]
-            else:
-                self.recalentar(partida, canon)
-
-        elif canon.estado == "recalentado":
-            if random.random() < 0.3:
-                partida.efectos.particula(boca_x + random.randint(-12, 12), boca_y - random.randint(4, 28),
-                                          0, -1, FUEGO, 16, 2)
-            if ahora >= canon.estado_hasta:
-                canon.cambiar_estado("listo", 0, ahora)
-
-    def recalentar(self, partida, canon):
-        canon.cambiar_estado("recalentado", FORTALEZA_RECALENTADO, partida.tiempo)
-        boca_x, boca_y = canon.boca(self)
-        partida.efectos.explosion(boca_x, boca_y - 14, FUEGO, 10, 3, 3)
-
-    def disparar(self, partida, canon):
+    def disparar(self, partida, canon, pulso):
+        # Un disparo por pulso (cada ataque sabe que hacer en cada pulso)
         boca_x, boca_y = canon.boca(self)
         rapidez = self.rapidez(partida)
         if canon.ataque == "rafaga":
-            for direccion in self.direcciones_rafaga(partida, canon):
-                partida.balas.append(Bala(boca_x, boca_y, math.cos(direccion) * rapidez,
-                                          math.sin(direccion) * rapidez))
-        elif canon.ataque == "misiles":
-            # Salen hacia abajo, abiertos, y despues te buscan
-            lado = random.choice((-1, 1))
-            partida.balas.append(Misil(boca_x, boca_y, lado * rapidez * 0.4, rapidez * 0.6))
-        elif canon.ataque == "minas":
-            # Cada mina viaja frenando hasta su objetivo (con friccion 0.95 recorre 20 veces su velocidad)
-            objetivo_x, objetivo_y = canon.objetivos[len(canon.objetivos) - canon.disparos]
+            nave_x, nave_y = partida.nave.centro()
+            direccion = math.atan2(nave_y - boca_y, nave_x - boca_x)
+            partida.balas.append(Obus(boca_x, boca_y, math.cos(direccion) * rapidez, math.sin(direccion) * rapidez))
+            partida.efectos.sacudir(3)
+        elif canon.ataque == "misiles" and pulso < 2:
+            lado = -1 if pulso == 0 else 1
+            escala = partida.reglas["velocidad"]
+            partida.balas.append(Misil(boca_x, boca_y, lado * 1.6 * escala, 1.2 * escala, FORTALEZA_MISIL_GUIADO))
+        elif canon.ataque == "minas" and pulso < len(canon.objetivos):
+            # Viaja frenando hasta su X (con friccion 0.95 recorre 20 veces su velocidad)
+            # y estalla 3 pulsos despues de salir: la primera en "+", la segunda en "x"
+            objetivo_x, objetivo_y = canon.objetivos[pulso]
             partida.balas.append(Mina(boca_x, boca_y, (objetivo_x - boca_x) / 20, (objetivo_y - boca_y) / 20,
-                                      rapidez * 0.7))
-        elif canon.ataque == "laser":
-            canon.laser_prendido = True
-            canon.laser_hasta = partida.tiempo + FORTALEZA_LASER
+                                      rapidez * 0.8, 3 * self.ms_pulso, "+" if pulso == 0 else "x"))
+        elif canon.ataque == "laser" and pulso == 0:
+            self.laser_prendido = True
             partida.efectos.sacudir(6, CIAN)
             partida.sonidos.reproducir("golpe")
+        else:
+            return
         partida.efectos.anillo(boca_x, boca_y, [(40, 40, 60), canon.color, BLANCO], 8, 3, 2)
-
-    def direcciones_rafaga(self, partida, canon):
-        # 3 balas hacia la nave, un poco abiertas. Las usan el disparo y el aviso
-        boca_x, boca_y = canon.boca(self)
-        nave_x, nave_y = partida.nave.centro()
-        hacia_nave = math.atan2(nave_y - boca_y, nave_x - boca_x)
-        return [hacia_nave + math.radians(abertura) for abertura in (-10, 0, 10)]
-
-    def disparar_espiral(self, partida):
-        # Sin coraza: el nucleo dispara en espiral, girando
-        nucleo_x, nucleo_y = self.centro_nucleo()
-        rapidez = self.rapidez(partida) * 0.75
-        for brazo in range(FORTALEZA_BRAZOS):
-            direccion = self.giro_espiral + 2 * math.pi * brazo / FORTALEZA_BRAZOS
-            partida.balas.append(Bala(nucleo_x, nucleo_y, math.cos(direccion) * rapidez,
-                                      math.sin(direccion) * rapidez))
-        self.giro_espiral += 0.22 * self.sentido
 
     # ---------- Partes rotas ----------
 
     def al_golpear_parte(self, partida, canon):
-        # El golpe lo enfria: hay que esperar a que vuelva a disparar
-        canon.cambiar_estado("listo", 0, partida.tiempo)
+        canon.caliente = False          # el golpe lo enfria
 
     def al_romper_parte(self, partida, canon):
-        canon.laser_prendido = False
+        canon.caliente = False
         centro_x, centro_y = canon.centro(self)
         partida.efectos.pedazos(centro_x, centro_y, METAL, 12, 5)
         partida.efectos.pedazos(centro_x, centro_y, [(60, 20, 0), BRASA, AMARILLO], 6, 4)
@@ -456,7 +427,66 @@ class Fortaleza(Jefe):
         if not self.partes_vivas():
             # Sin cañones: tiembla un rato y se le cae la coraza
             romper_balas(partida.balas, partida.efectos, EMBESTIDA)
-            self.cambiar_fase("descubrirse", 1800, partida.tiempo)
+            self.ms_pulso = FORTALEZA_PULSOS[-1]
+            self.cambiar_fase_pulsos("descubrirse", 4, partida.tiempo)
+
+    # ---------- El baile final (sin coraza) ----------
+
+    def actualizar_baile_final(self, partida):
+        ahora = partida.tiempo
+        fase = self.fase
+        if fase == "descubrirse":
+            nucleo_x, nucleo_y = self.centro_nucleo()
+            if random.random() < 0.4:
+                partida.efectos.explosion(nucleo_x + random.randint(-30, 30), nucleo_y + random.randint(-24, 24),
+                                          FUEGO, 8, 3, 3)
+            if self.fin_de_fase(ahora):
+                self.caer_coraza(partida)
+
+        elif fase == "cortinas":
+            # Pulso 0: avisa la primera cortina; 1: cae. Pulso 2: avisa la segunda; 3: cae.
+            # Los pulsos 4 y 5 son de respiro: los escombros terminan de caer antes de apuntar
+            self.y += (self.y_final - self.y) * 0.1
+            if self.fin_de_fase(ahora):
+                self.cambiar_fase_pulsos("apuntar", 2, ahora)
+            elif self.nuevo_pulso and self.pulso in (1, 3):
+                self.soltar_cortina(partida, self.huecos[self.pulso // 2])
+
+        elif fase == "apuntar":
+            # Se pone encima tuyo (el aviso marca la columna donde va a caer)
+            self.x += (self.x_sobre(partida.nave.centro()[0]) - self.x) * 0.12
+            if self.fin_de_fase(ahora):
+                self.cambiar_fase_pulsos("fijar", 1, ahora)
+
+        elif fase == "fijar":
+            # Deja de seguirte y junta fuerzas: el tiempo justo para salir de abajo
+            if self.fin_de_fase(ahora):
+                self.velocidad_caida = 0
+                self.cambiar_fase("caer", 5000, ahora)
+
+        elif fase == "caer":
+            self.velocidad_caida += 1.2
+            self.y += self.velocidad_caida
+            if self.y >= self.y_suelo():
+                self.y = self.y_suelo()
+                self.estrellarse(partida)
+
+        elif fase == "aturdida":
+            if random.random() < 0.25:
+                nucleo_x, nucleo_y = self.centro_nucleo()
+                partida.efectos.particula(nucleo_x + random.randint(-20, 20), nucleo_y + random.randint(-20, 20),
+                                          random.uniform(-1, 1), random.uniform(-2, 0), ORO, 12, 2)
+            if self.fin_de_fase(ahora):
+                self.cambiar_fase_pulsos("subir", 3, ahora)
+
+        elif fase == "subir":
+            self.y += (self.y_final - self.y) * 0.06
+            if self.fin_de_fase(ahora):
+                self.empezar_cortinas(partida)
+
+    def y_suelo(self):
+        # Hasta donde cae: el casco (88 px de alto) queda apoyado abajo de todo
+        return ALTO - 100
 
     def caer_coraza(self, partida):
         self.con_coraza = False
@@ -469,57 +499,128 @@ class Fortaleza(Jefe):
         partida.entrada.vibrar(0.8, 1, 400)
         partida.congelar_frames = 6
         partida.sonidos.reproducir("golpe")
-        self.empezar_furia(partida.tiempo)
+        self.empezar_cortinas(partida)
+
+    def empezar_cortinas(self, partida):
+        # Dos cortinas con el hueco en tercios distintos de la pantalla (hay que moverse)
+        tercios = [lienzo.ancho * (i + 0.5) / 3 for i in range(3)]
+        primero = random.choice(tercios)
+        segundo = random.choice([t for t in tercios if t != primero])
+        self.huecos = [primero + random.randint(-40, 40), segundo + random.randint(-40, 40)]
+        self.cambiar_fase_pulsos("cortinas", 6, partida.tiempo)
+
+    def soltar_cortina(self, partida, hueco):
+        rapidez = 3.6 * partida.reglas["velocidad"]
+        for x in range(24, lienzo.ancho, 72):
+            if abs(x - hueco) > 90:
+                partida.balas.append(Escombro(x, self.y + 96, 0, rapidez))
+        partida.efectos.sacudir(4)
+        partida.sonidos.reproducir("golpe")
+
+    def estrellarse(self, partida):
+        # Golpe contra el piso: temblor, pedazos y dos ondas de choque a los costados
+        centro_x = self.x + ANCHO / 2
+        piso = ALTO - 14
+        rapidez = 4.5 * partida.reglas["velocidad"]
+        partida.balas.append(Onda(self.x + 10, piso, -rapidez, 0))
+        partida.balas.append(Onda(self.x + ANCHO - 10, piso, rapidez, 0))
+        partida.efectos.pedazos(centro_x, piso - 10, METAL, 16, 6)
+        partida.efectos.sacudir(22, BLANCO)
+        partida.entrada.vibrar(1, 1, 300)
+        partida.congelar_frames = 5
+        partida.sonidos.reproducir("golpe")
+        self.cambiar_fase_pulsos("aturdida", FORTALEZA_ATURDIDA, partida.tiempo)
+
+    def al_recibir_golpe(self, partida):
+        self.cambiar_fase_pulsos("subir", 3, partida.tiempo)
 
     # ---------- Dibujo ----------
 
     def animacion(self):
         if self.con_coraza:
             return "coraza"
-        if self.fase in ("cansado", "morir"):
+        if self.fase in ("aturdida", "morir"):
             return "cansado"
         return "furia"
 
     def dibujar_extra(self, pantalla, partida):
-        for canon in self.partes_vivas():
-            if canon.laser_prendido:
-                self.dibujar_laser(pantalla, canon)
-            elif canon.estado == "cargando" and not self.congelado(partida):
-                self.dibujar_aviso(pantalla, partida, canon)
+        self.dibujar_compas(pantalla)
+        congelada = self.congelado(partida)
+        if self.laser_prendido:
+            self.dibujar_laser(pantalla)
+        elif self.fase == "cargar" and not congelada:
+            self.dibujar_aviso(pantalla, partida, self.canon_actual())
+        elif self.fase == "cortinas" and self.pulso in (0, 2) and dibujo.parpadeo(100):
+            self.dibujar_aviso_cortina(pantalla, self.huecos[self.pulso // 2])
+        elif self.fase in ("apuntar", "fijar") and dibujo.parpadeo(100 if self.fase == "apuntar" else 50):
+            # La columna donde va a caer
+            columna = pygame.Rect(int(self.x) + 4, int(self.y) + 100, ANCHO - 8, ALTO - int(self.y) - 100)
+            for borde_y in range(columna.top, columna.bottom, 16):
+                pantalla.fill(ROJO, (columna.left, borde_y, 4, 8))
+                pantalla.fill(ROJO, (columna.right - 4, borde_y, 4, 8))
+        elif self.fase == "aturdida":
+            # Estrellitas girando: esta mareada
+            nucleo_x, nucleo_y = self.centro_nucleo()
+            for i in range(3):
+                angulo = partida.tiempo / 200 + i * 2.1
+                estrella_x = int(nucleo_x + math.cos(angulo) * 50) // 2 * 2
+                estrella_y = int(nucleo_y - 60 + math.sin(angulo) * 12) // 2 * 2
+                pantalla.fill(AMARILLO, (estrella_x - 2, estrella_y - 6, 4, 12))
+                pantalla.fill(AMARILLO, (estrella_x - 6, estrella_y - 2, 12, 4))
 
-    def dibujar_laser(self, pantalla, canon):
+    def dibujar_compas(self, pantalla):
+        # Las cuatro lamparitas del casco marcan el pulso, como un metronomo
+        if self.fase in ("entrar", "morir", "caer") or self.pulso < 0:
+            return
+        prendida = self.pulso % 4
+        for i in range(4):
+            color = AMARILLO if i == prendida else (70, 50, 0)
+            pantalla.fill(color, (int(self.x) + 106 + i * 12, int(self.y) + 88, 8, 6))
+
+    def dibujar_laser(self, pantalla):
         # Un rayo grueso que titila: borde cian y centro blanco
-        rayo = canon.caja_laser(self)
-        rayo.top -= 4
-        rayo.height += 4
+        rayo = self.canon_actual().caja_laser(self)
         ancho = 16 if dibujo.parpadeo(60) else 12
-        pantalla.fill(CIAN, (rayo.centerx - ancho // 2, rayo.top, ancho, rayo.height))
-        pantalla.fill(BLANCO, (rayo.centerx - 3, rayo.top, 6, rayo.height))
+        pantalla.fill(CIAN, (rayo.centerx - ancho // 2, rayo.top - 4, ancho, rayo.height + 4))
+        pantalla.fill(BLANCO, (rayo.centerx - 3, rayo.top - 4, 6, rayo.height + 4))
 
     def dibujar_aviso(self, pantalla, partida, canon):
         boca_x, boca_y = canon.boca(self)
         if canon.ataque == "laser":
-            # El laser siempre avisa: una linea fina por donde va a pasar
+            # Siempre avisa: una linea fina y flechas hacia donde va a barrer
             if dibujo.parpadeo(80):
                 pantalla.fill(CIAN, (int(boca_x) // 2 * 2 - 1, int(boca_y), 2, ALTO - int(boca_y)))
-            return
-        # Los demas avisan solo si esta prendido el aviso del jefe (Opciones)
-        if not partida.opciones.aviso_jefe or not dibujo.parpadeo(100):
-            return
-        if canon.ataque == "rafaga":
-            for direccion in self.direcciones_rafaga(partida, canon):
-                for paso in range(24, 161, 16):
-                    punto_x = boca_x + math.cos(direccion) * paso
-                    punto_y = boca_y + math.sin(direccion) * paso
-                    pantalla.fill(ROJO, (int(punto_x) // 2 * 2, int(punto_y) // 2 * 2, 4, 4))
+            for flecha_y in range(int(boca_y) + 60, ALTO - 40, 120):
+                for i in range(3):
+                    punta_x = int(boca_x + self.barrido * (16 + i * 10)) // 2 * 2
+                    pantalla.fill(CIAN, (punta_x, flecha_y - 4, 4, 4))
+                    pantalla.fill(CIAN, (punta_x - self.barrido * 4, flecha_y - 8, 4, 4))
+                    pantalla.fill(CIAN, (punta_x - self.barrido * 4, flecha_y, 4, 4))
         elif canon.ataque == "minas":
-            # Una X donde va a caer cada mina
+            # Siempre: una X donde va a caer cada mina
             for objetivo_x, objetivo_y in canon.objetivos:
-                for paso in range(-6, 7, 3):
-                    for signo in (1, -1):
-                        pantalla.fill(MAGENTA, (objetivo_x + paso // 2 * 2, objetivo_y + signo * paso // 2 * 2, 4, 4))
+                for paso in range(-8, 9, 4):
+                    pantalla.fill(MAGENTA, (int(objetivo_x) + paso - 2, int(objetivo_y) + paso - 2, 4, 4))
+                    pantalla.fill(MAGENTA, (int(objetivo_x) + paso - 2, int(objetivo_y) - paso - 2, 4, 4))
+        elif not partida.opciones.aviso_jefe or not dibujo.parpadeo(100):
+            return
+        elif canon.ataque == "rafaga":
+            # Hacia donde va a salir el primer obus
+            nave_x, nave_y = partida.nave.centro()
+            direccion = math.atan2(nave_y - boca_y, nave_x - boca_x)
+            for paso in range(24, 161, 16):
+                punto_x = boca_x + math.cos(direccion) * paso
+                punto_y = boca_y + math.sin(direccion) * paso
+                pantalla.fill(ROJO, (int(punto_x) // 2 * 2, int(punto_y) // 2 * 2, 4, 4))
         elif canon.ataque == "misiles":
-            # Flechitas amarillas hacia abajo
-            for paso in range(16, 49, 16):
-                for lado in (-4, 0, 4):
-                    pantalla.fill(AMARILLO, (int(boca_x) // 2 * 2 + lado - 2, int(boca_y) + paso - abs(lado), 4, 4))
+            # Flechitas amarillas hacia los dos costados
+            for lado in (-1, 1):
+                for paso in range(1, 4):
+                    pantalla.fill(AMARILLO, (int(boca_x + lado * paso * 14) // 2 * 2, int(boca_y + paso * 10), 4, 4))
+
+    def dibujar_aviso_cortina(self, pantalla, hueco):
+        # Rayitas rojas donde van a caer los escombros (y el hueco libre)
+        for x in range(24, lienzo.ancho, 72):
+            if abs(x - hueco) > 90:
+                pantalla.fill(ROJO, (x - 8, int(self.y) + 104, 16, 4))
+                pantalla.fill(ROJO, (x - 2, int(self.y) + 112, 4, 12))

@@ -212,6 +212,7 @@ class Partida:
     def jefe_vencido(self):
         # Gran explosion y bonus de puntos (los enemigos vuelven cuando se va el cartel)
         centro_x, centro_y = self.jefe.centro()
+        self.jefe.al_vencerlo(self)
         self.jefe.explotar(self)
         self.jefes_vencidos += 1
         ganados = self.sumar_puntos(JEFE_PUNTOS * self.jefes_vencidos)
@@ -230,7 +231,7 @@ class Partida:
         if self.capsula is not None:
             objetos.append(self.capsula)
         if self.jefe is not None:
-            objetos.append(self.jefe)
+            objetos.extend(self.jefe.objetos_que_se_mueven())
         return objetos
 
     def guardar_posiciones(self):
@@ -397,6 +398,7 @@ class Partida:
             # Dash contra una parte golpeable o contra el nucleo descubierto
             # (con la caja grande de la nave, para que sea facil acertarle)
             caja = nave.caja_recoger()
+            self._destruir_proyectiles(caja)
             parte = jefe.parte_golpeable(caja)
             if parte is not None:
                 self._rebotar_en(*parte.centro(jefe))
@@ -417,6 +419,16 @@ class Partida:
         if not jefe.congelado(self) and any(nave.toca_rect(caja) for caja in jefe.cajas_danio()):
             centro_x, centro_y = jefe.centro()
             self.danar_jugador(centro_x, centro_y)
+
+    def _destruir_proyectiles(self, caja):
+        # Algunos proyectiles (los misiles) se destruyen con el dash y dan puntos
+        for bala in [b for b in self.balas if b.destruible and caja.collidepoint(b.x, b.y)]:
+            self.balas.remove(bala)
+            ganados = self.sumar_puntos(bala.puntos)
+            self.efectos.explosion(bala.x, bala.y, FUEGO, 16, 4, 3)
+            self.efectos.texto_flotante("+" + str(ganados), bala.x, bala.y - 20, AMARILLO)
+            self.sonidos.reproducir("golpe")
+            self.congelar_frames = 2
 
     def _rebotar_en(self, x, y):
         # Despues de pegarle al jefe, la nave rebota y queda un rato invulnerable

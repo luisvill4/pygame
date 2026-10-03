@@ -2,22 +2,29 @@
 Clase base de los jefes y su registro.
 
 Todo jefe tiene fases (self.fase). La clase base resuelve las comunes:
-    entrar  -> baja desde arriba hasta y_final con el cartel "¡CUIDADO!"
+    entrar  -> llega a la pantalla mientras se presenta con su nombre y su apodo
     morir   -> explosiones por todo el cuerpo durante 2 s y despues la grande
 y ademas: la vida, el destello al recibir un golpe, el congelado del hielo, el
 cartel "¡DASH!" cuando se le puede pegar, las variantes de sus sprites y las
 PARTES (piezas que se rompen por separado, ver jefes/partes.py).
+
+EL RITMO (el "pulso"): las peleas son un baile, no una lluvia de balas. Cada jefe
+tiene un pulso (ms_pulso, como el tempo de una cancion) y cuenta sus fases en pulsos:
+    anticipacion (avisa)  ->  ataque (en los pulsos)  ->  recuperacion (ventana para pegarle)
+Es la estructura de los ataques de Dark Souls o Cuphead: siempre se ve venir y
+siempre deja un hueco. En actualizar_fase(), self.nuevo_pulso es True en el paso en
+que empieza cada pulso, y self.pulso es cuantos pulsos van de la fase actual.
 
 El tamaño de cada jefe va en 'ancho' y 'alto' (el Ojo es de 120x120).
 
 Cada jefe (una subclase) define el resto de sus fases en actualizar_fase().
 Para agregar un jefe nuevo:
     1. Crear jefes/mi_jefe.py con una clase que herede de Jefe y @registrar_jefe.
-    2. Darle un 'tipo' y escribir: cargar_animaciones(), al_terminar_de_entrar(),
-       actualizar_fase() y animacion(). Si ataca de otra forma, tambien
-       caja_cuerpo(), caja_nucleo() y puede_recibir_golpe(). Si tiene partes, las
-       agrega a self.partes y escribe al_golpear_parte() y al_romper_parte().
-    3. Importarlo en jefes/__init__.py y agregarlo a ORDEN_JEFES (config.py).
+    2. Darle 'tipo', 'nombre' y 'apodo', y escribir: cargar_animaciones(),
+       al_terminar_de_entrar(), actualizar_fase() y animacion(). Si ataca de otra
+       forma, tambien caja_cuerpo(), caja_nucleo() y puede_recibir_golpe(). Si tiene
+       partes, las agrega a self.partes y escribe al_golpear_parte() y al_romper_parte().
+    3. Importarlo en jefes/__init__.py y ponerlo como "jefe" de un sector (SECTORES en config.py).
 """
 import math
 import random
@@ -26,8 +33,8 @@ import pygame
 
 from juego import recursos, dibujo, lienzo
 from juego.proyectiles import romper_balas
-from juego.config import (ROJO, CIAN, ORO, FUEGO, ENERGIA, ARCOIRIS, BLANCO, HIELO, EMBESTIDA,
-                          MS_POR_FRAME, MS_CUADRO_JEFE, JEFE_VIDA)
+from juego.config import (ALTO, ROJO, CIAN, ORO, FUEGO, ENERGIA, ARCOIRIS, BLANCO, HIELO, EMBESTIDA, GRIS,
+                          MS_POR_FRAME, MS_CUADRO_JEFE, JEFE_VIDA, JEFE_PULSO)
 
 TAMANO = 120                # tamaño del Ojo (y de los jefes que no digan otro)
 
@@ -54,26 +61,30 @@ _blancas = {}
 
 class Jefe:
     tipo = None
+    nombre = ""                 # la presentacion: "LA FORTALEZA"
+    apodo = ""                  # y debajo, mas chico: "ACORAZADO IMPERIAL"
+    color = ROJO                # color de su nombre
     ancho = TAMANO
     alto = TAMANO
     y_final = 70                # altura a la que baja al entrar
+    ms_pulso = JEFE_PULSO       # el tempo de su pelea
     fases_congelables = ("flotar", "atacar", "cansado")    # el hielo no lo congela al entrar ni al morir
 
     def __init__(self, partida):
         self.x = (lienzo.ancho - self.ancho) // 2   # esquina de arriba a la izquierda del sprite,
         self.y = -self.alto - 10                    # centrado y arriba de la pantalla
-        self.fase = "entrar"
-        self.fase_hasta = 0                 # momento en que termina la fase actual
+        self.creado_en = partida.tiempo
         self.vida_max = JEFE_VIDA + partida.jefes_vencidos
         self.vida = self.vida_max
         self.golpe_hasta = 0                # destello blanco despues de recibir un golpe
         self.partes = []                    # piezas que se rompen por separado (ver partes.py)
+        self.cambiar_fase("entrar", 0, partida.tiempo)
 
     # ---------- Sprites ----------
 
     @classmethod
     def cargar_animaciones(cls):
-        # Para las subclases: {"nombre de la animacion": [cuadros de 120x120]}
+        # Para las subclases: {"nombre de la animacion": [cuadros]}
         raise NotImplementedError
 
     @classmethod
@@ -127,6 +138,11 @@ class Jefe:
                 return parte
         return None
 
+    def objetos_que_se_mueven(self):
+        # Lo que se dibuja interpolado (las partes con posicion propia, como los
+        # segmentos de la Serpiente, se agregan aca)
+        return [self]
+
     def muriendo(self):
         return self.fase == "morir"
 
@@ -137,33 +153,65 @@ class Jefe:
     def congelado(self, partida):
         return partida.activo("hielo") and self.fase in self.fases_congelables
 
+    # ---------- Fases y pulso ----------
+
     def cambiar_fase(self, fase, duracion, tiempo):
         self.fase = fase
+        self.fase_desde = tiempo
         self.fase_hasta = tiempo + duracion
+        self.pulso = -1                     # pulsos que van de la fase (el 0 empieza en el proximo paso)
+        self.nuevo_pulso = False
+
+    def cambiar_fase_pulsos(self, fase, pulsos, tiempo):
+        # Lo mismo, pero la duracion se cuenta en pulsos (el ritmo de la pelea)
+        self.cambiar_fase(fase, pulsos * self.ms_pulso, tiempo)
+
+    def fin_de_fase(self, tiempo):
+        return tiempo >= self.fase_hasta
+
+    def _contar_pulso(self, tiempo):
+        pulso = int((tiempo - self.fase_desde) // self.ms_pulso)
+        self.nuevo_pulso = pulso != self.pulso
+        self.pulso = pulso
+
+    def latido(self, tiempo):
+        # 0 justo al empezar un pulso y sube hasta 1 antes del siguiente (para dibujar el ritmo)
+        return ((tiempo - self.fase_desde) % self.ms_pulso) / self.ms_pulso
 
     # ---------- Cada frame ----------
 
     def actualizar(self, partida):
         if self.congelado(partida):
             # Congelado no se mueve ni ataca, y su fase no avanza
+            self.fase_desde += MS_POR_FRAME
             self.fase_hasta += MS_POR_FRAME
             self.al_congelarse()
             return
+        self._contar_pulso(partida.tiempo)
         if self.fase == "entrar":
-            self.y += 1.2
-            if self.y >= self.y_final:
-                self.y = self.y_final
-                self.al_terminar_de_entrar(partida)
+            self.actualizar_entrada(partida)
         elif self.fase == "morir":
             # Explosiones por todo el cuerpo y despues la grande
             if random.random() < 0.35:
-                partida.efectos.explosion(self.x + random.randint(10, self.ancho - 10),
-                                          self.y + random.randint(10, self.alto - 20), FUEGO, 12, 4, 4)
+                explosion_x, explosion_y = self.punto_de_explosion()
+                partida.efectos.explosion(explosion_x, explosion_y, FUEGO, 12, 4, 4)
                 partida.efectos.sacudir(3)
             if partida.tiempo > self.fase_hasta:
                 partida.jefe_vencido()
         else:
             self.actualizar_fase(partida)
+
+    def actualizar_entrada(self, partida):
+        # Por defecto baja desde arriba. (La Serpiente o la Singularidad entran distinto)
+        self.y += 1.2
+        if self.y >= self.y_final:
+            self.y = self.y_final
+            self.al_terminar_de_entrar(partida)
+
+    def punto_de_explosion(self):
+        # Un lugar al azar del cuerpo, para las explosiones al morir
+        return (self.x + random.randint(10, self.ancho - 10),
+                self.y + random.randint(10, self.alto - 20))
 
     def al_congelarse(self):
         # Para las subclases: correr sus propios temporizadores mientras esta congelado
@@ -189,11 +237,14 @@ class Jefe:
         partida.entrada.vibrar(0.5, 0.8, 200)
         partida.congelar_frames = 6
         if self.vida <= 0:
-            romper_balas(partida.balas, efectos, EMBESTIDA)
-            self.cambiar_fase("morir", 2000, partida.tiempo)
+            self.empezar_a_morir(partida)
         else:
             efectos.texto_flotante("¡GOLPE!", nucleo_x, nucleo_y - 50, CIAN)
             self.al_recibir_golpe(partida)
+
+    def empezar_a_morir(self, partida):
+        romper_balas(partida.balas, partida.efectos, EMBESTIDA)
+        self.cambiar_fase("morir", 2000, partida.tiempo)
 
     def al_recibir_golpe(self, partida):
         # Para las subclases: que hace despues de un golpe que no lo mata
@@ -227,6 +278,10 @@ class Jefe:
         # Para las subclases: la parte se rompio
         pass
 
+    def al_vencerlo(self, partida):
+        # Para las subclases: limpiar lo suyo (ej: las abejas de la Colmena)
+        pass
+
     def explotar(self, partida):
         # La gran explosion final
         centro_x, centro_y = self.centro()
@@ -245,42 +300,62 @@ class Jefe:
         # Para las subclases: que animacion mostrar segun la fase
         return next(iter(self.animaciones()))
 
-    def dibujar(self, pantalla, partida):
+    def imagen_actual(self, partida):
+        # El cuadro que toca, en su variante: blanco (recien golpeado), congelado o normal
         nombre = self.animacion()
         cuadros = self.animaciones()[nombre]
         indice = pygame.time.get_ticks() // MS_CUADRO_JEFE % len(cuadros)
-
         restante_hielo = partida.restante("hielo")
         if partida.tiempo < self.golpe_hasta and dibujo.parpadeo(60):
-            imagen = _blancas[self.tipo][nombre][indice]
-        elif self.congelado(partida) and (restante_hielo > 1000 or dibujo.parpadeo(100)):
-            imagen = _congeladas[self.tipo][nombre][indice]
-        else:
-            imagen = cuadros[indice]
+            return _blancas[self.tipo][nombre][indice]
+        if self.congelado(partida) and (restante_hielo > 1000 or dibujo.parpadeo(100)):
+            return _congeladas[self.tipo][nombre][indice]
+        return cuadros[indice]
 
-        # Flota de a 2 pixeles; al morir tiembla
+    def posicion_dibujo(self, partida):
+        # Flota de a 2 pixeles; al temblar se sacude
         dibujo_x, dibujo_y = int(self.x), int(self.y)
         if self.temblando():
             dibujo_x += random.randint(-2, 2) * 2
             dibujo_y += random.randint(-2, 2) * 2
         elif self.fase != "entrar" and not self.congelado(partida):
             dibujo_y += round(math.sin(pygame.time.get_ticks() / 300)) * 2
-        pantalla.blit(imagen, (dibujo_x, dibujo_y))
-        # Las partes van encima, movidas igual que el cuerpo
+        return dibujo_x, dibujo_y
+
+    def dibujar(self, pantalla, partida):
+        self.dibujar_cuerpo(pantalla, partida)
+        self.dibujar_extra(pantalla, partida)
+        # Avisos: la presentacion al entrar y cuando se le puede pegar
+        if self.fase == "entrar":
+            self.dibujar_presentacion(pantalla, partida)
+        if dibujo.parpadeo(200):
+            if self.puede_recibir_golpe():
+                # Debajo del jefe; si no entra (esta abajo de todo), encima
+                nucleo_x = self.centro_nucleo()[0]
+                cartel_y = int(self.y) + self.alto + 12
+                if cartel_y > ALTO - 50:
+                    cartel_y = int(self.y) - 16
+                dibujo.texto(pantalla, "¡DASH!", dibujo.CHICA, CIAN, int(nucleo_x), cartel_y)
+            if self.fase in self.fases_congelables:
+                self.dibujar_avisos_partes(pantalla)
+
+    def dibujar_cuerpo(self, pantalla, partida):
+        # El sprite y encima las partes, movidas igual que el cuerpo
+        dibujo_x, dibujo_y = self.posicion_dibujo(partida)
+        pantalla.blit(self.imagen_actual(partida), (dibujo_x, dibujo_y))
         for parte in self.partes:
             parte.dibujar(pantalla, dibujo_x + parte.dx, dibujo_y + parte.dy, self, partida)
 
-        self.dibujar_extra(pantalla, partida)
-
-        # Avisos: al entrar y cuando se le puede pegar (al nucleo o a una parte)
-        if self.fase == "entrar" and dibujo.parpadeo(200):
-            dibujo.texto_3d(pantalla, "¡CUIDADO!", dibujo.GRANDE, ROJO, (110, 0, 30), 330, 4)
-        if dibujo.parpadeo(200):
-            if self.puede_recibir_golpe():
-                nucleo_x = self.centro_nucleo()[0]
-                dibujo.texto(pantalla, "¡DASH!", dibujo.CHICA, CIAN, int(nucleo_x), int(self.y) + self.alto + 12)
-            if self.fase in self.fases_congelables:
-                self.dibujar_avisos_partes(pantalla)
+    def dibujar_presentacion(self, pantalla, partida):
+        # Como en los arcades: el nombre aparece letra por letra y el apodo debajo
+        transcurrido = partida.tiempo - self.creado_en
+        letras = int(transcurrido // 70)
+        centro = lienzo.centro_x()
+        if dibujo.parpadeo(250) or letras < len(self.nombre):
+            dibujo.texto(pantalla, "¡CUIDADO!", dibujo.CHICA, ROJO, centro, 270)
+        dibujo.texto_3d(pantalla, self.nombre[:letras], dibujo.GRANDE, self.color, (40, 0, 30), 310, 4)
+        if letras > len(self.nombre) + 4:
+            dibujo.texto(pantalla, self.apodo, dibujo.CHICA, GRIS, centro, 360)
 
     def dibujar_avisos_partes(self, pantalla):
         # Una flechita debajo de cada parte golpeable y un solo "¡DASH!" entre todas
@@ -289,13 +364,14 @@ class Jefe:
         if not golpeables:
             return
         for parte in golpeables:
-            flecha_x = int(parte.centro(self)[0]) // 2 * 2
-            flecha_y = int(self.y) + parte.dy + parte.alto + 4
+            parte_x, parte_y = parte.centro(self)
+            flecha_x = int(parte_x) // 2 * 2
+            flecha_y = int(parte_y + parte.alto / 2) + 4
             for fila, ancho in enumerate((4, 12, 20)):
                 pantalla.fill(CIAN, (flecha_x - ancho // 2, flecha_y + fila * 4, ancho, 4))
         medio_x = sum(parte.centro(self)[0] for parte in golpeables) / len(golpeables)
-        abajo = max(parte.dy + parte.alto for parte in golpeables)
-        dibujo.texto(pantalla, "¡DASH!", dibujo.CHICA, CIAN, int(medio_x), int(self.y) + abajo + 30)
+        abajo = max(parte.centro(self)[1] + parte.alto / 2 for parte in golpeables)
+        dibujo.texto(pantalla, "¡DASH!", dibujo.CHICA, CIAN, int(medio_x), int(abajo) + 30)
 
     def dibujar_extra(self, pantalla, partida):
         # Para las subclases: avisos propios (ej: hacia donde va a disparar)

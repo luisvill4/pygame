@@ -33,6 +33,9 @@ def jefe_respaldo(color_nucleo):
 @registrar_jefe
 class JefeOjo(Jefe):
     tipo = "ojo"
+    nombre = "EL OJO"
+    apodo = "EL QUE TODO LO VE"
+    color = MAGENTA
 
     def __init__(self, partida):
         super().__init__(partida)
