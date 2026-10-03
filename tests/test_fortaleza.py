@@ -47,7 +47,7 @@ def sin_coraza(partida, jefe):
 def test_tiene_cuatro_canones_y_la_barra_los_suma(partida):
     jefe = llegar_a_la_fortaleza(partida)
     assert sorted(c.ataque for c in jefe.partes) == ["laser", "minas", "misiles", "rafaga"]
-    total = JEFE_VIDA + 1 + 4 * FORTALEZA_VIDA_CANON
+    total = JEFE_VIDA + 4 * FORTALEZA_VIDA_CANON          # (sale segunda: 1 jefe vencido // 2 = 0)
     assert jefe.vida_barra() == (total, total)
 
 

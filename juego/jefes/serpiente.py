@@ -34,7 +34,7 @@ import pygame
 from juego import recursos, dibujo, lienzo
 from juego.config import (ALTO, VERDE, AMARILLO, BLANCO, ROJO, HIELO, ORO, MS_POR_FRAME,
                           SERPIENTE_PULSOS, SERPIENTE_VELOCIDAD, SERPIENTE_GIRO, SERPIENTE_MORDIDA,
-                          SERPIENTE_ESPACIO, SERPIENTE_CUELLO, SERPIENTE_VENTANA)
+                          SERPIENTE_ESPACIO, SERPIENTE_CUELLO, SERPIENTE_VENTANA, SERPIENTE_CORTES_EXTRA)
 from juego.jefes.base import Jefe, registrar_jefe
 from juego.proyectiles import Veneno
 
@@ -146,6 +146,7 @@ class Serpiente(Jefe):
 
     def __init__(self, partida):
         super().__init__(partida)
+        self.vida_max = self.vida = self.vida_max + SERPIENTE_CORTES_EXTRA
         # Entra nadando desde la izquierda, con el cuerpo todavia afuera
         self.x, self.y = -CABEZA - 20, ALTO * 0.45
         self.angulo = 0                 # hacia donde mira y nada (radianes)

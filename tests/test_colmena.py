@@ -80,7 +80,7 @@ def test_la_compuerta_solo_se_rompe_abierta_y_las_abejas_se_enojan(partida):
 
 
 def test_nunca_hay_demasiadas_abejas(partida):
-    jefe = llegar_a_la_colmena(partida)
+    llegar_a_la_colmena(partida)
     for _ in range(60 * 40):
         jugar(partida)
         partida.nave.invulnerable_hasta = math.inf

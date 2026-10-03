@@ -165,7 +165,7 @@ RANGO_EMBESTIDOR = 250
 # Jefes: se les pega con el dash en el nucleo cuando quedan cansados
 JEFE_PULSO = 500                # ms de un "pulso": el tempo de las peleas (ver jefes/base.py)
 JEFE_CADA_NIVELES = 5           # aparece al llegar a los niveles 5, 10, 15... (cual: el del sector)
-JEFE_VIDA = 3                   # golpes que aguanta el primero (cada jefe nuevo aguanta uno mas)
+JEFE_VIDA = 3                   # golpes que aguanta el primero (cada 2 jefes vencidos, uno mas)
 JEFE_PUNTOS = 50                # bonus al vencerlo (el segundo da el doble, el tercero el triple...)
 JEFE_FLOTAR = 2500              # ms que se mueve de lado a lado antes de atacar
 JEFE_CANSADO = 2500             # ms que deja el nucleo al descubierto
@@ -194,6 +194,7 @@ SERPIENTE_GIRO = 0.06           # cuanto puede doblar por paso (radianes)
 SERPIENTE_MORDIDA = 10          # px por paso al morder
 SERPIENTE_ESPACIO = 26          # px entre un segmento y el siguiente
 SERPIENTE_CUELLO = 4            # segmentos que no se cortan (cortes = vida del jefe)
+SERPIENTE_CORTES_EXTRA = 2      # cortes de mas (un corte de cola es un golpe "chico")
 SERPIENTE_VENTANA = 5           # pulsos que la cola brilla despues de chocar (la ventana para cortarla)
 
 # La Colmena: una madre que defiende a sus hijas. Abre una compuerta (tiembla y zumba),

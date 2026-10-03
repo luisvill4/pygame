@@ -27,7 +27,7 @@ import random
 import pygame
 
 from juego import recursos, dibujo, lienzo
-from juego.config import (ALTO, HIELO, CIAN, MAGENTA, BLANCO, ORO, ENERGIA, JEFE_VIDA, SINGULARIDAD_PULSO,
+from juego.config import (ALTO, HIELO, CIAN, MAGENTA, BLANCO, ORO, ENERGIA, SINGULARIDAD_PULSO,
                           SINGULARIDAD_GRAVEDAD, SINGULARIDAD_INHALAR, SINGULARIDAD_RADIO, SINGULARIDAD_HUECOS,
                           SINGULARIDAD_EXPUESTA)
 from juego.jefes.base import Jefe, registrar_jefe
@@ -129,7 +129,6 @@ class Singularidad(Jefe):
 
     def __init__(self, partida):
         super().__init__(partida)
-        self.vida_max = self.vida = JEFE_VIDA + partida.jefes_vencidos // 2
         self.x, self.y = lienzo.centro_x() - LADO / 2, CENTRO_Y - LADO / 2
         self.escala = 0                 # al nacer crece desde un punto
         self.angulo_anillo = 0          # cuanto giro el anillo (en lugares)

@@ -30,7 +30,7 @@ import random
 import pygame
 
 from juego import recursos, dibujo, lienzo
-from juego.config import (ALTO, AMARILLO, BLANCO, ROJO, HIELO, ORO, JEFE_VIDA, COLMENA_PULSO, COLMENA_ABEJAS,
+from juego.config import (ALTO, AMARILLO, BLANCO, ROJO, HIELO, ORO, COLMENA_PULSO, COLMENA_ABEJAS,
                           COLMENA_ABEJAS_MAX, COLMENA_EXPUESTA, COLMENA_EMBESTIDA, COLMENA_REBOTES,
                           COLMENA_ATURDIDA)
 from juego.enemigos import crear_enemigo
@@ -184,8 +184,6 @@ class Colmena(Jefe):
 
     def __init__(self, partida):
         super().__init__(partida)
-        # El ojo aguanta menos golpes que otros jefes: antes hay que romper las compuertas
-        self.vida_max = self.vida = JEFE_VIDA + partida.jefes_vencidos // 2
         self.partes = [Compuerta(dx, dy, angulo) for dx, dy, angulo in COMPUERTAS]
         self.elegidas = []              # las compuertas del compas actual
         self.ultima = None

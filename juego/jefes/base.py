@@ -75,7 +75,7 @@ class Jefe:
         self.x = (lienzo.ancho - self.ancho) // 2   # esquina de arriba a la izquierda del sprite,
         self.y = -self.alto - 10                    # centrado y arriba de la pantalla
         self.creado_en = partida.tiempo
-        self.vida_max = JEFE_VIDA + partida.jefes_vencidos
+        self.vida_max = JEFE_VIDA + partida.jefes_vencidos // 2
         self.vida = self.vida_max
         self.golpe_hasta = 0                # destello blanco despues de recibir un golpe
         self.partes = []                    # piezas que se rompen por separado (ver partes.py)

@@ -131,8 +131,8 @@ class JefeOjo(Jefe):
             for i in range(cantidad):
                 direcciones.append(hacia_nave + math.radians((i - (cantidad - 1) / 2) * 14))
         else:
-            # Hacia todos lados, un poco mas lento
-            cantidad = min(14 + partida.jefes_vencidos * 2, 24)
+            # Hacia todos lados, un poco mas lento (pocas balas: los huecos se tienen que ver)
+            cantidad = min(12 + partida.jefes_vencidos // 5 * 2, 18)
             giro = self.rafagas * math.pi / cantidad    # cada rafaga sale girada: los huecos cambian
             for i in range(cantidad):
                 direcciones.append(2 * math.pi * i / cantidad + giro)
