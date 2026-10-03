@@ -38,8 +38,7 @@ class Escena:
         # Un paso del fondo (va en actualizar). Con una partida, el fondo ademas se corre
         # al reves de la nave (paralaje)
         if partida is not None:
-            sector = partida.director.sector
-            self.app.fondo.ir_a_sector(sector["tinte"], sector["fondo"])
+            self.app.fondo.ir_a_sector(partida.director.sector)
             self.app.fondo.mover(-partida.nave.vx * REACCION_PARALAJE, -partida.nave.vy * REACCION_PARALAJE)
         else:
             self.app.fondo.mover()

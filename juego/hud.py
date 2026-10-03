@@ -16,7 +16,7 @@ import random
 import pygame
 
 from juego import dibujo, nave, lienzo
-from juego.dibujo import texto, CHICA, MEDIA, GRANDE
+from juego.dibujo import texto, MINI, CHICA, MEDIA, GRANDE
 from juego.config import (ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA,
                           COMBO_TIEMPO, CARTEL_JEFE, OLEADA_DURACION)
 from juego.powerups import TIPOS_POWERUP
@@ -51,11 +51,13 @@ def dibujar(pantalla, partida):
     # Carteles: nivel, sector nuevo, oleada y jefe vencido
     if partida.tiempo - partida.tiempo_cartel_nivel < 1500:
         dibujo.texto_3d(pantalla, "NIVEL " + str(partida.nivel), GRANDE, AMARILLO, MAGENTA, 250, 4)
-    if partida.tiempo - director.tiempo_cartel_sector < 2500:
+    if 0 <= partida.tiempo - director.tiempo_cartel_sector < 2500:
         sector = director.sector
         texto(pantalla, "SECTOR " + str(director.numero_sector), CHICA, GRIS, lienzo.centro_x(), 300)
         dibujo.texto_3d(pantalla, sector["nombre"], MEDIA, sector["color"], (30, 30, 50), 330, 3)
-    if director.nuevo_tipo is not None and partida.tiempo - director.tiempo_cartel_nuevo < 3500:
+        if partida.tiempo - director.tiempo_cartel_sector > 600:
+            texto(pantalla, sector["lema"], CHICA, BLANCO, lienzo.centro_x(), 370)
+    if director.nuevo_tipo is not None and partida.tiempo - director.tiempo_cartel_nuevo < DURACION_CARTEL_NUEVO:
         _cartel_nuevo_enemigo(pantalla, director.nuevo_tipo, partida.tiempo - director.tiempo_cartel_nuevo)
     if director.en_oleada and director.restante_oleada() > OLEADA_DURACION - 2000 and dibujo.parpadeo(150):
         dibujo.texto_3d(pantalla, "¡OLEADA!", GRANDE, ROJO, (110, 0, 30), 200, 4)
@@ -126,16 +128,25 @@ def _activos(pantalla, partida):
         fila_y -= 26
 
 
+DURACION_CARTEL_NUEVO = 3500
+
+
 def _cartel_nuevo_enemigo(pantalla, tipo, transcurrido):
-    # "NUEVO ENEMIGO: DIVISOR" con su dibujo y un consejo (parpadea el primer segundo)
-    centro = lienzo.centro_x()
-    titulo = "NUEVO ENEMIGO: " + tipo.nombre
+    # Una ficha chica debajo del puntaje (asi no tapa el juego): entra deslizandose desde
+    # la izquierda, muestra el dibujo, el nombre y un consejo, y se va por donde vino
+    ancho, alto = 288, 64
+    entrada = min(1, transcurrido / 250, (DURACION_CARTEL_NUEVO - transcurrido) / 250)
+    x = int(20 - (1 - max(0, entrada)) * (ancho + 30)) // 4 * 4
+    y = 104
+    dibujo.marco(pantalla, pygame.Rect(x, y, ancho, alto), tipo.color)
+    imagen = tipo.cuadros()[0]
+    if imagen.get_width() > 40:
+        imagen = pygame.transform.scale(imagen, (40, 40))
+    pantalla.blit(imagen, imagen.get_rect(center=(x + 34, y + alto // 2)))
     if transcurrido > 1000 or dibujo.parpadeo(150):
-        texto(pantalla, titulo, CHICA, tipo.color, centro + 16, 420)
-        imagen = tipo.cuadros()[0]
-        ancho_titulo = len(titulo) * CHICA
-        pantalla.blit(imagen, imagen.get_rect(midright=(centro + 16 - ancho_titulo // 2 - 10, 420)))
-    texto(pantalla, tipo.pista, CHICA, BLANCO, centro, 448)
+        texto(pantalla, "NUEVO ENEMIGO", MINI, GRIS, x + 64, y + 16, alinear="izquierda")
+    texto(pantalla, tipo.nombre, CHICA, tipo.color, x + 64, y + 32, alinear="izquierda")
+    texto(pantalla, tipo.pista, MINI, BLANCO, x + 64, y + 50, alinear="izquierda")
 
 
 def _barra_oleada(pantalla, director):

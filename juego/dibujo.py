@@ -10,6 +10,7 @@ from juego import recursos
 from juego.config import ALTO, ANCHO_MENU, FONDO, GRIS, AMARILLO, ROJO, BLANCO, ARCOIRIS, FILAS_RECORDS
 
 # Tamaños de letra (siempre multiplos de 8 para que la fuente pixelada se vea nitida)
+MINI = 8                # el tamaño "real" de la fuente: para textos de apoyo
 CHICA = 16
 MEDIA = 24
 GRANDE = 40

@@ -2,8 +2,8 @@
 import math
 import random
 
-from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, ENEMIGOS_MAX, SECTORES, SECTOR_CADA_NIVELES,
-                          OLEADA_DURACION, MS_POR_FRAME)
+from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, ENEMIGOS_MAX, SECTORES, CARTEL_JEFE,
+                          OLEADA_DURACION, MS_POR_FRAME, JEFE_CADA_NIVELES)
 from tests.ayudas import jugar
 
 
@@ -52,23 +52,45 @@ def test_el_enemigo_recien_desbloqueado_se_presenta(partida):
     assert "embestidor" in [e.tipo for e in partida.enemigos]
 
 
-def test_el_sector_cambia_cada_2_niveles_y_nunca_se_repite_seguido(partida):
-    random.seed(1)
-    sectores = [partida.director.sector]
-    assert sectores[0] is SECTORES[0]           # siempre se empieza en el Cinturon
-    for nivel in range(2, 20):
-        subir_hasta(partida, nivel)
-        cambia = (nivel - 1) % SECTOR_CADA_NIVELES == 0
-        assert (partida.director.sector is not sectores[-1]) == cambia
-        sectores.append(partida.director.sector)
-    assert len({s["nombre"] for s in sectores}) >= 4        # se ven sectores distintos
+def test_cada_sector_termina_con_su_jefe_y_despues_viene_el_siguiente(partida):
+    partida.nave.invulnerable_hasta = math.inf
+    director = partida.director
+    assert director.sector is SECTORES[0]       # siempre se empieza en el Cinturon
+    for vuelta in range(len(SECTORES) + 1):
+        sector = director.sector
+        subir_hasta_el_jefe(partida)
+        assert partida.jefe.tipo == sector["jefe"]
+        assert director.sector is sector        # el sector no cambia durante la pelea
+        partida.jefe_vencido()
+        jugar(partida, int(CARTEL_JEFE / MS_POR_FRAME) + 2)
+        siguiente = SECTORES[(vuelta + 1) % len(SECTORES)]
+        assert director.sector is siguiente     # en orden, y despues del ultimo vuelve al primero
+        assert director.numero_sector == vuelta + 2
+
+
+def subir_hasta_el_jefe(partida):
+    # Sube de nivel hasta que aparece el jefe (sin limpiar la pelea)
+    partida.nivel = (partida.nivel // JEFE_CADA_NIVELES + 1) * JEFE_CADA_NIVELES - 1
+    partida.subir_nivel()
+
+
+def test_en_cada_sector_el_fondo_tiene_su_ambiente(app):
+    fondo = app.fondo
+    for sector in SECTORES:
+        fondo.ir_a_sector(sector, instantaneo=True)
+        for _ in range(400):
+            fondo.mover()
+        fondo.dibujar(app.pantalla)
+        assert fondo.motas, sector["nombre"]
 
 
 def test_al_cambiar_de_sector_se_van_algunos_enemigos(partida):
     subir_hasta(partida, 8)                 # con varios enemigos
     antes = list(partida.enemigos)
+    grupos = {id(getattr(e, "bandada", e)) for e in antes}      # un enjambre se va entero
     partida.director.cambiar_sector()
-    assert len([e for e in antes if e not in partida.enemigos]) == int(len(antes) * 0.34)
+    se_fueron = {id(getattr(e, "bandada", e)) for e in antes if e not in partida.enemigos}
+    assert len(se_fueron) == int(len(grupos) * 0.34)
 
 
 def preparar_oleada(partida):

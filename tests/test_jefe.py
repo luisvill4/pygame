@@ -3,7 +3,7 @@ import math
 
 import pytest
 
-from juego.config import JEFE_VIDA, CARTEL_JEFE, MS_POR_FRAME, ORDEN_JEFES
+from juego.config import JEFE_VIDA, CARTEL_JEFE, MS_POR_FRAME, SECTORES
 from juego.enemigos import crear_enemigo
 from juego.jefes import TIPOS_JEFE
 from tests.ayudas import jugar
@@ -17,8 +17,8 @@ def llegar_al_jefe(partida):
     return partida.jefe
 
 
-def test_todos_los_jefes_de_config_existen():
-    assert set(ORDEN_JEFES) <= set(TIPOS_JEFE)
+def test_todos_los_jefes_de_los_sectores_existen():
+    assert {sector["jefe"] for sector in SECTORES} <= set(TIPOS_JEFE)
 
 
 def test_aparece_en_el_nivel_5_y_guarda_a_los_enemigos(partida):
@@ -71,8 +71,10 @@ def test_al_vencerlo_vuelven_los_enemigos_y_se_completa_el_presupuesto(partida):
     guardados = list(partida.enemigos_guardados)
     partida.jefe_vencido()
     jugar(partida, int(CARTEL_JEFE / MS_POR_FRAME) + 2)
-    # Vuelven todos los que estaban y se completa el presupuesto del nivel
-    assert all(enemigo in partida.enemigos for enemigo in guardados)
+    # Vuelven los que estaban (menos los que se fueron al cambiar de sector)
+    # y se completa el presupuesto del nivel
+    volvieron = [enemigo for enemigo in guardados if enemigo in partida.enemigos]
+    assert len(volvieron) >= len(guardados) - int(len(guardados) * 0.34)
     assert partida.director.costo_actual() >= partida.director.presupuesto() - 1
 
 

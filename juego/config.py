@@ -164,8 +164,7 @@ RANGO_EMBESTIDOR = 250
 
 # Jefes: se les pega con el dash en el nucleo cuando quedan cansados
 JEFE_PULSO = 500                # ms de un "pulso": el tempo de las peleas (ver jefes/base.py)
-JEFE_CADA_NIVELES = 5           # aparece al llegar a los niveles 5, 10, 15...
-ORDEN_JEFES = ["ojo", "fortaleza"]  # que jefe sale cada vez (se repite la lista)
+JEFE_CADA_NIVELES = 5           # aparece al llegar a los niveles 5, 10, 15... (cual: el del sector)
 JEFE_VIDA = 3                   # golpes que aguanta el primero (cada jefe nuevo aguanta uno mas)
 JEFE_PUNTOS = 50                # bonus al vencerlo (el segundo da el doble, el tercero el triple...)
 JEFE_FLOTAR = 2500              # ms que se mueve de lado a lado antes de atacar
@@ -210,23 +209,32 @@ DIFICULTADES = {
                   "descripcion": ["1 VIDA", "ENEMIGOS 30% MAS RAPIDOS", "SIN PIEDAD"]},
 }
 
-# Sectores: cada SECTOR_CADA_NIVELES niveles cambia el ambiente (fondo teñido) y el enemigo
-# que mas aparece. El primero es siempre el Cinturon; despues se sortean (nunca dos iguales
-# seguidos). 'tinte' tiñe nebulosas y planetas (None = colores originales; ningun canal
-# por encima de ~110, para que no se confunda con enemigos); 'fondo' es el color del espacio
-SECTOR_CADA_NIVELES = 2
+# Sectores (biomas): cada uno termina con SU jefe, y al vencerlo se pasa al siguiente.
+# Despues del ultimo se vuelve al primero (los jefes aguantan mas cada vez).
+#   tinte:     tiñe nebulosas y planetas (None = colores originales)
+#   fondo:     el color del espacio
+#   ambiente:  las particulas del fondo (ver fondo.py): asteroides, brasas, esporas, panal o abismo
+#   estrellas: cuanto de rojo, verde y azul tienen las estrellas (1 = blancas)
+#   favorito:  el enemigo que mas aparece; lema: la frase del cartel al llegar
+# Ningun color del fondo pasa de ~110 por canal, para que no se confunda con enemigos
 PESO_FAVORITO = 3               # el enemigo favorito del sector sale 3 veces mas seguido
 RECAMBIO_SECTOR = 0.34          # al cambiar de sector se va esta parte de los enemigos (vienen otros)
 SECTORES = [
-    {"nombre": "CINTURON EXTERIOR", "color": CIAN, "tinte": None, "fondo": FONDO, "favorito": "perseguidor"},
-    {"nombre": "NEBULOSA CARMESI", "color": ROJO, "tinte": (110, 35, 50), "fondo": (16, 4, 8),
+    {"nombre": "CINTURON EXTERIOR", "lema": "DONDE EMPIEZA TODO", "color": CIAN, "jefe": "ojo",
+     "tinte": None, "fondo": FONDO, "ambiente": "asteroides", "estrellas": (1, 1, 1),
+     "favorito": "perseguidor"},
+    {"nombre": "NEBULOSA CARMESI", "lema": "EL AIRE ARDE", "color": ROJO, "jefe": "fortaleza",
+     "tinte": (110, 35, 50), "fondo": (16, 4, 8), "ambiente": "brasas", "estrellas": (1, 0.7, 0.7),
      "favorito": "embestidor"},
-    {"nombre": "CAMPO ESMERALDA", "color": VERDE, "tinte": (35, 105, 70), "fondo": (4, 14, 10),
+    {"nombre": "CAMPO ESMERALDA", "lema": "ALGO SE MUEVE ENTRE LAS ESPORAS", "color": VERDE, "jefe": "ojo",
+     "tinte": (35, 105, 70), "fondo": (4, 14, 10), "ambiente": "esporas", "estrellas": (0.75, 1, 0.8),
      "favorito": "divisor"},
-    {"nombre": "MAR DE AMBAR", "color": AMARILLO, "tinte": (110, 80, 30), "fondo": (14, 10, 4),
+    {"nombre": "MAR DE AMBAR", "lema": "LA COLMENA TE OBSERVA", "color": AMARILLO, "jefe": "fortaleza",
+     "tinte": (110, 80, 30), "fondo": (14, 10, 4), "ambiente": "panal", "estrellas": (1, 0.85, 0.6),
      "favorito": "enjambre"},
-    {"nombre": "ABISMO AZUL", "color": HIELO, "tinte": (35, 65, 110), "fondo": (4, 6, 20),
-     "favorito": "embestidor"},
+    {"nombre": "ABISMO AZUL", "lema": "NI LA LUZ ESCAPA", "color": HIELO, "jefe": "ojo",
+     "tinte": (35, 65, 110), "fondo": (4, 6, 20), "ambiente": "abismo", "estrellas": (0.7, 0.8, 1),
+     "favorito": "rebotador"},
 ]
 TRANSICION_SECTOR = 60          # pasos (1 s) que tarda el fondo en cambiar de color, en 4 etapas
 

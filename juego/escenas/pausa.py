@@ -9,7 +9,7 @@ import pygame
 
 from juego import dibujo
 from juego.dibujo import texto, CHICA, MEDIA, TITULO
-from juego.config import FONDO, CIAN, BLANCO, GRIS, ROJO, AMARILLO
+from juego.config import FONDO, CIAN, BLANCO, GRIS, ROJO, AMARILLO, SECTORES
 from juego.entrada import PAUSA, VOLVER, OPCIONES, ACEPTAR, ARRIBA, ABAJO, IZQUIERDA, DERECHA
 from juego.escenas.base import Escena
 from juego.escenas.opciones import Opciones
@@ -87,7 +87,7 @@ class Pausa(Escena):
         self.app.sonidos.reanudar_todo()
         self.app.sonidos.parar_musica()
         self.app.efectos.reiniciar()
-        self.app.fondo.ir_a_sector(None, FONDO, instantaneo=True)
+        self.app.fondo.ir_a_sector(SECTORES[0], instantaneo=True)
         self.app.sonidos.reproducir("seleccion")
         self.app.cambiar_escena(Inicio(self.app))
 

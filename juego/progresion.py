@@ -6,8 +6,8 @@ llega una OLEADA. (Los juegos le dicen "director" a esta parte: dirige la tensio
   presupuesto que crece. Se completa con enemigos al azar entre los desbloqueados,
   con mas chances para el favorito del sector. Asi la dificultad crece controlada,
   pero cada partida es distinta.
-- Sectores: cada SECTOR_CADA_NIVELES niveles cambia el ambiente y parte de los
-  enemigos se van y llegan otros.
+- Sectores: cada sector termina con su jefe; al vencerlo se pasa al siguiente
+  (otro ambiente, otro enemigo favorito) y parte de los enemigos se van y llegan otros.
 - Oleadas: picos de tension. Llegan muchos enemigos de golpe, duran unos segundos
   y se van; pasarla sin perder una vida da un bonus y un power-up.
 
@@ -17,16 +17,16 @@ actualizar() en cada paso.
 import random
 
 from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, PRESUPUESTO_INICIAL, PRESUPUESTO_POR_NIVEL,
-                          PRESUPUESTO_MAXIMO, ENEMIGOS_MAX, SECTORES, SECTOR_CADA_NIVELES, PESO_FAVORITO,
+                          PRESUPUESTO_MAXIMO, ENEMIGOS_MAX, SECTORES, PESO_FAVORITO,
                           RECAMBIO_SECTOR, OLEADA_DESDE_NIVEL, OLEADA_ESPERA, OLEADA_DURACION,
-                          OLEADA_PRESUPUESTO, OLEADA_PUNTOS, REFUERZO_ESPERA, AMARILLO, ROJO)
+                          OLEADA_PRESUPUESTO, OLEADA_PUNTOS, REFUERZO_ESPERA, CARTEL_JEFE, AMARILLO, ROJO)
 from juego.enemigos import crear_enemigos, TIPOS_ENEMIGO
 
 
 class Director:
     def __init__(self, partida):
         self.partida = partida
-        self.sector = SECTORES[0]           # el primero es siempre el mas tranquilo
+        self.sector = SECTORES[0]           # el primero es siempre el Cinturon
         self.numero_sector = 1
         self.tiempo_cartel_sector = -10000
         # Oleadas
@@ -101,12 +101,19 @@ class Director:
         self.completar_presupuesto()
 
     def al_subir_nivel(self):
-        if (self.partida.nivel - 1) % SECTOR_CADA_NIVELES == 0:
-            self.cambiar_sector()
         self.completar_presupuesto()
+
+    def al_vencer_al_jefe(self):
+        # Vencido el jefe del sector, se pasa al siguiente (el cartel sale cuando se va
+        # el de "¡JEFE VENCIDO!", para que no se pisen)
+        self.cambiar_sector()
+        self.tiempo_cartel_sector = self.partida.tiempo + CARTEL_JEFE
 
     def al_volver_del_jefe(self):
         self.completar_presupuesto()
+
+    def jefe_del_sector(self):
+        return self.sector["jefe"]
 
     def al_empezar_jefe(self):
         # Si habia una oleada, se corta (sus enemigos no se guardan)
@@ -115,17 +122,27 @@ class Director:
     # ---------- Sectores ----------
 
     def cambiar_sector(self):
+        # El siguiente de la lista (despues del ultimo, vuelve al primero)
         partida = self.partida
-        otros = [s for s in SECTORES if s is not self.sector]
-        self.sector = random.choice(otros)
+        self.sector = SECTORES[(SECTORES.index(self.sector) + 1) % len(SECTORES)]
         self.numero_sector += 1
         self.tiempo_cartel_sector = partida.tiempo
-        # Parte de los enemigos se va (desaparecen en una nube) y despues llegan otros
-        fijos = self.fijos()
-        for enemigo in random.sample(fijos, int(len(fijos) * RECAMBIO_SECTOR)):
-            centro_x, centro_y = enemigo.centro()
-            partida.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color], 14, 3, 3)
-            partida.quitar_enemigo(enemigo)
+        # Parte de los enemigos se va y despues llegan otros. Si estaban guardados por la
+        # pelea con el jefe, directamente no vuelven; si estan en pantalla, se van en una nube.
+        # Un enjambre se va entero (cuenta como un grupo)
+        guardados = partida.enemigos_guardados
+        grupos = {}
+        for enemigo in (guardados if guardados else self.fijos()):
+            grupos.setdefault(id(getattr(enemigo, "bandada", enemigo)), []).append(enemigo)
+        for grupo in random.sample(list(grupos.values()), int(len(grupos) * RECAMBIO_SECTOR)):
+            for enemigo in grupo:
+                if enemigo in guardados:
+                    guardados.remove(enemigo)
+                    enemigo.al_quitar(partida)
+                else:
+                    centro_x, centro_y = enemigo.centro()
+                    partida.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color], 14, 3, 3)
+                    partida.quitar_enemigo(enemigo)
 
     # ---------- Oleadas ----------
 

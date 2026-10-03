@@ -21,7 +21,7 @@ from juego import hud, lienzo
 from juego.config import (COMBO_TIEMPO, COMBO_MAXIMO, MONEDAS_POR_NIVEL, MS_POR_FRAME,
                           PUNTOS_ENEMIGO_CONGELADO, NAVE_VELOCIDAD, RECARGA_POR_DESTRUIR,
                           TURBO_VELOCIDAD, DASH_RECARGA, RECARGA_RAPIDA, PRIMER_POWERUP, ESPERA_POWERUP,
-                          INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, JEFE_CADA_NIVELES, ORDEN_JEFES, JEFE_PUNTOS,
+                          INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, JEFE_CADA_NIVELES, JEFE_PUNTOS,
                           CARTEL_JEFE, DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
                           ESCARCHA, EMBESTIDA, ARCOIRIS)
 from juego.nave import Nave
@@ -197,8 +197,8 @@ class Partida:
             self.termino = True
 
     def iniciar_jefe(self):
-        # Los enemigos explotan y se guardan hasta que venzas al jefe, que baja desde arriba
-        tipo = ORDEN_JEFES[self.jefes_vencidos % len(ORDEN_JEFES)]
+        # Los enemigos explotan y se guardan hasta que venzas al jefe del sector
+        tipo = self.director.jefe_del_sector()
         self.director.al_empezar_jefe()     # si habia una oleada, se corta
         self.jefe = crear_jefe(tipo, self)
         self.balas.clear()
@@ -220,6 +220,7 @@ class Partida:
         self.tiempo_cartel_jefe = self.tiempo
         self.jefe = None
         self.balas.clear()
+        self.director.al_vencer_al_jefe()      # se pasa al sector siguiente
 
     # ================================== #
     # =========== CADA FRAME =========== #
