@@ -38,8 +38,9 @@ El nivel 1 pide 10 y cada nivel pide 1 más, hasta 16. Jugar con combo alto y us
 ### El dash
 El dash es la herramienta principal: te lanza hacia adelante y durante ese instante **nada te hace daño**.
 
-- **Dash perfecto:** si el dash atraviesa un enemigo o una bala que te habría pegado, sale "¡PERFECTO!": ganás puntos, el combo no se corta y **el dash se recarga casi enseguida**, así que se pueden encadenar. Varios perfectos seguidos (antes de 1.5 s) forman una **cadena** que multiplica los puntos hasta x5.
-- Algunos enemigos (el divisor, el enjambre, las abejas) y algunos proyectiles (misiles, asteroides) se **destruyen** con el dash, y cada uno adelanta la recarga.
+- Algunos enemigos (el divisor, el enjambre, las abejas) y algunos proyectiles (misiles, asteroides) se **destruyen** con el dash, y cada uno adelanta la recarga. Atravesar a los demás enemigos o a las balas solo te salva del golpe: no da nada.
+- **Dash perfecto:** romper (o partir) con el dash a un enemigo destruible es un "¡PERFECTO!": unos puntos más, el combo no se corta y **el dash se recarga casi enseguida**. Varios seguidos (antes de 1.5 s) forman una **cadena** que multiplica esos puntos hasta x5.
+- **Interceptar:** si le pegás con el dash al **embestidor mientras embiste**, lo frenás en seco: queda aturdido 2 s (no lastima), da 10 puntos y cuenta como dash perfecto ("¡INTERCEPTADO!").
 - Contra los jefes, el dash es la única forma de pegarles.
 
 ### Mejoras (el Taller)
@@ -47,7 +48,8 @@ En el **nivel 3** y **al cerrar cada sector** el juego se detiene y te ofrece **
 
 | Mejora | Qué hace |
 |---|---|
-| **DOBLE DASH** | Un dash más seguido antes de recargar (se ve como cuadraditos al lado de "DASH"). |
+| **DOBLE DASH** *(rara)* | Un dash más seguido antes de recargar (se ve como un cuadradito al lado de "DASH"). Una sola vez y desde el sector 3. |
+| **ECO** | Cada dash tiene un 25% (45% en nivel 2) de dejar una copia violeta que lo repite un momento después: destruye, aturde y rompe balas. |
 | **RECARGA** | El dash se recarga un 20% más rápido (por nivel). |
 | **ONDA** | Al terminar cada dash, una onda rompe balas, destruye a los enemigos destruibles y empuja (y aturde) a los demás. |
 | **COMETA** | Dash un 50% más largo. |
@@ -75,7 +77,6 @@ Caen desde arriba cada tanto. No caen del todo al azar: el juego elige **el que 
 | **TURBO** | Más velocidad, hasta perder una vida. |
 | **RECARGA** | El dash se recarga el doble de rápido, hasta perder una vida. |
 | **NOVA** | Tu próximo dash termina en una gran explosión (rompe balas, destruye y aturde). |
-| **ECO** | Durante 10 s, una copia violeta repite cada dash un momento después. |
 
 ### Logros y naves
 Hay **16 logros** (vencer a tu primer jefe, 10 dash perfectos, rango S, 5000 puntos...). Se guardan entre partidas en `progreso.json` y cuando desbloqueás uno aparece una ficha "¡LOGRO!". Varios logros desbloquean **naves de otro color**: se eligen en **LOGROS** (desde el inicio) con IZQ/DER.
@@ -109,7 +110,7 @@ Las peleas son un **baile**: cada jefe avisa antes de atacar, ataca al ritmo de 
   | Mar de ámbar | **Fiebre del oro** | La buena: las monedas valen el doble y el combo tarda más en cortarse. |
   | Abismo azul | Una al azar | Desde la segunda vuelta, todos los sectores la sortean. |
 
-- **Desafíos (opcionales):** al llegar a cada sector (en el primero, en el nivel 2) aparece un reto a la derecha, debajo de las vidas: **SIN DASH**, **INTOCABLE** (sin recibir golpes), **SIN AYUDA** (sin agarrar power-ups), **SIN CORTAR EL COMBO** (12 monedas seguidas), **CAZADOR** (destruir 6 enemigos con el dash) o **AL FILO** (5 dash perfectos). Los tres primeros se cumplen al llegar al jefe; los otros, apenas los lográs. Premio: puntos y un power-up.
+- **Desafíos (opcionales):** al llegar a cada sector (en el primero, en el nivel 2) aparece un reto a la derecha, debajo de las vidas: **SIN DASH**, **INTOCABLE** (sin recibir golpes), **SIN AYUDA** (sin agarrar power-ups), **SIN CORTAR EL COMBO** (12 monedas seguidas), **CAZADOR** (destruir 6 enemigos con el dash) o **INTERCEPTOR** (frenar 3 embestidas con el dash). Los tres primeros se cumplen al llegar al jefe; los otros, apenas los lográs. Premio: puntos y un power-up.
 - **Rango:** al vencer al jefe, el sector se califica de **S** a **C** con estrellas: sin golpes (2), combo de 12 (1), desafío cumplido (1) y jefe vencido rápido (1). S = 5 estrellas, A = 4, B = 2 o 3. Cada letra da puntos extra.
 
 En **Opciones → FORMATO** se elige entre 4:3 (800x600) y 16:9 (1066x600, un campo de juego más ancho). Se cambia desde el menú de inicio, no en medio de una partida.
@@ -138,7 +139,7 @@ juego/
   mejoras.py            # las cartas del Taller
   estadisticas.py       # lo que pasa en la partida (para el Game Over y los logros)
   logros.py             # los logros (y que nave desbloquea cada uno)
-  eco.py                # la copia del power-up ECO
+  eco.py                # la copia de la mejora ECO
   enemigos/             # un archivo por enemigo + base.py
   jefes/                # un archivo por jefe + base.py
   powerups/             # tipos.py (todos los power-ups) + base.py
@@ -224,4 +225,4 @@ En `juego/logros.py`, sumá un `Logro(id, nombre, descripcion, condicion)` a `LO
 En `juego/anomalias.py`, una clase que herede de `Anomalia`, con `@registrar_anomalia`, un `tipo`, `nombre`, `pista` y `color`. Usá los ganchos que necesites: `actualizar()` (lo que hace en cada paso), `dibujar()` (avisos, efectos), `terminar()`, `multiplicador_monedas()` o `factor_combo()`. Si ataca, que **avise antes** (como las columnas de los asteroides). Para que un sector la tenga, ponela como `"anomalia"` en `SECTORES`.
 
 ### Un desafío
-En `juego/desafios.py`, una clase que herede de `Desafio`, con `@registrar_desafio`, `tipo`, `nombre`, `pista` y `color`. Elegí los avisos que le importan (`al_usar_dash`, `al_recibir_golpe`, `al_agarrar_powerup`, `al_recoger_moneda`, `al_destruir_enemigo`, `al_dash_perfecto`) y llamá a `self.fallar()` (los de aguantar) o a `self.avanzar(progreso)` con una `meta` (los de lograr). Si no se puede en cualquier momento, escribí `disponible()`.
+En `juego/desafios.py`, una clase que herede de `Desafio`, con `@registrar_desafio`, `tipo`, `nombre`, `pista` y `color`. Elegí los avisos que le importan (`al_usar_dash`, `al_recibir_golpe`, `al_agarrar_powerup`, `al_recoger_moneda`, `al_destruir_enemigo`, `al_interceptar`) y llamá a `self.fallar()` (los de aguantar) o a `self.avanzar(progreso)` con una `meta` (los de lograr). Si no se puede en cualquier momento, escribí `disponible()`.

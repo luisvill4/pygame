@@ -110,12 +110,15 @@ DASH_FUERZA = 14
 DASH_DURACION = 180             # ms que dura el impulso (sin recibir daño)
 DASH_RECARGA = 1500             # ms hasta poder usarlo otra vez
 BUFFER_DASH = 150               # si apretas el dash hasta estos ms antes de que se recargue, sale igual
-# Dash perfecto: atravesar un enemigo o una bala CON el dash (sin el, te habria pegado).
+# Dash perfecto: destruir (o partir) con el dash a un enemigo destruible, o INTERCEPTAR al
+# embestidor en plena embestida. Atravesar a los demas enemigos o a las balas no cuenta.
 # Premio: puntos, el combo no se corta y el dash se recarga casi enseguida (se pueden encadenar)
 DASH_PERFECTO_PUNTOS = 3        # por el multiplicador del combo
 DASH_PERFECTO_RECARGA = 200     # ms hasta poder usar el dash otra vez despues de un perfecto
 CADENA_PERFECTOS = 1500         # ms: otro perfecto antes de esto alarga la cadena (x2, x3...)
 CADENA_MAXIMA = 5               # la cadena multiplica los puntos del perfecto hasta x5
+INTERCEPTAR_PUNTOS = 10         # por frenar al embestidor con el dash en plena embestida...
+ATURDIDO_INTERCEPTAR = 2000     # ...y los ms que queda aturdido (quieto y sin lastimar)
 
 # Choques que hacen daño: circulos, asi la nave recibe el mismo golpe aunque este girada
 RADIO_NAVE = 11
@@ -137,10 +140,9 @@ DURACION = {                    # milisegundos que dura cada power-up temporal
     "hielo": 5000,
     "iman": 7000,
     "doble": 8000,
-    "eco": 10000,
 }
 NOVA_RADIO = 180                # NOVA: radio de la explosion al terminar el dash
-ECO_RETRASO = 20                # ECO: pasos que espera la copia antes de repetir tu dash
+ECO_RETRASO = 20                # mejora ECO: pasos que espera la copia antes de repetir tu dash
 REPETIR_POWERUP = 0.35          # el mismo power-up dos veces seguidas tiene estas chances (de 1)
 
 # Mejoras: cartas que se eligen durante la partida y duran hasta el Game Over (ver mejoras.py).
@@ -158,6 +160,7 @@ MEJORA_COMBO = 0.3              # COMBO LARGO: el combo tarda esta parte mas en 
 MEJORA_SUERTE = 0.25            # SUERTE: esta parte menos de espera entre power-ups (por nivel)
 MEJORA_POTENCIA = 0.4           # POTENCIA: esta parte mas de duracion de los power-ups (por nivel)
 MEJORA_MOTOR = 0.12             # MOTOR: esta parte mas de velocidad (por nivel)
+MEJORA_ECO = [0.25, 0.45]       # ECO: chances de que un dash deje una copia que lo repite
 FENIX_INVULNERABLE = 2500       # FENIX: ms sin recibir daño al volver
 # Ondas (la mejora ONDA y el power-up NOVA): rompen balas, destruyen a los destruibles y a
 # los demas los empujan y los dejan ATURDIDOS (quietos y sin lastimar) un rato
@@ -298,7 +301,7 @@ DESAFIO_ESPERA = 3000           # ms despues de eso (para que no se pise con los
 DESAFIO_PUNTOS = 50             # premio por el numero de sector (el sector 3 da 150)
 DESAFIO_COMBO = 12              # "SIN CORTAR EL COMBO": monedas seguidas
 DESAFIO_CAZADOR = 6             # "CAZADOR": enemigos destruidos con el dash
-DESAFIO_ROCE = 5                # "AL FILO": dash perfectos
+DESAFIO_INTERCEPTAR = 3         # "INTERCEPTOR": embestidores frenados con el dash
 
 # Rango: al vencer al jefe, una nota de S a C para el sector (ver rango.py)
 CARTEL_RANGO = 4500             # ms que se ve el cartel del rango (despues de "¡JEFE VENCIDO!")

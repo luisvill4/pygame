@@ -171,6 +171,14 @@ class Enemigo:
         # Para las subclases: un enemigo que por un rato no lastima (ej: una abeja volviendo a casa)
         return True
 
+    def interceptable(self):
+        # Para las subclases: ¿un dash lo frena ahora? (ej: el embestidor en plena embestida)
+        return False
+
+    def al_interceptar(self, partida):
+        # Para las subclases: que hace despues de que lo frenaron con el dash
+        pass
+
     def aturdido(self, tiempo):
         return tiempo < self.aturdido_hasta
 

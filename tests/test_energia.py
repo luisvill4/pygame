@@ -36,13 +36,12 @@ def test_el_dash_perfecto_y_destruir_enemigos_dan_energia(partida):
 
 
 def test_cumplir_un_desafio_da_energia(partida):
-    partida.nivel = 30                      # la barra pide mucho: asi no sube en el medio
     director = partida.director
-    director.desafio = TIPOS_DESAFIO["roce"]()
+    director.desafio = TIPOS_DESAFIO["interceptor"]()
     for _ in range(director.desafio.meta):
-        partida.perfecto_en_este_dash = False
-        partida._dash_perfecto(0, 0)
-    assert partida.energia == ENERGIA_PERFECTO * director.desafio.meta + ENERGIA_DESAFIO
+        director.al_interceptar()
+    assert director.desafio.estado == "cumplido"
+    assert partida.energia == ENERGIA_DESAFIO
 
 
 def test_con_la_barra_llena_se_sube_y_sobra_el_resto(partida):

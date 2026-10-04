@@ -20,7 +20,7 @@ import random
 
 from juego.config import (CIAN, AMARILLO, ROJO, MAGENTA, VERDE, HIELO, BLANCO, NARANJA, VIOLETA,
                           MEJORA_RECARGA, MEJORA_ONDA_RADIO, MEJORA_COMETA, MEJORA_ROCE, MEJORA_ATRACCION,
-                          MEJORA_COMBO, MEJORA_SUERTE, MEJORA_POTENCIA, MEJORA_MOTOR)
+                          MEJORA_COMBO, MEJORA_SUERTE, MEJORA_POTENCIA, MEJORA_MOTOR, MEJORA_ECO)
 
 TIPOS_MEJORA = {}           # tipo -> instancia, en el orden en que se registran
 
@@ -75,7 +75,8 @@ class Mejora:
 class DobleDash(Mejora):
     tipo, nombre, color = "doble_dash", "DOBLE DASH", CIAN
     descripcion = ["UN DASH MAS SEGUIDO", "ANTES DE RECARGAR"]
-    maximo = 2
+    peso = 0.35             # dificil de conseguir: con dos dash seguidos todo es muy facil
+    desde_sector = 3
     icono = ["X..X...",
              ".X..X..",
              "..X..X.",
@@ -115,6 +116,21 @@ class Onda(Mejora):
              "X..X..X",
              ".X...X.",
              "..XXX.."]
+
+
+@registrar_mejora
+class Eco(Mejora):
+    tipo, nombre, color = "eco", "ECO", VIOLETA
+    descripcion = ["UN " + porcentaje(MEJORA_ECO[0]) + " DE LOS DASH", "DEJA UNA COPIA QUE",
+                   "LOS REPITE", "(NIVEL 2: " + porcentaje(MEJORA_ECO[1]) + ")"]
+    maximo = len(MEJORA_ECO)
+    icono = ["..XXX..",
+             ".XXXXX.",
+             "XX.X.XX",
+             "XXXXXXX",
+             "XXXXXXX",
+             "XXXXXXX",
+             "X.X.X.X"]
 
 
 @registrar_mejora

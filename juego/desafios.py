@@ -18,7 +18,7 @@ Para agregar uno: una clase con @registrar_desafio, su 'tipo', 'nombre', 'pista'
 'color', y los avisos que necesite (llamando a self.fallar() o self.avanzar()).
 """
 from juego.config import (CIAN, AMARILLO, ROJO, VERDE, MAGENTA, BLANCO, DESAFIO_COMBO, DESAFIO_CAZADOR,
-                          DESAFIO_ROCE, DESBLOQUEO_ENEMIGO)
+                          DESAFIO_INTERCEPTAR, DESBLOQUEO_ENEMIGO)
 
 TIPOS_DESAFIO = {}          # nombre -> clase
 
@@ -87,7 +87,7 @@ class Desafio:
     def al_destruir_enemigo(self):
         pass
 
-    def al_dash_perfecto(self):
+    def al_interceptar(self):
         pass
 
 
@@ -155,12 +155,17 @@ class Cazador(Desafio):
 
 
 @registrar_desafio
-class AlFilo(Desafio):
-    tipo = "roce"
-    nombre = "AL FILO"
-    pista = "ATRAVESA " + str(DESAFIO_ROCE) + " PELIGROS CON EL DASH"
+class Interceptor(Desafio):
+    tipo = "interceptor"
+    nombre = "INTERCEPTOR"
+    pista = "FRENA " + str(DESAFIO_INTERCEPTAR) + " EMBESTIDAS CON EL DASH"
     color = BLANCO
-    meta = DESAFIO_ROCE
+    meta = DESAFIO_INTERCEPTAR
 
-    def al_dash_perfecto(self):
+    @classmethod
+    def disponible(cls, partida):
+        # Solo si ya hay embestidores
+        return partida.nivel >= DESBLOQUEO_ENEMIGO["embestidor"]
+
+    def al_interceptar(self):
         self.avanzar(self.progreso + 1)

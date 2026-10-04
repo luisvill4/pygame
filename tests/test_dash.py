@@ -1,7 +1,8 @@
-"""Dash: el dash perfecto (atravesar un peligro) y los dashes extra."""
+"""Dash: el dash perfecto (romper o interceptar enemigos), la cadena y los dashes extra."""
 import math
 
-from juego.config import DASH_RECARGA, DASH_PERFECTO_RECARGA, DASH_PERFECTO_PUNTOS, MS_POR_FRAME
+from juego.config import (DASH_RECARGA, DASH_PERFECTO_RECARGA, DASH_PERFECTO_PUNTOS, MS_POR_FRAME,
+                          INTERCEPTAR_PUNTOS, ATURDIDO_INTERCEPTAR, CADENA_PERFECTOS)
 from juego.enemigos import crear_enemigo
 from juego.proyectiles import Bala
 from tests.ayudas import jugar
@@ -15,53 +16,105 @@ def enemigo_en(partida, tipo, x, y):
     return enemigo
 
 
-def test_atravesar_un_enemigo_con_el_dash_es_perfecto(partida):
+def dash_a_la_derecha(partida, pasos=8):
+    jugar(partida, dx=1, dash=True)
+    jugar(partida, pasos, dx=1)
+
+
+def test_romper_un_enemigo_destruible_es_perfecto(partida):
+    partida.nave.x, partida.nave.y = 100, 300
+    divisor = enemigo_en(partida, "divisor_chico", 165, 315)
+    dash_a_la_derecha(partida)
+    assert divisor not in partida.enemigos
+    assert partida.estadisticas.perfectos == 1
+    assert partida.puntaje == divisor.puntos_dash + DASH_PERFECTO_PUNTOS
+    # Recarga casi enseguida (en vez de DASH_RECARGA)
+    assert partida.nave.dash_listo - partida.tiempo <= DASH_PERFECTO_RECARGA < DASH_RECARGA
+
+
+def test_atravesar_a_los_demas_o_a_las_balas_no_da_nada(partida):
     partida.nave.x, partida.nave.y = 100, 300
     enemigo_en(partida, "perseguidor", 160, 305)
-    jugar(partida, dx=1, dash=True)
-    jugar(partida, 6, dx=1)
-    assert partida.estadisticas.perfectos == 1
-    assert partida.vidas == partida.vidas_max
-    assert partida.puntaje == DASH_PERFECTO_PUNTOS
-    # Recarga casi enseguida (en vez de DASH_RECARGA)
-    assert partida.nave.dash_listo - partida.tiempo <= DASH_PERFECTO_RECARGA
-    assert DASH_PERFECTO_RECARGA < DASH_RECARGA
+    partida.balas.append(Bala(250, 325, 0, 0))
+    dash_a_la_derecha(partida, 12)
+    assert partida.estadisticas.perfectos == 0
+    assert partida.puntaje == 0
+    assert partida.vidas == partida.vidas_max        # el dash igual atraviesa sin daño
 
 
 def test_una_sola_vez_por_dash(partida):
     partida.nave.x, partida.nave.y = 100, 300
-    enemigo_en(partida, "perseguidor", 150, 305)
-    enemigo_en(partida, "perseguidor", 200, 305)
-    jugar(partida, dx=1, dash=True)
-    jugar(partida, 10, dx=1)
+    enemigo_en(partida, "divisor_chico", 150, 315)
+    enemigo_en(partida, "divisor_chico", 210, 315)
+    dash_a_la_derecha(partida, 10)
     assert partida.estadisticas.perfectos == 1
 
 
-def test_atravesar_una_bala_tambien(partida):
+def test_con_filo_los_demas_se_rompen_pero_no_son_perfectos(partida):
+    partida.director.numero_sector = 2
+    partida.elegir_mejora("filo")
     partida.nave.x, partida.nave.y = 100, 300
-    partida.balas.append(Bala(170, 325, 0, 0))
-    jugar(partida, dx=1, dash=True)
-    jugar(partida, 6, dx=1)
+    perseguidor = enemigo_en(partida, "perseguidor", 150, 305)
+    dash_a_la_derecha(partida)
+    assert perseguidor not in partida.enemigos
+    assert partida.estadisticas.perfectos == 0
+
+
+def embestidor_embistiendo(partida, x, y):
+    embestidor = enemigo_en(partida, "embestidor", x, y)
+    embestidor.fase = "cargar"
+    embestidor.fase_hasta = partida.tiempo + 500
+    embestidor.vx, embestidor.vy = -9, 0             # viene hacia la nave
+    return embestidor
+
+
+def test_interceptar_al_embestidor_lo_aturde_y_da_puntos(partida):
+    partida.nave.x, partida.nave.y = 100, 300
+    embestidor = embestidor_embistiendo(partida, 230, 305)
+    dash_a_la_derecha(partida, 4)
+    assert embestidor in partida.enemigos               # no se destruye: queda aturdido
+    assert embestidor.aturdido(partida.tiempo)
+    assert embestidor.fase == "acercarse" and (embestidor.vx, embestidor.vy) == (0, 0)
+    assert partida.estadisticas.interceptados == 1
     assert partida.estadisticas.perfectos == 1
+    assert partida.puntaje == INTERCEPTAR_PUNTOS + DASH_PERFECTO_PUNTOS
+    assert partida.vidas == partida.vidas_max
+    # Aturdido no lastima aunque la nave este encima
+    partida.nave.x, partida.nave.y = embestidor.x - 5, embestidor.y - 5
+    jugar(partida, int(ATURDIDO_INTERCEPTAR / MS_POR_FRAME) - 20)
     assert partida.vidas == partida.vidas_max
 
 
-def test_sin_dash_el_enemigo_pega(partida):
+def test_si_no_esta_embistiendo_no_se_intercepta(partida):
     partida.nave.x, partida.nave.y = 100, 300
-    enemigo_en(partida, "perseguidor", 105, 305)
-    jugar(partida)
-    assert partida.estadisticas.perfectos == 0
-    assert partida.vidas == partida.vidas_max - 1
+    embestidor = enemigo_en(partida, "embestidor", 180, 305)
+    embestidor.fase = "acercarse"
+    dash_a_la_derecha(partida, 6)
+    assert not embestidor.aturdido(partida.tiempo)
+    assert partida.estadisticas.interceptados == 0
 
 
 def test_el_perfecto_mantiene_el_combo(partida):
     partida.combo = 4
     partida.ultima_moneda = partida.tiempo - 1900        # al combo le quedan 100 ms
     partida.nave.x, partida.nave.y = 100, 300
-    enemigo_en(partida, "perseguidor", 160, 305)
-    jugar(partida, dx=1, dash=True)
-    jugar(partida, 12, dx=1)
+    enemigo_en(partida, "divisor_chico", 165, 315)
+    dash_a_la_derecha(partida, 12)
     assert partida.combo == 4
+
+
+def test_perfectos_seguidos_forman_una_cadena(partida):
+    partida._dash_perfecto(0, 0)
+    partida.perfecto_en_este_dash = False
+    partida.tiempo += CADENA_PERFECTOS - 100
+    partida._dash_perfecto(0, 0)
+    assert partida.cadena == 2
+    assert partida.puntaje == DASH_PERFECTO_PUNTOS * 3          # 1 + 2
+    partida.perfecto_en_este_dash = False
+    partida.tiempo += CADENA_PERFECTOS + 100                  # muy tarde: empieza otra
+    partida._dash_perfecto(0, 0)
+    assert partida.cadena == 1
+    assert partida.estadisticas.mejor_cadena == 2
 
 
 def test_los_dashes_extra_salen_seguidos_y_se_recargan_juntos(partida):
@@ -88,18 +141,3 @@ def test_el_dash_se_cuenta_en_las_estadisticas(partida):
     jugar(partida, dx=-1, dash=True)
     assert partida.estadisticas.dashes == 2
     assert math.isfinite(partida.nave.dash_listo)
-
-
-def test_perfectos_seguidos_forman_una_cadena(partida):
-    from juego.config import CADENA_PERFECTOS
-    partida._dash_perfecto(0, 0)
-    partida.perfecto_en_este_dash = False
-    partida.tiempo += CADENA_PERFECTOS - 100
-    partida._dash_perfecto(0, 0)
-    assert partida.cadena == 2
-    assert partida.puntaje == DASH_PERFECTO_PUNTOS * 3          # 1 + 2
-    partida.perfecto_en_este_dash = False
-    partida.tiempo += CADENA_PERFECTOS + 100                  # muy tarde: empieza otra
-    partida._dash_perfecto(0, 0)
-    assert partida.cadena == 1
-    assert partida.estadisticas.mejor_cadena == 2

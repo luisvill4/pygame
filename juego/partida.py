@@ -15,8 +15,9 @@ Reglas importantes:
 - Todos los puntos pasan por sumar_puntos() (aplica DOBLE y detecta el record).
 - Toda la energia pasa por ganar_energia(): monedas, dash perfectos, enemigos destruidos,
   desafios y oleadas llenan la barra; llena, se sube de nivel.
-- Dash perfecto: si el dash atraviesa algo que te habria pegado, _dash_perfecto() premia
-  (una vez por dash): puntos, el combo sigue y el dash se recarga casi enseguida.
+- Dash perfecto: destruir con el dash a un enemigo destruible o interceptar a uno en pleno
+  ataque (_interceptar). _dash_perfecto() premia (una vez por dash): puntos, el combo sigue
+  y el dash se recarga casi enseguida.
 - Lo que pasa queda anotado en self.estadisticas (Game Over y logros).
 - Mejoras (mejoras.py): self.mejoras dice cuantas veces se eligio cada una; las reglas
   las consultan con self.mejora("tipo").
@@ -33,7 +34,8 @@ from juego.config import (COMBO_TIEMPO, COMBO_MAXIMO, MS_POR_FRAME, ENERGIA_MONE
                           DASH_PERFECTO_PUNTOS, DASH_PERFECTO_RECARGA, CADENA_PERFECTOS, CADENA_MAXIMA, MEJORA_RECARGA, MEJORA_ONDA_RADIO,
                           MEJORA_FILO_PUNTOS, MEJORA_ROCE, MEJORA_ROCE_ESCUDO, MEJORA_ATRACCION, MEJORA_COMBO,
                           MEJORA_SUERTE, MEJORA_POTENCIA, MEJORA_MOTOR, FENIX_INVULNERABLE, ATURDIDO_ONDA,
-                          EMPUJE_ONDA, NARANJA, NOVA_RADIO, REPETIR_POWERUP,
+                          EMPUJE_ONDA, NARANJA, NOVA_RADIO, REPETIR_POWERUP, MEJORA_ECO, INTERCEPTAR_PUNTOS,
+                          ATURDIDO_INTERCEPTAR, MAGENTA,
                           DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
                           ESCARCHA, EMBESTIDA, ARCOIRIS)
 from juego.nave import Nave
@@ -430,8 +432,8 @@ class Partida:
         # Mejora ONDA: al final de cada dash, una onda alrededor de la nave
         elif self.mejora("onda"):
             self.onda_expansiva(nave_x, nave_y, MEJORA_ONDA_RADIO[self.mejora("onda") - 1])
-        # Power-up ECO: una copia va a repetir este dash
-        if self.activo("eco") and self.camino_dash:
+        # Mejora ECO: a veces una copia repite este dash
+        if self.camino_dash and self.mejora("eco") and random.random() < MEJORA_ECO[self.mejora("eco") - 1]:
             self.ecos.append(Eco(self.camino_dash, self.nave.angulo))
         self.camino_dash = []
 
@@ -455,8 +457,9 @@ class Partida:
             else:
                 enemigo.empujar(self, x, y, EMPUJE_ONDA, ATURDIDO_ONDA)
 
-    def _dash_perfecto(self, x, y):
-        # El dash atraveso algo que te habria pegado: premio (una vez por dash)
+    def _dash_perfecto(self, x, y, cartel="¡PERFECTO!", puntos_extra=0):
+        # El dash destruyo a un enemigo destruible o freno a uno en pleno ataque: premio
+        # (una vez por dash). 'cartel' y 'puntos_extra': la intercepcion usa los suyos
         if self.perfecto_en_este_dash:
             return
         self.perfecto_en_este_dash = True
@@ -473,17 +476,18 @@ class Partida:
         if self.combo > 0:
             self.ultima_moneda = self.tiempo        # el combo no se corta
         multiplicador = min(self.cadena, CADENA_MAXIMA)
-        ganados = self.sumar_puntos(DASH_PERFECTO_PUNTOS * self.multiplicador_combo() * multiplicador)
+        ganados = self.sumar_puntos(DASH_PERFECTO_PUNTOS * self.multiplicador_combo() * multiplicador
+                                    + puntos_extra)
         nave_x, nave_y = nave.centro()
         self.efectos.anillo(x, y, ENERGIA, 20 + 4 * multiplicador, 5, 3)
         self.efectos.explosion(x, y, [(0, 70, 110), CIAN, BLANCO], 12, 4, 2)
-        cartel = "¡PERFECTO!" if self.cadena < 2 else "¡PERFECTO x" + str(multiplicador) + "!"
+        if self.cadena >= 2:
+            cartel = cartel[:-1] + " x" + str(multiplicador) + "!"        # "¡PERFECTO x3!"
         self.efectos.texto_flotante(cartel + " +" + str(ganados), nave_x, nave_y - 34,
                                     CIAN if self.cadena < 2 else AMARILLO)
         self.sonidos.reproducir("seleccion")
         self.entrada.vibrar(0.2, 0.4, 60)
         self.congelar_frames = max(self.congelar_frames, 3)
-        self.director.al_dash_perfecto()
         self.ganar_energia(ENERGIA_PERFECTO)
         # Mejora ESCUDO ROCE: cada tantos perfectos, un escudo
         if self.mejora("roce"):
@@ -592,9 +596,14 @@ class Partida:
             elif congelados or enemigo.aturdido(ahora):
                 continue        # (congelado o aturdido no lastima)
             elif self.puede_destruir(enemigo) and nave.en_dash(ahora) and caja_nave.colliderect(enemigo.caja()):
+                # El perfecto es solo para los que el dash rompe de por si (con FILO se
+                # destruyen todos, pero esos no cuentan)
+                perfecto = enemigo.destruible
                 self.destruir_con_dash(enemigo)
-            elif nave.en_dash(ahora) and enemigo.hace_danio() and nave.toca_circulo(golpe_x, golpe_y, enemigo.radio):
-                self._dash_perfecto(golpe_x, golpe_y)       # lo atravesaste: te habria pegado
+                if perfecto:
+                    self._dash_perfecto(golpe_x, golpe_y)
+            elif nave.en_dash(ahora) and enemigo.interceptable() and caja_nave.colliderect(enemigo.caja()):
+                self._interceptar(enemigo)
             elif (enemigo.hace_danio() and nave.toca_circulo(golpe_x, golpe_y, enemigo.radio)
                   and not nave.atraviesa(ahora)):
                 self.danar_jugador(golpe_x, golpe_y)
@@ -605,6 +614,25 @@ class Partida:
                     self.destruir_enemigo(enemigo, con_dash=False)
                 else:
                     enemigo.reaparecer(self)
+
+    def _interceptar(self, enemigo):
+        # Dash contra un enemigo en pleno ataque (el embestidor cargando): lo frena en seco,
+        # queda aturdido y da puntos (y es un dash perfecto)
+        golpe_x, golpe_y = enemigo.centro()
+        enemigo.al_interceptar(self)
+        enemigo.vx, enemigo.vy = 0, 0
+        enemigo.aturdido_hasta = self.tiempo + ATURDIDO_INTERCEPTAR
+        self.efectos.explosion(golpe_x, golpe_y, EMBESTIDA, 24, 6, 4)
+        self.efectos.sacudir(8)
+        self.sonidos.reproducir("golpe")
+        self.estadisticas.interceptados += 1
+        self.director.al_interceptar()
+        if self.perfecto_en_este_dash:
+            # Ya hubo un perfecto en este dash: solo los puntos de la intercepcion
+            ganados = self.sumar_puntos(INTERCEPTAR_PUNTOS)
+            self.efectos.texto_flotante("¡INTERCEPTADO! +" + str(ganados), golpe_x, golpe_y - 30, MAGENTA)
+        else:
+            self._dash_perfecto(golpe_x, golpe_y, "¡INTERCEPTADO!", INTERCEPTAR_PUNTOS)
 
     def destruir_con_dash(self, enemigo):
         # El dash destruye a los enemigos 'destruibles': puntos, chispas, y el dash se recarga un poco
@@ -656,8 +684,6 @@ class Partida:
                 self._rebotar_en(*jefe.centro_nucleo())
                 jefe.recibir_golpe(self)
                 return
-        if nave.en_dash(ahora):
-            self._rozar_balas()
         if jefe.muriendo() or nave.atraviesa(ahora):
             return      # el dash y la invulnerabilidad atraviesan al jefe y sus balas
         if self._tocar_balas():
@@ -674,16 +700,8 @@ class Partida:
         nave, ahora = self.nave, self.tiempo
         if nave.en_dash(ahora):
             self._destruir_proyectiles(nave.caja_recoger())
-            self._rozar_balas()
         if not nave.atraviesa(ahora):
             self._tocar_balas()
-
-    def _rozar_balas(self):
-        # En dash: una bala que te habria pegado es un dash perfecto
-        for bala in self.balas:
-            if self.nave.toca_circulo(bala.x, bala.y, bala.radio):
-                self._dash_perfecto(bala.x, bala.y)
-                return
 
     def _tocar_balas(self):
         # Si una bala toca a la nave: se borra, hace daño y devuelve True

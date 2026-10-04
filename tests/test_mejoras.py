@@ -185,6 +185,42 @@ def test_botin_duplica_los_puntos_del_dash(partida):
     assert partida.puntaje == enemigo.puntos_dash * 2
 
 
-def test_doble_dash_da_un_dash_extra(partida):
+def test_doble_dash_da_un_dash_extra_y_es_dificil_de_conseguir(partida):
+    doble = TIPOS_MEJORA["doble_dash"]
+    assert doble.peso < 1 and doble.maximo == 1
+    assert not doble.disponible(partida)            # recien desde el sector 3
+    partida.director.numero_sector = 3
+    assert doble.disponible(partida)
     partida.elegir_mejora("doble_dash")
     assert partida.nave.dash_extra_max == 1
+    assert not doble.disponible(partida)            # una sola vez
+
+
+def dash_con_eco(partida, monkeypatch, azar):
+    # Un dash a la derecha con la mejora ECO y el azar fijo
+    import random
+    monkeypatch.setattr(random, "random", lambda: azar)
+    partida.elegir_mejora("eco")
+    partida.nave.x, partida.nave.y = 100, 300
+    jugar(partida, dx=1, dash=True)
+    jugar(partida, int(partida.nave.duracion_dash / MS_POR_FRAME) + 1)
+
+
+def test_eco_a_veces_repite_el_dash_y_destruye(partida, monkeypatch):
+    from juego.config import ECO_RETRASO, MEJORA_ECO
+    dash_con_eco(partida, monkeypatch, MEJORA_ECO[0] - 0.01)     # salio la chance
+    assert len(partida.ecos) == 1
+    # Un enemigo destruible justo en el camino que hizo el dash
+    camino = partida.ecos[0].camino
+    enemigo = enemigo_en(partida, "divisor_chico", *camino[len(camino) // 2])
+    enemigo.x, enemigo.y = enemigo.x + 15, enemigo.y + 15
+    partida.nave.x, partida.nave.y = 600, 500                  # la nave ya esta lejos
+    jugar(partida, ECO_RETRASO + len(camino) + 2)
+    assert enemigo not in partida.enemigos
+    assert partida.ecos == []
+
+
+def test_eco_sin_suerte_no_deja_copia(partida, monkeypatch):
+    from juego.config import MEJORA_ECO
+    dash_con_eco(partida, monkeypatch, MEJORA_ECO[0] + 0.01)
+    assert partida.ecos == []

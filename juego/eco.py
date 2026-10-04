@@ -1,8 +1,9 @@
 """
-Eco (power-up ECO): una copia violeta de la nave que repite tu dash un momento despues.
+Eco (mejora ECO): una copia violeta de la nave que repite tu dash un momento despues.
 
-Mientras ECO esta activo, la Partida anota el camino de cada dash. Al terminar el dash
-nace un Eco con ese camino: espera ECO_RETRASO pasos y lo recorre igual que vos.
+La Partida anota el camino de cada dash. Al terminar, con la mejora ECO hay una chance
+(MEJORA_ECO) de que nazca un Eco con ese camino: espera ECO_RETRASO pasos y lo recorre
+igual que vos.
 Lo que toca: destruye a los enemigos que el dash destruye, aturde a los demas y rompe
 las balas. (Tiene x/y: se dibuja interpolado como todo lo que se mueve)
 """

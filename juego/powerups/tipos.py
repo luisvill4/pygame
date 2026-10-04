@@ -2,9 +2,8 @@
 Todos los power-ups. El orden en que estan aca es el orden del HUD y del panel de inicio
 (los cinco primeros, ademas, son los cuadros de sprites/powerups.png).
 """
-from juego.config import (CIAN, HIELO, ROJO, MAGENTA, VERDE, AMARILLO, NARANJA, VIOLETA, ENERGIA, ESCARCHA,
+from juego.config import (CIAN, HIELO, ROJO, MAGENTA, VERDE, AMARILLO, NARANJA, ENERGIA, ESCARCHA,
                           CORAZON, IMANTADO, TREBOL, ORO, FUEGO, DURACION)
-from juego.config import BLANCO
 from juego.powerups.base import PowerUp, registrar_powerup, HASTA_PERDER_VIDA
 from juego.proyectiles import romper_balas
 
@@ -143,16 +142,3 @@ class Nova(PowerUp):
 
     def texto_al_recoger(self):
         return "NOVA: ¡DASH!"
-
-
-@registrar_powerup
-class Eco(PowerUp):
-    # Una copia repite cada dash: lo maneja Partida (ver eco.py)
-    tipo, letra, color, nombre = "eco", "O", VIOLETA, "ECO"
-    descripcion = "UNA COPIA REPITE TU DASH"
-    paleta = [(60, 20, 90), VIOLETA, BLANCO]
-    duracion = DURACION["eco"]
-
-    def peso(self, partida):
-        destruibles = sum(1 for e in partida.enemigos if partida.puede_destruir(e))
-        return 1 + min(2, destruibles / 4)

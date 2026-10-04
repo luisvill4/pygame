@@ -5,7 +5,7 @@ import pytest
 
 from juego.config import (COSTO_ENEMIGO, DIVISOR_PUNTOS, ENJAMBRE_CANTIDAD, ENJAMBRE_PUNTOS, ENJAMBRE_BONUS,
                           RECARGA_POR_DESTRUIR, REFUERZO_ESPERA, DIVISOR_NACIMIENTO, MS_POR_FRAME,
-                          CARTEL_JEFE, CARTEL_RANGO)
+                          CARTEL_JEFE, CARTEL_RANGO, DASH_PERFECTO_PUNTOS)
 from juego.enemigos import TIPOS_ENEMIGO, crear_enemigo, crear_enemigos
 from tests.ayudas import jugar
 
@@ -41,8 +41,10 @@ def test_el_dash_parte_al_divisor_en_dos(partida):
     hijos = [e for e in partida.enemigos if e.tipo == "divisor_mediano"]
     assert len(hijos) == 2
     assert all(h.costo == 0 and h.naciendo for h in hijos)     # no cuestan y nacen parpadeando
-    assert partida.puntaje == DIVISOR_PUNTOS["divisor"]
-    assert partida.nave.dash_listo == pytest.approx(recarga_antes - RECARGA_POR_DESTRUIR)
+    # Sus puntos y los del dash perfecto (romperlo con el dash lo es), y la recarga se adelanta
+    assert partida.puntaje == DIVISOR_PUNTOS["divisor"] + DASH_PERFECTO_PUNTOS
+    assert partida.estadisticas.perfectos == 1
+    assert partida.nave.dash_listo <= recarga_antes - RECARGA_POR_DESTRUIR
 
 
 def test_los_hijos_recien_nacidos_no_hacen_dano(partida):

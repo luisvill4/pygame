@@ -5,12 +5,13 @@ Fases:  acercarse -> apuntar (0.6 s quieto, linea roja punteada) -> cargar (0.5 
 Solo te sigue (y te embiste) si estas a menos de RANGO_EMBESTIDOR; si no, deambula.
 Mientras apunta, la mira te sigue hasta "apunte_fijo" ms antes de embestir (depende de la
 dificultad); desde ahi queda fija y la linea deja de parpadear: es el momento de correrse.
+O de contraatacar: un dash contra el en plena embestida lo INTERCEPTA (queda aturdido).
 """
 import math
 import random
 
 from juego import recursos, dibujo, lienzo
-from juego.config import MAGENTA, ROJO, EMBESTIDA, RANGO_EMBESTIDOR
+from juego.config import MAGENTA, ROJO, EMBESTIDA, RANGO_EMBESTIDOR, ATURDIDO_INTERCEPTAR
 from juego.enemigos.base import Enemigo, registrar_enemigo
 
 _blanco = []        # primer cuadro en blanco (respaldo si falta el sprite de carga)
@@ -20,7 +21,7 @@ _blanco = []        # primer cuadro en blanco (respaldo si falta el sprite de ca
 class Embestidor(Enemigo):
     tipo = "embestidor"
     nombre = "EMBESTIDOR"
-    pista = "CUANDO APUNTA, CORRETE"
+    pista = "CORRETE O FRENALO CON DASH"
     color = MAGENTA
 
     def al_aparecer(self, partida):
@@ -74,6 +75,14 @@ class Embestidor(Enemigo):
                 self.fase_hasta = ahora + random.randint(2500, 3500)
                 self.vx *= 0.3
                 self.vy *= 0.3
+
+    def interceptable(self):
+        return self.fase == "cargar"
+
+    def al_interceptar(self, partida):
+        # Lo frenaron en plena embestida: cuando se le pase el aturdido, vuelve a acercarse
+        self.fase = "acercarse"
+        self.fase_hasta = partida.tiempo + ATURDIDO_INTERCEPTAR + random.randint(2000, 3000)
 
     def _deambular(self):
         # Despacio y de vez en cuando cambia de rumbo

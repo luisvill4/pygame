@@ -218,10 +218,9 @@ class Director:
             self.desafio.al_recoger_moneda(combo)
             self.revisar_desafio()
 
-    def al_dash_perfecto(self):
-        self.bitacora.perfectos += 1
+    def al_interceptar(self):
         if self.desafio_en_curso():
-            self.desafio.al_dash_perfecto()
+            self.desafio.al_interceptar()
             self.revisar_desafio()
 
     def al_destruir_enemigo(self):

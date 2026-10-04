@@ -20,7 +20,6 @@ class Bitacora:
     def __init__(self):
         self.golpes = 0                 # golpes recibidos (tambien los que paro el escudo)
         self.mejor_combo = 0
-        self.perfectos = 0              # dash perfectos
         self.desafio_cumplido = False
         self.inicio_jefe = None         # momento en que aparecio el jefe
         self.tiempo_jefe = 0            # ms que tardaste en vencerlo

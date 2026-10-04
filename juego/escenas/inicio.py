@@ -113,10 +113,10 @@ class Inicio(Escena):
         for i in range(3):
             fantasma.set_alpha(80 + i * 80)
             pantalla.blit(fantasma, fantasma.get_rect(center=(196 + i * 12, 402)))
-        texto(pantalla, "ATRAVESA", CHICA, BLANCO, 255, 402, alinear="izquierda")
+        texto(pantalla, "ROMPE O FRENA", CHICA, BLANCO, 255, 402, alinear="izquierda")
         texto(pantalla, "CON DASH", CHICA, CIAN, 600, 402, alinear="derecha")
         texto(pantalla, "LLENA LA BARRA DE ENERGIA PARA SUBIR DE NIVEL", MINI, GRIS, 400, 434)
-        texto(pantalla, "¡PERFECTO! EL DASH SE RECARGA YA", CHICA, CIAN, 400, 492)
+        texto(pantalla, "DASH AL EMBESTIDOR CUANDO EMBISTE", CHICA, CIAN, 400, 492)
 
     def _dibujar_powerups(self, pantalla):
         # Capsulas; una a la vez se explica abajo (cambia cada segundo)
