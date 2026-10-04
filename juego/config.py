@@ -83,7 +83,16 @@ TREBOL = [(0, 90, 40), VERDE, BLANCO]
 
 COMBO_TIEMPO = 2000             # ms maximos entre monedas para seguir el combo
 COMBO_MAXIMO = 5                # el multiplicador llega hasta x5
-MONEDAS_POR_NIVEL = 10
+# Energia: todo lo que haces bien llena una barra y, llena, subis de nivel (ver Partida.ganar_energia)
+ENERGIA_MONEDA = 1              # por moneda...
+ENERGIA_COMBO = 0.25            # ...mas esto por cada paso del multiplicador del combo (x5: 2 por moneda)
+ENERGIA_PERFECTO = 1.5          # por dash perfecto
+ENERGIA_ENEMIGO = 0.5           # por enemigo destruido (o congelado roto)
+ENERGIA_DESAFIO = 5             # por desafio cumplido
+ENERGIA_OLEADA = 3              # por oleada superada
+ENERGIA_INICIAL = 10            # lo que pide el nivel 1 para subir...
+ENERGIA_POR_NIVEL = 1           # ...y esto mas en cada nivel...
+ENERGIA_MAXIMA = 16             # ...hasta este tope
 PUNTOS_ENEMIGO_CONGELADO = 5
 
 # Nave

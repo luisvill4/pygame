@@ -13,6 +13,8 @@ Dos relojes, no mezclarlos:
 Reglas importantes:
 - Todo daño a la nave pasa por danar_jugador().
 - Todos los puntos pasan por sumar_puntos() (aplica DOBLE y detecta el record).
+- Toda la energia pasa por ganar_energia(): monedas, dash perfectos, enemigos destruidos,
+  desafios y oleadas llenan la barra; llena, se sube de nivel.
 - Dash perfecto: si el dash atraviesa algo que te habria pegado, _dash_perfecto() premia
   (una vez por dash): puntos, el combo sigue y el dash se recarga casi enseguida.
 - Lo que pasa queda anotado en self.estadisticas (Game Over y logros).
@@ -23,7 +25,8 @@ import math
 import random
 
 from juego import hud, lienzo
-from juego.config import (COMBO_TIEMPO, COMBO_MAXIMO, MONEDAS_POR_NIVEL, MS_POR_FRAME,
+from juego.config import (COMBO_TIEMPO, COMBO_MAXIMO, MS_POR_FRAME, ENERGIA_MONEDA, ENERGIA_COMBO,
+                          ENERGIA_PERFECTO, ENERGIA_ENEMIGO, ENERGIA_INICIAL, ENERGIA_POR_NIVEL, ENERGIA_MAXIMA,
                           PUNTOS_ENEMIGO_CONGELADO, NAVE_VELOCIDAD, RECARGA_POR_DESTRUIR,
                           TURBO_VELOCIDAD, DASH_RECARGA, RECARGA_RAPIDA, PRIMER_POWERUP, ESPERA_POWERUP,
                           INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, JEFE_CADA_NIVELES, JEFE_PUNTOS,
@@ -74,7 +77,8 @@ class Partida:
         self.combo = 0                  # monedas seguidas sin dejar pasar mucho tiempo
         self.mejor_combo = 0
         self.ultima_moneda = -10000
-        self.monedas_recogidas = 0
+        self.energia = 0                # la barra de nivel (ver ganar_energia)
+        self.tiempo_energia = -10000    # la ultima vez que se gano (para que la barra destelle)
         self.nivel = 1
         self.record_superado = False
         self.tiempo_cartel_nivel = -10000
@@ -139,6 +143,14 @@ class Partida:
             return duracion
         return duracion * (1 + MEJORA_POTENCIA * self.mejora("potencia"))
 
+    def energia_necesaria(self):
+        # Lo que hay que juntar para pasar de nivel: un poco mas en cada nivel, con tope
+        return min(ENERGIA_INICIAL + (self.nivel - 1) * ENERGIA_POR_NIVEL, ENERGIA_MAXIMA)
+
+    def puede_ganar_energia(self):
+        # Durante la pelea con el jefe (y el cierre del sector) no se sube de nivel
+        return self.jefe is None and not self.director.cerrando_sector()
+
     def tiempo_combo(self):
         # ms maximos entre monedas para seguir el combo (la fiebre del oro y COMBO LARGO lo alargan)
         return COMBO_TIEMPO * self.director.factor_combo() * (1 + MEJORA_COMBO * self.mejora("combo"))
@@ -191,6 +203,23 @@ class Partida:
             self.efectos.anillo(nave_x, nave_y, ARCOIRIS, 40, 7, 4)
             self.efectos.texto_flotante("¡NUEVO RECORD!", lienzo.centro_x(), 140, AMARILLO)
         return puntos
+
+    def ganar_energia(self, cantidad):
+        # Toda la energia pasa por aca. Con la barra llena se sube de nivel y lo que sobra
+        # queda para el siguiente (pero nunca alcanza para saltear un nivel)
+        if cantidad <= 0 or not self.puede_ganar_energia():
+            return
+        self.energia += cantidad
+        self.tiempo_energia = self.tiempo
+        necesaria = self.energia_necesaria()
+        if self.energia < necesaria:
+            return
+        sobra = self.energia - necesaria
+        self.subir_nivel()
+        if self.jefe is not None:
+            self.energia = 0                    # despues del jefe se empieza con la barra vacia
+        else:
+            self.energia = min(sobra, self.energia_necesaria() - 1)
 
     def subir_nivel(self):
         self.nivel += 1
@@ -455,6 +484,7 @@ class Partida:
         self.entrada.vibrar(0.2, 0.4, 60)
         self.congelar_frames = max(self.congelar_frames, 3)
         self.director.al_dash_perfecto()
+        self.ganar_energia(ENERGIA_PERFECTO)
         # Mejora ESCUDO ROCE: cada tantos perfectos, un escudo
         if self.mejora("roce"):
             self.perfectos_para_escudo += 1
@@ -485,12 +515,8 @@ class Partida:
         self.tiempo_moneda = ahora
         self.moneda.mover_a_lugar_nuevo(self)
         self.director.al_recoger_moneda(self.combo)
-        # Durante la pelea con el jefe (y el cierre del sector) las monedas dan puntos
-        # pero no suben de nivel
-        if self.jefe is None and not self.director.cerrando_sector():
-            self.monedas_recogidas += 1
-            if self.monedas_recogidas % MONEDAS_POR_NIVEL == 0:
-                self.subir_nivel()
+        # Energia: mas con el combo alto
+        self.ganar_energia(ENERGIA_MONEDA + ENERGIA_COMBO * (self.multiplicador_combo() - 1))
 
     def _actualizar_powerups(self):
         # Cada 8 a 13 segundos cae uno desde arriba; si no lo recoges, se va por abajo
@@ -552,6 +578,7 @@ class Partida:
             if congelados and caja_nave.colliderect(enemigo.caja()):
                 # Enemigo congelado: lo rompes y ganas puntos (el hielo sigue)
                 ganados = self.sumar_puntos(PUNTOS_ENEMIGO_CONGELADO)
+                self.ganar_energia(ENERGIA_ENEMIGO)
                 self.sonidos.reproducir("moneda")
                 self.tiempo_moneda = ahora
                 self.efectos.explosion(golpe_x, golpe_y, ESCARCHA, 40, 7, 5)
@@ -593,6 +620,7 @@ class Partida:
         self.nave.dash_listo = max(self.tiempo, self.nave.dash_listo - RECARGA_POR_DESTRUIR * (1 + botin))
         self.destruir_enemigo(enemigo, con_dash=True)
         self.estadisticas.enemigos += 1
+        self.ganar_energia(ENERGIA_ENEMIGO)
         self.director.al_destruir_enemigo()
 
     def destruir_enemigo(self, enemigo, con_dash):

@@ -2,7 +2,7 @@
 import math
 
 from juego.config import (RANGO_COMBO, RANGO_PUNTOS, RANGO_TIEMPO_JEFE, RANGO_SELLO, CARTEL_JEFE, CARTEL_RANGO,
-                          MS_POR_FRAME, MONEDAS_POR_NIVEL)
+                          MS_POR_FRAME)
 from juego.enemigos import crear_enemigo
 from juego.rango import Bitacora, calcular_rango
 from tests.ayudas import jugar, avanzar, empezar_partida
@@ -73,7 +73,7 @@ def test_mientras_se_cierra_el_sector_no_se_sube_de_nivel(partida):
     partida.nave.invulnerable_hasta = math.inf
     partida.iniciar_jefe()
     partida.jefe_vencido()
-    partida.monedas_recogidas = MONEDAS_POR_NIVEL - 1
+    partida.energia = partida.energia_necesaria() - 0.5         # a una moneda de subir
     nivel = partida.nivel
     partida.moneda.x, partida.moneda.y = partida.nave.x + 15, partida.nave.y + 15
     jugar(partida)

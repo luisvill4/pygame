@@ -3,7 +3,7 @@ HUD: el marcador que se dibuja encima del juego.
 
 - Arriba: puntos y combo (izquierda), record (centro), vidas (derecha).
 - Abajo: power-ups activos (izquierda), barra del jefe, de la oleada o de la anomalia
-  (centro), dash y nivel (derecha).
+  (centro), dash, nivel y la barra de energia para subir de nivel (derecha).
 - Debajo de las vidas: el desafio del sector y como va.
 - Carteles: "NIVEL X", "¡JEFE VENCIDO!", el rango del sector, la anomalia que llega...
 - Fichas: tarjetas chicas que entran deslizandose (enemigo nuevo a la izquierda,
@@ -24,7 +24,7 @@ import pygame
 
 from juego import dibujo, nave, lienzo, recursos
 from juego.dibujo import texto, MINI, CHICA, MEDIA, GRANDE, TITULO
-from juego.config import (ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA, VERDE,
+from juego.config import (ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA, VERDE, NARANJA,
                           CARTEL_JEFE, CARTEL_RANGO, RANGO_SELLO, OLEADA_DURACION, ANOMALIA_DURACION,
                           CARTEL_ALFA_TAPANDO, CARTEL_MARGEN, CARTEL_ESPERA_TAPANDO)
 from juego.powerups import TIPOS_POWERUP
@@ -33,7 +33,7 @@ from juego.powerups import TIPOS_POWERUP
 def zonas_hud():
     return [
         pygame.Rect(0, 0, lienzo.ancho, 100),       # arriba: puntos, combo, record y vidas
-        pygame.Rect(0, 530, lienzo.ancho, 70),      # abajo: dash, nivel y barra del jefe
+        pygame.Rect(0, 524, lienzo.ancho, 76),      # abajo: dash, nivel, energia y barra del jefe
         pygame.Rect(0, 430, 180, 170),              # abajo a la izquierda: power-ups activos
     ]
 
@@ -190,24 +190,25 @@ def _marcador(pantalla, partida):
     else:
         texto(pantalla, dibujo.numero_arcade(partida.puntaje_maximo), CHICA, BLANCO, centro, 46)
 
-    # Nivel y dash (abajo a la derecha)
-    texto(pantalla, "NIVEL " + str(partida.nivel), CHICA, AMARILLO, derecha, 575, alinear="derecha")
+    # Dash, nivel y la barra de energia (abajo a la derecha, de arriba hacia abajo)
+    texto(pantalla, "NIVEL " + str(partida.nivel), CHICA, AMARILLO, derecha, 563, alinear="derecha")
+    _barra_energia(pantalla, partida)
     # Dashes extra (mejora DOBLE DASH): cuadraditos a la izquierda, llenos si se pueden usar
     nave_jugador = partida.nave
     for i in range(nave_jugador.dash_extra_max):
         disponible = ahora >= nave_jugador.dash_listo or i < nave_jugador.dash_extra
-        cuadrito = pygame.Rect(derecha - 84 - i * 12, 539, 8, 12)
+        cuadrito = pygame.Rect(derecha - 84 - i * 12, 530, 8, 12)
         if disponible:
             pantalla.fill(CIAN, cuadrito)
         else:
             pygame.draw.rect(pantalla, GRIS, cuadrito, 2)
     if ahora >= partida.nave.dash_listo:
-        texto(pantalla, "DASH", CHICA, CIAN, derecha, 545, alinear="derecha")
+        texto(pantalla, "DASH", CHICA, CIAN, derecha, 536, alinear="derecha")
     else:
-        texto(pantalla, "DASH", CHICA, GRIS, derecha, 545, alinear="derecha")
+        texto(pantalla, "DASH", CHICA, GRIS, derecha, 536, alinear="derecha")
         # max(0, ...) por si RECARGA cambia a mitad de una recarga
         cargado = max(0, 1 - (partida.nave.dash_listo - ahora) / partida.recarga_dash())
-        pantalla.fill(CIAN, (derecha - 64, 557, int(64 * cargado), 3))
+        pantalla.fill(CIAN, (derecha - 64, 547, int(64 * cargado), 3))
 
     # Vidas (derecha): parpadean despues de recibir un golpe
     texto(pantalla, "VIDAS", CHICA, ROJO, derecha, 22, alinear="derecha")
@@ -217,6 +218,25 @@ def _marcador(pantalla, partida):
         icono_x = derecha - partida.vidas_max * 28 + 3 + i * 28
         icono = nave.imagen("icono") if i < partida.vidas else nave.imagen("icono_vacio")
         pantalla.blit(icono, (icono_x, 34))
+
+
+def _barra_energia(pantalla, partida):
+    # Debajo de "NIVEL": cuanto falta para subir, en bloques de 4 px (estilo retro).
+    # Destella en blanco al ganar energia y parpadea casi llena. Con el jefe queda vacia
+    derecha = lienzo.ancho - 20
+    marco = pygame.Rect(derecha - 128, 576, 128, 12)
+    pygame.draw.rect(pantalla, GRIS, marco, 2)
+    if not partida.puede_ganar_energia():
+        return
+    lleno = min(1, partida.energia / partida.energia_necesaria())
+    if partida.tiempo - partida.tiempo_energia < 120:
+        color = BLANCO
+    elif lleno > 0.8 and dibujo.parpadeo(150):
+        color = NARANJA
+    else:
+        color = AMARILLO
+    for i in range(int(30 * lleno)):
+        pantalla.fill(color, (marco.left + 4 + i * 4, marco.top + 3, 3, 6))
 
 
 def _activos(pantalla, partida):

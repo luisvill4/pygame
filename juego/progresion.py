@@ -29,7 +29,7 @@ from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, PRESUPUESTO_INICIAL
                           OLEADA_PRESUPUESTO, OLEADA_PUNTOS, REFUERZO_ESPERA, CARTEL_JEFE, AMARILLO, ROJO,
                           JEFE_CADA_NIVELES, ANOMALIA_NIVEL, ANOMALIA_ESPERA, RESPIRO_ANOMALIA,
                           DESAFIO_DESDE_NIVEL, DESAFIO_ESPERA, DESAFIO_PUNTOS, CARTEL_RANGO, RANGO_SELLO, VERDE,
-                          MEJORA_PRIMER_NIVEL)
+                          MEJORA_PRIMER_NIVEL, ENERGIA_DESAFIO, ENERGIA_OLEADA)
 from juego.enemigos import crear_enemigos, TIPOS_ENEMIGO
 from juego.anomalias import TIPOS_ANOMALIA, crear_anomalia
 from juego.desafios import TIPOS_DESAFIO
@@ -328,6 +328,7 @@ class Director:
             partida.sonidos.reproducir("powerup")
             if partida.capsula is None:
                 partida.proximo_powerup = partida.tiempo
+            partida.ganar_energia(ENERGIA_OLEADA)
 
     def restante_oleada(self):
         return max(0, self.oleada_hasta - self.partida.tiempo) if self.en_oleada else 0
@@ -399,6 +400,7 @@ class Director:
         partida.sonidos.reproducir("powerup")
         if partida.capsula is None:
             partida.proximo_powerup = partida.tiempo     # de premio, un power-up enseguida
+        partida.ganar_energia(ENERGIA_DESAFIO)
 
     # ---------- Mejoras ----------
 

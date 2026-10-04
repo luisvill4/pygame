@@ -115,7 +115,7 @@ class Inicio(Escena):
             pantalla.blit(fantasma, fantasma.get_rect(center=(196 + i * 12, 402)))
         texto(pantalla, "ATRAVESA", CHICA, BLANCO, 255, 402, alinear="izquierda")
         texto(pantalla, "CON DASH", CHICA, CIAN, 600, 402, alinear="derecha")
-        texto(pantalla, "CADA SECTOR: UN JEFE Y UNA MEJORA", MINI, GRIS, 400, 434)
+        texto(pantalla, "LLENA LA BARRA DE ENERGIA PARA SUBIR DE NIVEL", MINI, GRIS, 400, 434)
         texto(pantalla, "¡PERFECTO! EL DASH SE RECARGA YA", CHICA, CIAN, 400, 492)
 
     def _dibujar_powerups(self, pantalla):

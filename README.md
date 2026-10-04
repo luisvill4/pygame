@@ -22,6 +22,19 @@ python main.py
 
 Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. En FÁCIL y NORMAL el embestidor deja de seguirte con la mira un momento antes de embestir (la línea roja deja de parpadear): ahí es cuando hay que correrse. En DIFÍCIL y PESADILLA te sigue hasta el último instante.
 
+### Subir de nivel: la barra de energía
+Abajo a la derecha, debajo de "NIVEL", hay una **barra de energía**. Todo lo que hacés bien la llena y, cuando se llena, subís de nivel (lo que sobra pasa al siguiente):
+
+| Qué | Energía |
+|---|---|
+| Moneda | 1, y +0.25 por cada paso del combo (con x5, 2 por moneda) |
+| Dash perfecto | 1.5 |
+| Enemigo destruido (o congelado roto) | 0.5 |
+| Oleada superada | 3 |
+| Desafío cumplido | 5 |
+
+El nivel 1 pide 10 y cada nivel pide 1 más, hasta 16. Jugar con combo alto y usar el dash te hace avanzar más rápido. Durante la pelea con el jefe (y mientras se ven sus carteles) no se gana energía: la barra se ve gris.
+
 ### El dash
 El dash es la herramienta principal: te lanza hacia adelante y durante ese instante **nada te hace daño**.
 
