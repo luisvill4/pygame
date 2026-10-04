@@ -72,9 +72,16 @@ class Fin(Escena):
             ("MONEDAS", str(estadisticas.monedas)),
             ("MEJOR COMBO", str(partida.mejor_combo)),
             ("ENEMIGOS", str(estadisticas.enemigos)),
-            ("DASH PERFECTOS", str(estadisticas.perfectos) + " (x" + str(estadisticas.mejor_cadena) + ")"),
+            ("PERFECTOS", self._perfectos()),
             ("DESAFIOS", str(estadisticas.desafios)),
         ]
+
+    def _perfectos(self):
+        # "21", o con la mejor cadena si hubo: "21 (x3)"
+        estadisticas = self.partida.estadisticas
+        if estadisticas.mejor_cadena < 2:
+            return str(estadisticas.perfectos)
+        return str(estadisticas.perfectos) + " (x" + str(estadisticas.mejor_cadena) + ")"
 
     # ---------- Dibujo ----------
 
