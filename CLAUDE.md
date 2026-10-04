@@ -5,10 +5,10 @@ Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge moneda
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~215 tests, unos 20 s, sin ventana
+python -m pytest        # ~255 tests, unos 22 s, sin ventana
 ```
 - Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
-- **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json` y `__pycache__`.
+- **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json`, `progreso.json` y `__pycache__`.
 - **Correr `python -m pytest` después de cada cambio.** Si se agrega una regla de juego, sumarle su test.
 
 ## Estructura
@@ -25,11 +25,15 @@ juego/
   anomalias.py          # Anomalia + registro: asteroides, tormenta, niebla, oro
   desafios.py           # Desafio + registro: sin_dash, intocable, sin_ayuda, combo, cazador
   rango.py              # Bitacora del sector y calcular_rango() (S/A/B/C)
+  mejoras.py            # Mejora + registro: las cartas del Taller (14), sortear_mejoras()
+  estadisticas.py       # Estadisticas de UNA partida (Game Over y logros)
+  logros.py             # LOGROS (16, con su condicion) y revisar_logros()
+  eco.py                # Eco: la copia del power-up ECO que repite un dash
   nave.py  moneda.py  proyectiles.py (Bala, Obus, Misil, Mina, Escombro, Onda, Veneno, Meteoro)
   enemigos/  base.py (Enemigo + registro) · perseguidor · rebotador · embestidor · divisor · enjambre · abeja
   jefes/     base.py (Jefe + registro + pulso) · partes.py (Parte) · ojo · fortaleza · serpiente · colmena · singularidad
   powerups/  base.py (PowerUp, Capsula, registro) · tipos.py (los 7 power-ups, en orden)
-  escenas/   base.py · inicio · dificultad · opciones · listo · juego · pausa · explosion · iniciales · fin
+  escenas/   base.py · inicio · dificultad · logros · opciones · listo · juego · taller · pausa · explosion · iniciales · fin
   entrada.py  sonido.py  ventana.py  guardado.py  recursos.py
   dibujo.py   efectos.py  fondo.py   hud.py
 tests/                  # conftest.py (fixtures app/partida), ayudas.py, test_*.py
@@ -37,6 +41,7 @@ sprites/ efectos/ fuentes/   # recursos (ver "Sprites"); efectos/ son los sonido
 records.json            # top 5 POR DIFICULTAD: {"FACIL": [{"nombre", "puntos"}...], "NORMAL": [...], ...}
                         # (un archivo viejo con una sola lista pasa a ser la tabla de NORMAL)
 config.json             # {"formato", "resolucion", "fps", "volumen" (0-10), "musica", "efectos", "aviso_jefe", "dificultad"}
+progreso.json           # {"logros": [ids], "nave": "CIAN", "partidas": n}  (guardado.Progreso)
 ```
 
 **Frecuencia: paso fijo (fixed timestep) + interpolación.**
@@ -71,7 +76,7 @@ Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
 - Partículas (`efectos.Efectos`): cuadrados alineados a una cuadrícula de 2 px. Pueden tener `gravedad`; `pedazos()` la usa para trozos que saltan y caen. No se desvanecen con transparencia: cambian de color por etapas según una **paleta**, una lista que va de oscuro a brillante (`FUEGO`, `ORO`, `ESCARCHA`…).
 - **Carteles que no tapan el juego** (pedido del usuario: los carteles le tapaban monedas y enemigos): todo cartel o ficha del HUD se dibuja con `hud._cartel(pantalla, partida, nombre, funcion, *datos)`. La función dibuja en una capa transparente del tamaño de la pantalla; `_zona_dibujada()` busca qué ocupó (con la capa achicada 8 veces por `smoothscale`: `get_bounding_rect()` tardaba 2 ms) y, si esa zona + `CARTEL_MARGEN` toca algo de `cosas_que_importan(partida)` (nave, moneda, cápsula, enemigos, balas, jefe), se pega con opacidad `CARTEL_ALFA_TAPANDO` y sigue así `CARTEL_ESPERA_TAPANDO` ms (reloj real) para no titilar. Cuesta ~0.5 ms por cartel visible. **Trampa:** para volverla opaca se usa `set_alpha(255)`; `set_alpha(None)` le saca la transparencia por píxel y el cartel sale sobre un recuadro negro. Un cartel nuevo tiene que pasar por `_cartel()`.
 - Efectos disponibles:
-  - en `dibujo`: líneas CRT (`efecto_crt`), parpadeos duros (`parpadeo`), texto con relieve (`texto_3d`), marcos de doble línea (`marco`), arcoíris (`color_arcoiris`) y `oscurecer`;
+  - en `dibujo`: líneas CRT (`efecto_crt`), parpadeos duros (`parpadeo`), texto con relieve (`texto_3d`), marcos de doble línea (`marco`), arcoíris (`color_arcoiris`), `oscurecer` y `pixel_art(pantalla, filas, x, y, color, tamano_pixel)` (dibujos de "X" y ".": iconos de mejoras, trofeo, tilde, candado);
   - en `Efectos`: temblor en pasos de 2 px y destello de color (`sacudir`, `dibujar_temblor_y_destello`; se descuentan en `actualizar`).
 - Variantes de sprites sin archivos nuevos: `recursos.tenir()` (escala de grises + multiplicar color) y `recursos.blanquear()` (`BLEND_RGB_MAX`).
 
@@ -128,7 +133,8 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 ## Arquitectura
 
 ### App y escenas (patrón State)
-- `App` crea una sola vez los servicios: `ventana`, `opciones`, `sonidos`, `records`, `entrada`, `fondo`, `efectos`, más `pantalla` (el lienzo de 800x600).
+- `App` crea una sola vez los servicios: `ventana`, `opciones`, `sonidos`, `records`, `progreso`, `entrada`, `fondo`, `efectos`, más `pantalla` (el lienzo de 800x600). Al arrancar aplica el color de la nave elegida (`nave.cambiar_color`).
+- **Atajos globales** (`App._atajos()`, antes de cada paso de la escena): M (`SILENCIO`) apaga o prende música y efectos juntos; F11 (`PANTALLA_COMPLETA`) pasa a "COMPLETA" y vuelve a la ventana de antes (`ventana_antes`). Los dos guardan las opciones y muestran un aviso chico (`App.avisar()`, dibujado encima de todo por `_dibujar_aviso`).
 - Un paso de lógica es `escena.actualizar(entrada)` + `entrada.consumir()`. Un cuadro es `escena.dibujar(pantalla)` + `ventana.mostrar(pantalla)`. `cuadro(ms)` corre los pasos que tocan y un cuadro; `ejecutar()` lo repite con `LimitadorFPS` (ver "Frecuencia").
 - `App.ahora()` es el reloj real; los tests lo reemplazan. `App(carpeta_datos=..., usar_mandos=...)` también se usa en los tests.
 - Cada escena hereda de `escenas/base.Escena`:
@@ -136,7 +142,12 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - `al_cerrar()` se llama si se cierra la ventana; Iniciales guarda el récord ahí.
   - `tiempo_en_escena()` cuenta con el reloj real y sirve para READY (1.6 s), la explosión (1.5 s) y el Game Over (ENTER se ignora 0.8 s).
   - `dibujar_partida(pantalla, partida, con_nave, paralaje)` dibuja el fondo y la partida.
-- Flujo: `Inicio → Dificultad → Listo → Juego ⇄ Pausa ⇄ Opciones`, y `Juego → Explosion → Iniciales (si entra al top 5 de esa dificultad) → Fin → Listo` (Fin repite con la misma dificultad).
+- Flujo: `Inicio → (Dificultad | Logros | Opciones)`, `Dificultad → Listo → Juego ⇄ Pausa ⇄ Opciones`, `Juego ⇄ Taller`, y `Juego → Explosion → Iniciales (si entra al top 5 de esa dificultad) → Fin → Listo` (ENTER repite con la misma dificultad) o `Fin → Inicio` (ESC).
+- **Inicio** (`MENU` = JUGAR, LOGROS, OPCIONES con IZQ/DER): el panel cambia de página cada `PAGINA_MS` (cómo se juega con el dash perfecto, power-ups y, si hay, récords), con puntitos de página. Arriba a la derecha, "LOGROS n/16".
+- **Taller** (`escenas/taller.py`): lo abre Juego cuando `partida.director.ofertas` no está vacía (con la captura de la pantalla). 3 cartas que caen de a una (`PASOS_ENTRE_CARTAS`), IZQ/DER + ENTER → `partida.elegir_mejora(tipo)` y vuelve al mismo Juego. Ignora las teclas `PASOS_SIN_ELEGIR` pasos. Las de `peso < 1` dicen RARA. El tiempo de la partida no corre.
+- **Logros** (`escenas/logros.py`): hangar arriba (IZQ/DER cambia entre `progreso.naves_disponibles()`, se aplica y se guarda) y la lista en dos columnas (tilde o candado, y un cuadradito del color de la nave que da).
+- **Fin**: dos marcos: la partida (puntaje que cuenta, estadísticas que salen de a una cada `MS_POR_FILA`, letras de rango) y récords + iconos de mejoras + logros nuevos. ENTER otra vez, ESC al menú (importa Inicio adentro del método para no hacer un ciclo).
+- **Pausa** muestra además el sector, nivel, tiempo, perfectos y los iconos de las mejoras.
 - `App.nueva_partida(dificultad=None)`: sin dificultad, usa `opciones.dificultad`. Reinicia los efectos, vuelve el fondo a los colores del primer sector, crea una `Partida`, suena "seleccion", arranca la música y pasa a `Listo`.
 - **Dificultad** (`escenas/dificultad.py`): IZQ/DER cambian con animación. El nombre entra deslizándose (`PASOS_ANIMACION`) y destella, las calaveras (`CALAVERA`, pixel art de 7x7) aparecen de a una, saltan chispas con la `paleta` de la dificultad y PESADILLA hace temblar la pantalla. ENTER guarda `opciones.dificultad` y empieza; ESC vuelve al inicio.
 - **Pausa** (`escenas/pausa.py`): menú `FILAS_PAUSA` = CONTINUAR, OPCIONES y VOLVER AL MENU (ARRIBA/ABAJO + ENTER).
@@ -148,8 +159,13 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - **Hit-stop:** mientras `partida.congelar_frames > 0`, Juego y Explosion no actualizan ni dibujan (`saltar_dibujo`). `Juego.actualizar` revisa primero `partida.termino`, después el hit-stop y después la pausa.
 
 ### Partida (`partida.py`)
-- Contiene todo el estado de una partida: `nave`, `vidas`, `puntaje`, `combo`, `nivel`, `moneda`, `capsula`, `activos` (tipo → ms en que termina; `math.inf` para los que duran hasta perder una vida), `enemigos`, `enemigos_guardados`, `jefe` (`None` si no hay pelea), `balas`, `tiempo`, `congelar_frames`, `pausa_pendiente` y `termino`.
-- Los servicios le llegan por parámetro (`efectos`, `sonidos`, `entrada` para vibrar, `records` y `opciones`, que se leen en vivo).
+- Contiene todo el estado de una partida: `nave`, `vidas`, `puntaje`, `combo`, `nivel`, `moneda`, `capsula`, `activos` (tipo → ms en que termina; `math.inf` para los que duran hasta perder una vida), `enemigos`, `enemigos_guardados`, `jefe` (`None` si no hay pelea), `balas`, `ecos`, `mejoras` (tipo → veces elegida), `estadisticas`, `tiempo`, `congelar_frames`, `pausa_pendiente` y `termino`.
+- Los servicios le llegan por parámetro (`efectos`, `sonidos`, `entrada` para vibrar, `records` y `opciones`, que se leen en vivo, y `progreso`: si es `None`, no se revisan logros).
+- **Dash perfecto** (el corazón del juego, pedido "que el dash le dé vida"): si la nave está en dash y toca algo que la habría lastimado (un enemigo que `hace_danio()` y no está aturdido, en `_actualizar_enemigos`; una bala, en `_rozar_balas()` sin jefe y con jefe), `_dash_perfecto(x, y)` premia **una vez por dash** (`perfecto_en_este_dash`): `DASH_PERFECTO_PUNTOS` × combo × cadena, el combo no se corta (`ultima_moneda`), `dash_listo` baja a `DASH_PERFECTO_RECARGA`, 3 frames de hit-stop. **Cadena:** otro perfecto antes de `CADENA_PERFECTOS` sube `cadena` (multiplica hasta `CADENA_MAXIMA`). El cuerpo del jefe no cuenta (es enorme).
+- **Inicio y fin del dash:** `actualizar()` detecta el cambio de `nave.dash_hasta` (`_al_empezar_dash`: estadística, desafío, borra `camino_dash`) y el fin (`en_dash_antes` → `_al_terminar_dash`: NOVA, si no ONDA, y crea un `Eco` si ECO está activo). Mientras dura, anota `camino_dash`.
+- `onda_expansiva(x, y, radio)`: rompe balas (las destruibles dan puntos), destruye lo que `puede_destruir()` (con `destruir_con_dash`) y a los demás `enemigo.empujar(..., EMPUJE_ONDA, ATURDIDO_ONDA)`. No toca al jefe. La usan ONDA y NOVA.
+- **Mejoras:** `mejora(tipo)` (cuántas veces), `elegir_mejora(tipo)` (suma, `al_elegir`, estadística, vacía `director.ofertas`), `mejoras_elegidas()` [(tipo, veces)]. Las reglas que consultan mejoras: `vel_max` (MOTOR), `recarga_dash` (RECARGA), `tiempo_combo` (COMBO LARGO), `espera_powerup` (SUERTE), `duracion_powerup` (POTENCIA, la usa `PowerUp.al_recoger`), `puede_destruir` (FILO), `destruir_con_dash` (BOTIN), `_dash_perfecto` (ESCUDO ROCE), `danar_jugador` (FENIX: vuelve con 1 vida y la mejora baja a 0), la atracción de la moneda (ATRACCION).
+- **Logros:** cada 30 pasos `revisar_logros()`; cada logro nuevo va a `logros_nuevos` y a `fichas_logro` ([logro, desde], una detrás de otra). Al terminar (`_al_terminar`): última revisión y `progreso.partidas += 1`.
 - **Dos relojes, no mezclarlos:**
   - `partida.tiempo` avanza `MS_POR_FRAME` solo en `actualizar()` y lo usan todos los temporizadores de juego.
   - `pygame.time.get_ticks()` es el reloj real: solo para parpadeos y animaciones.
@@ -158,7 +174,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - `sumar_puntos(base)`: aplica DOBLE y detecta cuándo se supera el récord.
   - `subir_nivel()`, `iniciar_jefe()` y `jefe_vencido()`.
 - Consultas: `activo(tipo)`, `restante(tipo)`, `activar(tipo, duracion)`, `desactivar(tipo)`, `vel_max()` (turbo), `recarga_dash()` (recarga), `factor_velocidad()` y `multiplicador_combo() = min(1 + combo // 3, COMBO_MAXIMO)`.
-- Orden de `actualizar(dx, dy, pidio_dash)`: tiempo → nave (y aviso de dash) → corte del combo (`tiempo_combo()`) → imán → moneda → power-ups → director (oleadas, anomalías, desafíos, rango) → devolver enemigos guardados → enemigos (mover y choques) → jefe (balas, fases y choques) o balas sueltas → estela → brillo de la moneda → efectos.
+- Orden de `actualizar(dx, dy, pidio_dash)`: tiempo → nave (empieza/termina el dash, camino del ECO) → ecos → corte del combo (`tiempo_combo()`) → imán o ATRACCION → moneda → power-ups → director (oleadas, anomalías, desafíos, rango, ofertas de mejoras) → devolver enemigos guardados → enemigos (mover y choques) → jefe (balas, fases y choques) o balas sueltas → estela → brillo de la moneda → efectos → logros (cada 30 pasos).
 
 ### Entrada (`entrada.py`)
 - Teclado y mando se convierten en **acciones**: `ACEPTAR`, `VOLVER`, `PAUSA`, `OPCIONES`, `DASH`, `ARRIBA`, `ABAJO`, `IZQUIERDA` y `DERECHA`.
@@ -175,6 +191,8 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - `_acelerar()` separa la velocidad en **avance** (hacia donde se aprieta) y **deriva** (de costado). Arrancar usa `NAVE_ACELERACION`; lo que va hacia atrás o de costado se corrige con `NAVE_FRENADO` (más fuerte): dobla y frena enseguida sin perder la inercia. Acelerando desde quieta da lo mismo que antes (lo usa `test_frecuencia`).
   - Inclinación al girar; flota 2 px cuando está casi quieta.
   - **Dash con buffer:** `dash_pedido_en` + `BUFFER_DASH`, y un destello cian una sola vez cuando se recarga (`dash_avisado`).
+  - **Dashes extra** (DOBLE DASH): `dash_extra_max` y `dash_extra`. `dash_disponible(t)`: recargado o con extras (nunca en medio de un dash). Usar uno extra no reinicia la recarga; al recargarse vuelven todos. `duracion_dash` (COMETA lo alarga). El HUD dibuja un cuadradito por extra a la izquierda de "DASH".
+  - `nave.cambiar_color(color)`: otra nave (tiñe el sprite con `tenir` y borra el caché de imágenes).
   - Choques: `caja_recoger()` (50x50, para recoger cosas), `toca_circulo()` y `toca_rect()` (daño con `RADIO_NAVE = 11`), `atraviesa(t)` (dash o invulnerable) y `empujon()`.
 - **Moneda** (`moneda.py`): `lugar_para_moneda(partida)` busca un lugar con `hud.posicion_libre()` a entre `MONEDA_DISTANCIA_MIN` y `MONEDA_DISTANCIA_MAX` de la nave, a más de 60 px de cada enemigo y lejos del jefe (hasta 200 intentos).
 - **Zonas del HUD** (`hud.zonas_hud()`, una función porque dependen del ancho): la franja de arriba (y < 100), la de abajo (y ≥ 530) y la columna de power-ups activos. Si el HUD cambia, hay que actualizarlas.
@@ -187,6 +205,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - **Tope de velocidad:** `Enemigo.rapidez(partida, base)` = `min(base * factor_velocidad(), ENEMIGO_VELOCIDAD_MAX)` (4.2; la nave va a 5): ningún enemigo que te persigue es más rápido que la nave. Lo usan perseguidor, divisor, embestidor (al acercarse) y el `paso()` del rebotador. Los ataques con aviso (embestida, picadas) no tienen tope.
   - `perseguidor`: inercia y se separa de los demás.
   - `rebotador`: diagonal y rebota; se acelera con `factor_velocidad()`.
+  - **Aturdido** (`aturdido_hasta`, `aturdido(t)`, `empujar(partida, x, y, distancia, ms)`): quieto y sin lastimar (ni da dash perfecto); dibuja tres estrellitas amarillas que giran. Lo causan las ondas y el ECO; `reaparecer()` lo borra.
   - **Enemigos destruibles con el dash** (`destruible = True`): `Partida._actualizar_enemigos` los destruye si la nave está en dash y su `caja_recoger()` toca `enemigo.caja()`.
     - `destruir_con_dash()` da `puntos_dash`, chispas y 2 frames de hit-stop, y adelanta la recarga del dash `RECARGA_POR_DESTRUIR` ms.
     - Después pasa por `destruir_enemigo()`, que llama a `al_destruirse(partida, con_dash)` y a `quitar_enemigo()`.
@@ -220,7 +239,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
       - El tipo recién desbloqueado se presenta primero.
       - Se llama al empezar, al subir de nivel y al volver del jefe. La cantidad se cuenta con `cantidad_actual()` (un enjambre cuenta como uno).
       - **Refuerzos:** cada `REFUERZO_ESPERA`, si sobra presupuesto (porque destruiste enemigos), llega uno nuevo.
-      - Cuando se desbloquea un tipo después del nivel 1, el HUD muestra una **ficha chica** debajo del puntaje (`hud._ficha`: entra desde su lado, `DURACION_FICHA`, se ensancha si el nombre no entra): dibujo, "NUEVO ENEMIGO", nombre y pista en MINI. Antes era un cartel al centro y el usuario se quejó de que tapaba la pantalla. La ficha del desafío es la misma, del lado derecho.
+      - Cuando se desbloquea un tipo después del nivel 1, el HUD muestra una **ficha chica** debajo del puntaje (`hud._ficha`: entra desde su lado, `DURACION_FICHA`, se ensancha si el nombre no entra): dibujo, "NUEVO ENEMIGO", nombre y pista en MINI. Antes era un cartel al centro y el usuario se quejó de que tapaba la pantalla. La ficha del desafío es la misma, del lado derecho, y la del logro baja al centro (`lado="centro"`, con un `TROFEO` de pixel art).
     - **Sectores = biomas, uno por jefe** (`SECTORES`, en orden fijo): Cinturón → Ojo, Carmesí → Fortaleza, Esmeralda → Serpiente, Ámbar → Colmena, Abismo → Singularidad, y vuelve al primero. `iniciar_jefe()` usa `director.jefe_del_sector()`.
       - Cada sector: `nombre`, `lema` (debajo del nombre en el cartel), `color`, `jefe`, `tinte`, `fondo`, `ambiente`, `estrellas` (factor RGB) y `favorito`.
       - Se cambia en `jefe_vencido()` → `director.al_vencer_al_jefe()`; el cartel del sector sale cuando termina el cierre (`tiempo_cartel_sector` en el futuro; el HUD lo muestra si `0 <= t < 2500`).
@@ -232,10 +251,11 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
       - No se pisa con las oleadas (ninguna empieza durante una ni hasta `RESPIRO_ANOMALIA` después); el jefe la corta. Medido con un bot (golpes/min, mismo nivel): sin nada ~4, oleada ~5.6, tormenta ~6.2, asteroides ~7 (pero solo ~0.7/min son de los asteroides: el resto, enemigos mientras esquiva), niebla y oro ≈ normal.
       - **Proyectiles sin jefe:** si no hay jefe pero hay balas (asteroides), `Partida._actualizar_balas_sueltas()` las mueve, el dash rompe las destruibles y `_tocar_balas()` revisa el daño (la misma que usa `_choques_jefe`).
     - **Desafíos** (`desafios.py`, registro `TIPOS_DESAFIO`, `director.desafio`): uno por sector, `DESAFIO_ESPERA` después de llegar (en el primero, del nivel `DESAFIO_DESDE_NIVEL`), al azar entre los `disponible()` y distinto del anterior.
-      - De **aguantar** (`meta = None`: sin_dash, intocable, sin_ayuda) se fallan con su aviso y se cumplen al llegar el jefe; de **lograr** (combo `DESAFIO_COMBO`, cazador `DESAFIO_CAZADOR`, solo desde el divisor) se cumplen con `avanzar()` y se fallan si llega el jefe.
-      - **Avisos:** la Partida llama a `director.al_recibir_golpe()` (en `danar_jugador`, también si para el escudo), `al_usar_dash()` (si cambió `nave.dash_hasta`), `al_agarrar_powerup()`, `al_recoger_moneda(combo)` y `al_destruir_enemigo()` (en `destruir_con_dash`). El director anota la bitácora y le pasa el aviso al desafío; `revisar_desafio()` premia (`DESAFIO_PUNTOS * numero_sector`, anillo, power-up enseguida) o lo marca fallado.
+      - De **aguantar** (`meta = None`: sin_dash, intocable, sin_ayuda) se fallan con su aviso y se cumplen al llegar el jefe; de **lograr** (combo `DESAFIO_COMBO`, cazador `DESAFIO_CAZADOR`, solo desde el divisor, y "AL FILO" `DESAFIO_ROCE` dash perfectos) se cumplen con `avanzar()` y se fallan si llega el jefe.
+      - **Avisos:** la Partida llama a `director.al_recibir_golpe()` (en `danar_jugador`, también si para el escudo), `al_usar_dash()` (si cambió `nave.dash_hasta`), `al_agarrar_powerup()`, `al_recoger_moneda(combo)`, `al_destruir_enemigo()` (en `destruir_con_dash`) y `al_dash_perfecto()`. El director anota la bitácora y le pasa el aviso al desafío; `revisar_desafio()` premia (`DESAFIO_PUNTOS * numero_sector`, anillo, power-up enseguida) o lo marca fallado.
       - HUD: ficha a la derecha (`_ficha_desafio`: al proponerse, al cumplirse y al fallarse) y el nombre con el progreso debajo de las vidas (y 72/86, MINI).
     - **Rango y cierre del sector** (`rango.py`): `Bitacora` (golpes, mejor_combo, desafio_cumplido, inicio_jefe, tiempo_jefe). En `al_vencer_al_jefe()` se calcula `calcular_rango()` (estrellas: golpes 2/1/0, combo ≥ `RANGO_COMBO`, desafío, jefe antes de `RANGO_TIEMPO_JEFE` +20% por vuelta; S = 5, A = 4, B ≥ 2, C) y empieza el **cierre**: `CARTEL_JEFE` ("¡JEFE VENCIDO!") + `CARTEL_RANGO` (el cartel con las filas de a una; la letra cae a los `RANGO_SELLO`, y ahí `pagar_rango()` suma `RANGO_PUNTOS`). Mientras `director.cerrando_sector()`, los enemigos guardados no vuelven, las monedas no suben de nivel y no hay oleadas ni anomalías; al terminar sale el cartel del sector nuevo.
+    - **Mejoras** (`mejoras.py`, registro `TIPOS_MEJORA` de instancias, `director.ofertas`): `ofrecer_mejoras()` deja `sortear_mejoras(partida)` (3 distintas, `random.choices` con `peso`, solo las `disponible()`: no al máximo y desde `desde_sector`) en el nivel `MEJORA_PRIMER_NIVEL` y cuando termina el cierre del sector (`mejora_tras_cierre`). `con_mejoras = False` las apaga (fixture). Cada `Mejora`: `tipo`, `nombre` (≤12), `descripcion` (líneas ≤22, MINI), `color`, `icono` 7x7, `maximo`, `peso`, `desde_sector`, `al_elegir()`. Los valores están en config (`MEJORA_*`, `FENIX_INVULNERABLE`). Medido con el bot: no cambian los golpes/min del juego normal (el bot elige al azar).
     - **Oleadas:** cada `OLEADA_ESPERA` (desde `OLEADA_DESDE_NIVEL`, sin jefe) llegan enemigos extra con `de_oleada=True` por `OLEADA_DURACION`, y después se van.
       - Si no perdiste vidas: `OLEADA_PUNTOS * nivel` y un power-up enseguida.
       - El jefe corta la oleada (`al_empezar_jefe`).
@@ -282,7 +302,9 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - **Balance medido con un bot** (script del scratchpad que esquiva balas/cuerpos, lee los avisos y pega en las ventanas; cada jefe con su `jefes_vencidos` real): Ojo ~24 s, Fortaleza ~60 s, Serpiente ~33 s, Colmena ~45 s, Singularidad ~43 s; balas en pantalla de promedio: 7.6 / 3.7 / 0.6 / 0 / 9.5. Cuando el bot recibía muchos golpes en una fase, casi siempre era un aviso que no daba tiempo (se agregaron `fijar`, un pulso más en `temblar` y las flechitas de los huecos).
   - Daño a la nave: las balas (círculo de `bala.radio`) y `cajas_danio()` (`toca_rect`).
   - Durante la pelea las monedas no suben de nivel. Al vencerlo: bonus `JEFE_PUNTOS * jefes_vencidos`, el cartel "¡JEFE VENCIDO!" (`CARTEL_JEFE`) y el del rango (`CARTEL_RANGO`). Los enemigos guardados vuelven recién cuando termina el cierre del sector.
-- **Power-ups** (`powerups/`), registro `TIPOS_POWERUP`; el orden de `tipos.py` es el del HUD y del panel de inicio:
+- **Power-ups** (`powerups/`), registro `TIPOS_POWERUP`; el orden de `tipos.py` es el del HUD y del panel de inicio (9: escudo, hielo, vida, imán, doble, turbo, recarga, nova, eco):
+  - **Inteligentes:** `Partida.elegir_powerup()` usa `random.choices` con `PowerUp.peso(partida)` (por defecto 1: vida 4 con una vida, escudo y recarga más contra un jefe, hielo y nova según enemigos y balas, imán y doble según el combo, eco según los destruibles) y multiplica por `REPETIR_POWERUP` al que cayó recién (`ultimo_powerup`).
+  - `nova` (HASTA_PERDER_VIDA): el próximo dash termina en `onda_expansiva(NOVA_RADIO)` y se gasta. `eco` (`DURACION["eco"]`): `Eco(camino, angulo)` espera `ECO_RETRASO` pasos y recorre el camino del dash: destruye lo destruible, aturde (una vez por enemigo) y rompe balas; deja partículas violetas.
   - `duracion`: ms (escudo, hielo, imán, doble; valores en `DURACION`), `HASTA_PERDER_VIDA` (turbo, recarga) o `None` (vida, instantáneo).
   - `disponible(partida)`: vida solo si falta alguna; los permanentes, solo si no están activos.
   - `al_recoger()`: el hielo además rompe las balas y hace explotar escarcha.
@@ -307,21 +329,21 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - **Fondo** (`Fondo.mover(empuje_x, empuje_y)` en la lógica, mediante `Escena.mover_fondo(partida=None)`, y `Fondo.dibujar(pantalla, fraccion)` interpolado, mediante `Escena.dibujar_fondo`): objetos (`PROFUNDIDAD`) y estrellas (90 cada 800 px de ancho, teñidas con `sector["estrellas"]`). Caen a `0.6 * profundidad` y, solo en Juego, se corren con el paralaje (`-v * REACCION_PARALAJE`). Paleta: ningún canal por encima de ~110.
   - **Ambiente del bioma** (`sector["ambiente"]`, `Mota`s con tope `MAXIMO_MOTAS`): asteroides + estrellas fugaces, brasas que suben + relámpagos (`relampago`), luciérnagas + esporas, panal de fondo (`panal()`, baldosa que se desplaza) + polen, polvo que gira hacia el centro + ondas de gravedad. Al cambiar de sector, las motas viejas se van apagando de a poco.
 
+- **Logros** (`logros.py`): `Logro(id, nombre ≤16, descripcion ≤36, condicion)`; `revisar_logros(partida, progreso)` devuelve los nuevos y los desbloquea (`Progreso.desbloquear` guarda). `NAVES` en config: (nombre, color o None, id del logro o None); `Progreso.naves_disponibles()` y `color_nave()`. Las estadísticas (`estadisticas.py`) las suma la Partida: monedas, enemigos, dashes, perfectos, mejor_cadena, powerups, desafios, sectores_limpios, rangos, mejoras.
+
 ## Tests (`tests/`)
 - `conftest.py`:
   - pone los drivers dummy;
   - fixture `app` (datos en `tmp_path`, `usar_mandos=False`, reloj falso `app.reloj_falso` y teclas mantenidas en el conjunto `app.teclas`);
-  - fixture `partida` (recién creada, sin enemigos, sin power-ups, sin oleadas, **sin anomalías ni desafíos** (`director.con_anomalias`/`con_desafios = False`; sus tests los prenden) y con la moneda lejos).
+  - fixture `partida` (recién creada, sin enemigos, sin power-ups, sin oleadas, **sin anomalías, desafíos ni mejoras** (`director.con_anomalias`/`con_desafios`/`con_mejoras = False`; sus tests los prenden) y con la moneda lejos).
   - Para esperar a que vuelvan los enemigos después de un jefe: `CARTEL_JEFE + CARTEL_RANGO`.
 - `ayudas.py`: `avanzar(app, frames)` (frames completos de la App, sin esperar), `tecla(K)`, `boton(n)` y `jugar(partida, frames, dx, dy, dash)` (solo la lógica).
-- Se verificó que los tests detectan bugs inyectados a propósito (combo, hitbox y rango del embestidor).
+- Se verificó que los tests detectan bugs inyectados a propósito (combo, hitbox, rango del embestidor, dash perfecto, dashes extra, aturdido, fénix, Taller, peso de la vida, guardado de logros, combo en el perfecto y la oferta del nivel 3).
+- Bots del scratchpad: `bot_sector.py` (partida entera eligiendo mejoras al azar), `medir_anomalias.py` (golpes/min; con `CAZA_RAIZ` apunta a otra carpeta, por ejemplo un `git worktree` de un commit viejo, para comparar), `app_completa.py` (la App entera a 144 FPS apretando teclas: pasa por Taller, jefes y Game Over).
 - Para inspeccionar algo visual, sacar una captura de `app.pantalla` con `pygame.image.save` desde un script en el scratchpad que use `App(carpeta_datos=<scratchpad>)`. Filtrar la salida con `grep -a`, porque "¡" hace que grep la trate como binaria.
 
 ## Ideas pendientes (propuestas, aún sin hacer)
-- Propuestas no elegidas: Torreta + Mina, Ladrón + Escudero, Fantasma + Barrera + Élites, taller de cartas, Los Gemelos, fase 2 del Ojo.
-- Estadísticas al final de la partida (monedas, enemigos destruidos, tiempo); por ahora solo se muestra el mejor combo.
-- Logros, tecla M para silenciar, música más intensa según el nivel, transiciones retro entre pantallas y F11 para pantalla completa.
-- Del análisis de gameplay (no elegidas todavía; el tope de velocidad y el frenado ya se hicieron):
-  - roce (graze) con puntos;
-  - HUD fijo (puntos, vidas) que se oscurece si hay algo debajo (los carteles y fichas ya lo hacen).
-- Mostrar los rangos de cada sector en la pantalla de Fin.
+- Propuestas no elegidas: Torreta + Mina, Ladrón + Escudero, Fantasma + Barrera + Élites, Los Gemelos, fase 2 del Ojo.
+- Música más intensa según el nivel y transiciones retro entre pantallas.
+- HUD fijo (puntos, vidas) que se oscurece si hay algo debajo (los carteles y fichas ya lo hacen).
+- Desafío diario (semilla fija), volver a sortear las cartas del Taller, más logros (la pantalla LOGROS tiene lugar para 16: con más hay que paginar).

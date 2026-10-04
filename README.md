@@ -17,9 +17,59 @@ python main.py
 | Pausa | P o Esc | Menú (≡) |
 | Opciones (en pausa) | O | Vista (⧉) |
 | Volver | Esc | B |
+| Silenciar / activar el sonido | M | |
+| Pantalla completa / ventana | F11 | |
 
 Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. En FÁCIL y NORMAL el embestidor deja de seguirte con la mira un momento antes de embestir (la línea roja deja de parpadear): ahí es cuando hay que correrse. En DIFÍCIL y PESADILLA te sigue hasta el último instante.
 
+### El dash
+El dash es la herramienta principal: te lanza hacia adelante y durante ese instante **nada te hace daño**.
+
+- **Dash perfecto:** si el dash atraviesa un enemigo o una bala que te habría pegado, sale "¡PERFECTO!": ganás puntos, el combo no se corta y **el dash se recarga casi enseguida**, así que se pueden encadenar. Varios perfectos seguidos (antes de 1.5 s) forman una **cadena** que multiplica los puntos hasta x5.
+- Algunos enemigos (el divisor, el enjambre, las abejas) y algunos proyectiles (misiles, asteroides) se **destruyen** con el dash, y cada uno adelanta la recarga.
+- Contra los jefes, el dash es la única forma de pegarles.
+
+### Mejoras (el Taller)
+En el **nivel 3** y **al cerrar cada sector** el juego se detiene y te ofrece **3 cartas**: elegís una y dura toda la partida. Se pueden repetir hasta su nivel máximo. Así cada partida termina con una nave distinta:
+
+| Mejora | Qué hace |
+|---|---|
+| **DOBLE DASH** | Un dash más seguido antes de recargar (se ve como cuadraditos al lado de "DASH"). |
+| **RECARGA** | El dash se recarga un 20% más rápido (por nivel). |
+| **ONDA** | Al terminar cada dash, una onda rompe balas, destruye a los enemigos destruibles y empuja (y aturde) a los demás. |
+| **COMETA** | Dash un 50% más largo. |
+| **FILO** *(rara)* | El dash destruye a **todos** los enemigos. Desde el sector 2. |
+| **ESCUDO ROCE** | Cada 4 dash perfectos (3 en nivel 2) ganás un escudo. |
+| **BOTIN** | Destruir con el dash da el doble de puntos y recarga más. |
+| **MOTOR** | La nave va un 12% más rápido. |
+| **ATRACCION** | La moneda viene sola si estás cerca. |
+| **COMBO LARGO** | El combo tarda un 30% más en cortarse. |
+| **CORAZON** | +1 vida máxima (y te cura una). |
+| **FENIX** *(rara)* | Si perdés la última vida, volvés con una (una vez). |
+| **SUERTE** | Los power-ups caen más seguido. |
+| **POTENCIA** | Los power-ups duran un 40% más. |
+
+### Power-ups
+Caen desde arriba cada tanto. No caen del todo al azar: el juego elige **el que más sirve en ese momento** (la vida si te queda una, el hielo si hay muchos enemigos, el escudo contra un jefe...) y casi nunca repite el mismo dos veces seguidas.
+
+| Power-up | Qué hace |
+|---|---|
+| **ESCUDO** | Aguanta un golpe. |
+| **HIELO** | Congela a los enemigos (tocarlos da puntos) y rompe las balas. |
+| **VIDA** | Recupera una vida. |
+| **IMAN** | La moneda vuela hacia vos. |
+| **DOBLE** | Puntos dobles. |
+| **TURBO** | Más velocidad, hasta perder una vida. |
+| **RECARGA** | El dash se recarga el doble de rápido, hasta perder una vida. |
+| **NOVA** | Tu próximo dash termina en una gran explosión (rompe balas, destruye y aturde). |
+| **ECO** | Durante 10 s, una copia violeta repite cada dash un momento después. |
+
+### Logros y naves
+Hay **16 logros** (vencer a tu primer jefe, 10 dash perfectos, rango S, 5000 puntos...). Se guardan entre partidas en `progreso.json` y cuando desbloqueás uno aparece una ficha "¡LOGRO!". Varios logros desbloquean **naves de otro color**: se eligen en **LOGROS** (desde el inicio) con IZQ/DER.
+
+Al perder, el **Game Over** muestra el resumen de la partida: tiempo, sector, monedas, mejor combo, enemigos destruidos, dash perfectos (y la mejor cadena), desafíos, el rango de cada sector y las mejoras que elegiste. ENTER juega otra vez; ESC vuelve al menú. En la **pausa** también se ve cómo va la partida y tus mejoras.
+
+### Carteles
 Los carteles ("NIVEL 3", "¡JEFE VENCIDO!", el rango...) y las fichas (enemigo nuevo, desafío) se vuelven casi transparentes cuando tienen algo abajo (la nave, la moneda, un enemigo, una bala), así nunca te tapan el juego. Cada tanto llega una **oleada**: muchos enemigos durante unos segundos; si la pasás sin perder una vida, ganás puntos y un power-up. Los enemigos de cada nivel se eligen al azar según un "presupuesto", así que cada partida es distinta.
 
 ### Sectores y jefes
@@ -46,7 +96,7 @@ Las peleas son un **baile**: cada jefe avisa antes de atacar, ataca al ritmo de 
   | Mar de ámbar | **Fiebre del oro** | La buena: las monedas valen el doble y el combo tarda más en cortarse. |
   | Abismo azul | Una al azar | Desde la segunda vuelta, todos los sectores la sortean. |
 
-- **Desafíos (opcionales):** al llegar a cada sector (en el primero, en el nivel 2) aparece un reto a la derecha, debajo de las vidas: **SIN DASH**, **INTOCABLE** (sin recibir golpes), **SIN AYUDA** (sin agarrar power-ups), **SIN CORTAR EL COMBO** (12 monedas seguidas) o **CAZADOR** (destruir 6 enemigos con el dash). Los tres primeros se cumplen al llegar al jefe; los otros dos, apenas los lográs. Premio: puntos y un power-up.
+- **Desafíos (opcionales):** al llegar a cada sector (en el primero, en el nivel 2) aparece un reto a la derecha, debajo de las vidas: **SIN DASH**, **INTOCABLE** (sin recibir golpes), **SIN AYUDA** (sin agarrar power-ups), **SIN CORTAR EL COMBO** (12 monedas seguidas), **CAZADOR** (destruir 6 enemigos con el dash) o **AL FILO** (5 dash perfectos). Los tres primeros se cumplen al llegar al jefe; los otros, apenas los lográs. Premio: puntos y un power-up.
 - **Rango:** al vencer al jefe, el sector se califica de **S** a **C** con estrellas: sin golpes (2), combo de 12 (1), desafío cumplido (1) y jefe vencido rápido (1). S = 5 estrellas, A = 4, B = 2 o 3. Cada letra da puntos extra.
 
 En **Opciones → FORMATO** se elige entre 4:3 (800x600) y 16:9 (1066x600, un campo de juego más ancho). Se cambia desde el menú de inicio, no en medio de una partida.
@@ -70,12 +120,17 @@ juego/
   app.py                # crea todo y corre el bucle principal
   partida.py            # el estado de una partida y sus reglas
   nave.py  moneda.py  proyectiles.py
-  progresion.py         # el "director": enemigos de cada nivel, sectores, oleadas
+  progresion.py         # el "director": enemigos de cada nivel, sectores, oleadas, mejoras
   anomalias.py  desafios.py  rango.py   # lo que pasa en cada sector
+  mejoras.py            # las cartas del Taller
+  estadisticas.py       # lo que pasa en la partida (para el Game Over y los logros)
+  logros.py             # los logros (y que nave desbloquea cada uno)
+  eco.py                # la copia del power-up ECO
   enemigos/             # un archivo por enemigo + base.py
   jefes/                # un archivo por jefe + base.py
   powerups/             # tipos.py (todos los power-ups) + base.py
-  escenas/              # una clase por pantalla: inicio, listo, juego, pausa, opciones, explosion, iniciales, fin
+  escenas/              # una clase por pantalla: inicio, dificultad, logros, listo, juego, taller, pausa,
+                        # opciones, explosion, iniciales, fin
   entrada.py            # teclado + mando -> acciones (aceptar, dash, pausa...)
   sonido.py  ventana.py  guardado.py  recursos.py
   dibujo.py  efectos.py  fondo.py  hud.py
@@ -87,12 +142,12 @@ tests/                  # pytest
 - **Una responsabilidad por módulo.** Si querés cambiar cómo se ve el marcador, vas a `hud.py`; si querés cambiar el mando, a `entrada.py`. No hay que buscar en un archivo de 2000 líneas.
 - **`config.py` solo tiene valores.** Podés ajustar la dificultad sin miedo a romper la lógica.
 - **Escenas (patrón *State*).** Cada pantalla es una clase con `actualizar()` y `dibujar()`. La `App` llama a esos dos métodos sobre la escena actual. Para cambiar de pantalla: `self.app.cambiar_escena(OtraEscena(...))`.
-- **Registros (patrón *Registry*).** Los enemigos, jefes, power-ups, anomalías y desafíos se anotan solos con un decorador (`@registrar_enemigo`…). El resto del juego los crea por nombre, así que **agregar uno nuevo no obliga a tocar el resto del código**.
+- **Registros (patrón *Registry*).** Los enemigos, jefes, power-ups, anomalías, desafíos y mejoras se anotan solos con un decorador (`@registrar_enemigo`…). El resto del juego los crea por nombre, así que **agregar uno nuevo no obliga a tocar el resto del código**.
 - **Clases base (patrón *Template Method*).** `Enemigo`, `Jefe` y `PowerUp` resuelven todo lo común: aparecer con aviso, congelarse con el hielo, el sprite de respaldo, el HUD… Cada tipo escribe solo lo que lo hace distinto.
 - **`Partida` en vez de variables globales.** Todo el estado de una partida vive en un objeto. Empezar otra partida es crear una nueva, así no queda nada "sucio" de la anterior.
 - **Entrada por acciones.** El juego pregunta "¿se apretó DASH?", no "¿se apretó la barra espaciadora?". Así teclado y mando funcionan igual.
 - **Paso fijo + interpolación.** La lógica (`actualizar`) corre siempre 60 veces por segundo y el dibujo (`dibujar`) a la frecuencia elegida. Regla de oro: en `actualizar` se cambia el estado, en `dibujar` solo se dibuja.
-- **Estable.** El juego no se cae si falta un sprite (usa uno dibujado), si no hay placa de sonido, o si `records.json` / `config.json` están dañados o no se pueden escribir.
+- **Estable.** El juego no se cae si falta un sprite (usa uno dibujado), si no hay placa de sonido, o si `records.json` / `config.json` / `progreso.json` están dañados o no se pueden escribir.
 
 ## Cómo agregar cosas nuevas
 
@@ -142,11 +197,18 @@ Entrar (con la presentación de su `nombre` y `apodo`), morir, la vida, el conge
        duracion = 6000          # o HASTA_PERDER_VIDA, o None si es instantáneo
    ```
 2. Donde tenga efecto, preguntá `partida.activo("lento")` (por ejemplo, en `Partida.factor_velocidad()`).
+3. (Opcional) `peso(partida)`: devolvé más de 1 cuando sea más útil (así cae más seguido en ese momento).
 
-El HUD, la caída al azar y el panel de la pantalla de inicio lo muestran solos.
+El HUD, la caída y el panel de la pantalla de inicio lo muestran solos.
+
+### Una mejora (carta del Taller)
+En `juego/mejoras.py`, una clase que herede de `Mejora`, con `@registrar_mejora`, `tipo`, `nombre` (hasta 12 letras), `descripcion` (líneas de hasta 22), `color`, un `icono` de 7x7 (pixel art con "X") y `maximo`. Si cambia algo una sola vez, escribí `al_elegir()` (como `Corazon`); si no, preguntá `partida.mejora("mi_tipo")` donde tenga efecto (devuelve cuántas veces la elegiste). Con `peso` < 1 sale menos (y la carta dice RARA).
+
+### Un logro
+En `juego/logros.py`, sumá un `Logro(id, nombre, descripcion, condicion)` a `LOGROS`. La condición recibe la partida y devuelve True cuando se cumplió (usá `partida.estadisticas`). Para que dé una nave, agregala a `NAVES` en `config.py` con el id del logro.
 
 ### Una anomalía
 En `juego/anomalias.py`, una clase que herede de `Anomalia`, con `@registrar_anomalia`, un `tipo`, `nombre`, `pista` y `color`. Usá los ganchos que necesites: `actualizar()` (lo que hace en cada paso), `dibujar()` (avisos, efectos), `terminar()`, `multiplicador_monedas()` o `factor_combo()`. Si ataca, que **avise antes** (como las columnas de los asteroides). Para que un sector la tenga, ponela como `"anomalia"` en `SECTORES`.
 
 ### Un desafío
-En `juego/desafios.py`, una clase que herede de `Desafio`, con `@registrar_desafio`, `tipo`, `nombre`, `pista` y `color`. Elegí los avisos que le importan (`al_usar_dash`, `al_recibir_golpe`, `al_agarrar_powerup`, `al_recoger_moneda`, `al_destruir_enemigo`) y llamá a `self.fallar()` (los de aguantar) o a `self.avanzar(progreso)` con una `meta` (los de lograr). Si no se puede en cualquier momento, escribí `disponible()`.
+En `juego/desafios.py`, una clase que herede de `Desafio`, con `@registrar_desafio`, `tipo`, `nombre`, `pista` y `color`. Elegí los avisos que le importan (`al_usar_dash`, `al_recibir_golpe`, `al_agarrar_powerup`, `al_recoger_moneda`, `al_destruir_enemigo`, `al_dash_perfecto`) y llamá a `self.fallar()` (los de aguantar) o a `self.avanzar(progreso)` con una `meta` (los de lograr). Si no se puede en cualquier momento, escribí `disponible()`.
