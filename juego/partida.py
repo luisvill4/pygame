@@ -27,7 +27,7 @@ from juego.config import (COMBO_TIEMPO, COMBO_MAXIMO, MONEDAS_POR_NIVEL, MS_POR_
                           PUNTOS_ENEMIGO_CONGELADO, NAVE_VELOCIDAD, RECARGA_POR_DESTRUIR,
                           TURBO_VELOCIDAD, DASH_RECARGA, RECARGA_RAPIDA, PRIMER_POWERUP, ESPERA_POWERUP,
                           INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, JEFE_CADA_NIVELES, JEFE_PUNTOS,
-                          DASH_PERFECTO_PUNTOS, DASH_PERFECTO_RECARGA, MEJORA_RECARGA, MEJORA_ONDA_RADIO,
+                          DASH_PERFECTO_PUNTOS, DASH_PERFECTO_RECARGA, CADENA_PERFECTOS, CADENA_MAXIMA, MEJORA_RECARGA, MEJORA_ONDA_RADIO,
                           MEJORA_FILO_PUNTOS, MEJORA_ROCE, MEJORA_ROCE_ESCUDO, MEJORA_ATRACCION, MEJORA_COMBO,
                           MEJORA_SUERTE, MEJORA_POTENCIA, MEJORA_MOTOR, FENIX_INVULNERABLE, ATURDIDO_ONDA,
                           EMPUJE_ONDA, NARANJA, NOVA_RADIO, REPETIR_POWERUP,
@@ -82,7 +82,8 @@ class Partida:
         self.tiempo_golpe = -1000       # ultimo golpe (para hacer parpadear las vidas)
         self.estadisticas = Estadisticas()
         self.perfecto_en_este_dash = False  # el dash perfecto se premia una sola vez por dash
-        self.tiempo_perfecto = -10000   # ultimo dash perfecto (para el HUD)
+        self.tiempo_perfecto = -10000   # ultimo dash perfecto
+        self.cadena = 0                 # perfectos seguidos (cada uno antes de CADENA_PERFECTOS)
         self.en_dash_antes = False      # para saber cuando termina un dash
         self.mejoras = {}               # tipo de mejora -> cuantas veces se eligio
         self.perfectos_para_escudo = 0  # cuenta de la mejora ESCUDO ROCE
@@ -430,17 +431,26 @@ class Partida:
         if self.perfecto_en_este_dash:
             return
         self.perfecto_en_este_dash = True
+        # Cadena: si el anterior fue hace poco, esta vale mas
+        if self.tiempo - self.tiempo_perfecto < CADENA_PERFECTOS:
+            self.cadena += 1
+        else:
+            self.cadena = 1
         self.tiempo_perfecto = self.tiempo
         self.estadisticas.perfectos += 1
+        self.estadisticas.mejor_cadena = max(self.estadisticas.mejor_cadena, self.cadena)
         nave = self.nave
         nave.dash_listo = min(nave.dash_listo, self.tiempo + DASH_PERFECTO_RECARGA)
         if self.combo > 0:
             self.ultima_moneda = self.tiempo        # el combo no se corta
-        ganados = self.sumar_puntos(DASH_PERFECTO_PUNTOS * self.multiplicador_combo())
+        multiplicador = min(self.cadena, CADENA_MAXIMA)
+        ganados = self.sumar_puntos(DASH_PERFECTO_PUNTOS * self.multiplicador_combo() * multiplicador)
         nave_x, nave_y = nave.centro()
-        self.efectos.anillo(x, y, ENERGIA, 20, 5, 3)
+        self.efectos.anillo(x, y, ENERGIA, 20 + 4 * multiplicador, 5, 3)
         self.efectos.explosion(x, y, [(0, 70, 110), CIAN, BLANCO], 12, 4, 2)
-        self.efectos.texto_flotante("¡PERFECTO! +" + str(ganados), nave_x, nave_y - 34, CIAN)
+        cartel = "¡PERFECTO!" if self.cadena < 2 else "¡PERFECTO x" + str(multiplicador) + "!"
+        self.efectos.texto_flotante(cartel + " +" + str(ganados), nave_x, nave_y - 34,
+                                    CIAN if self.cadena < 2 else AMARILLO)
         self.sonidos.reproducir("seleccion")
         self.entrada.vibrar(0.2, 0.4, 60)
         self.congelar_frames = max(self.congelar_frames, 3)

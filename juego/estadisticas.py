@@ -12,6 +12,7 @@ class Estadisticas:
         self.enemigos = 0           # enemigos destruidos (con el dash, una onda, una nova...)
         self.dashes = 0             # veces que se uso el dash
         self.perfectos = 0          # dash perfectos (atravesar un peligro con el dash)
+        self.mejor_cadena = 0       # mas perfectos seguidos (ver CADENA_PERFECTOS)
         self.powerups = 0           # power-ups recogidos
         self.desafios = 0           # desafios cumplidos
         self.sectores_limpios = 0   # sectores cerrados sin recibir un golpe

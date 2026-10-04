@@ -27,7 +27,7 @@ import random
 import pygame
 
 from juego import recursos, dibujo, lienzo
-from juego.config import (ALTO, HIELO, CIAN, MAGENTA, BLANCO, ORO, ENERGIA, SINGULARIDAD_PULSO,
+from juego.config import (HIELO, CIAN, MAGENTA, BLANCO, ORO, ENERGIA, SINGULARIDAD_PULSO,
                           SINGULARIDAD_GRAVEDAD, SINGULARIDAD_INHALAR, SINGULARIDAD_RADIO, SINGULARIDAD_HUECOS,
                           SINGULARIDAD_EXPUESTA)
 from juego.jefes.base import Jefe, registrar_jefe

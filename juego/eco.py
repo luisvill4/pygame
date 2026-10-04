@@ -9,7 +9,7 @@ las balas. (Tiene x/y: se dibuja interpolado como todo lo que se mueve)
 import pygame
 
 from juego import recursos, nave as modulo_nave
-from juego.config import VIOLETA, ECO_RETRASO, ATURDIDO_ONDA
+from juego.config import VIOLETA, BLANCO, ECO_RETRASO, ATURDIDO_ONDA
 
 _imagen = []        # la nave teñida de violeta (se crea la primera vez)
 
@@ -40,6 +40,7 @@ class Eco:
             return False
         self.x, self.y = self.camino[self.indice]
         caja = pygame.Rect(self.x, self.y, modulo_nave.TAMANO, modulo_nave.TAMANO)
+        partida.efectos.particula(caja.centerx, caja.centery, 0, 0, [(60, 20, 90), VIOLETA, BLANCO], 14, 6)
         for bala in [b for b in partida.balas if caja.collidepoint(b.x, b.y)]:
             partida.balas.remove(bala)
             partida.efectos.explosion(bala.x, bala.y, [(60, 20, 90), VIOLETA], 6, 3, 2)

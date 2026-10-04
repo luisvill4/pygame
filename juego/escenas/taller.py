@@ -83,6 +83,8 @@ class Taller(Escena):
         texto(pantalla, mejora.nombre, CHICA, mejora.color if elegida else BLANCO, carta.centerx, arriba + 126)
         for fila, linea in enumerate(mejora.descripcion):
             texto(pantalla, linea, MINI, BLANCO if elegida else GRIS, carta.centerx, arriba + 162 + fila * 16)
+        if mejora.peso < 1 and dibujo.parpadeo(250):
+            texto(pantalla, "RARA", MINI, MAGENTA, carta.centerx, arriba + 18)      # sale menos seguido
         tenes = self.partida.mejora(mejora.tipo)
         if tenes == 0:
             etiqueta, color = "NUEVA", CIAN

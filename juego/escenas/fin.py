@@ -72,7 +72,7 @@ class Fin(Escena):
             ("MONEDAS", str(estadisticas.monedas)),
             ("MEJOR COMBO", str(partida.mejor_combo)),
             ("ENEMIGOS", str(estadisticas.enemigos)),
-            ("DASH PERFECTOS", str(estadisticas.perfectos)),
+            ("DASH PERFECTOS", str(estadisticas.perfectos) + " (x" + str(estadisticas.mejor_cadena) + ")"),
             ("DESAFIOS", str(estadisticas.desafios)),
         ]
 

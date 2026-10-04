@@ -105,6 +105,8 @@ BUFFER_DASH = 150               # si apretas el dash hasta estos ms antes de que
 # Premio: puntos, el combo no se corta y el dash se recarga casi enseguida (se pueden encadenar)
 DASH_PERFECTO_PUNTOS = 3        # por el multiplicador del combo
 DASH_PERFECTO_RECARGA = 200     # ms hasta poder usar el dash otra vez despues de un perfecto
+CADENA_PERFECTOS = 1500         # ms: otro perfecto antes de esto alarga la cadena (x2, x3...)
+CADENA_MAXIMA = 5               # la cadena multiplica los puntos del perfecto hasta x5
 
 # Choques que hacen daño: circulos, asi la nave recibe el mismo golpe aunque este girada
 RADIO_NAVE = 11

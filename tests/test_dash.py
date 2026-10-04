@@ -88,3 +88,18 @@ def test_el_dash_se_cuenta_en_las_estadisticas(partida):
     jugar(partida, dx=-1, dash=True)
     assert partida.estadisticas.dashes == 2
     assert math.isfinite(partida.nave.dash_listo)
+
+
+def test_perfectos_seguidos_forman_una_cadena(partida):
+    from juego.config import CADENA_PERFECTOS
+    partida._dash_perfecto(0, 0)
+    partida.perfecto_en_este_dash = False
+    partida.tiempo += CADENA_PERFECTOS - 100
+    partida._dash_perfecto(0, 0)
+    assert partida.cadena == 2
+    assert partida.puntaje == DASH_PERFECTO_PUNTOS * 3          # 1 + 2
+    partida.perfecto_en_este_dash = False
+    partida.tiempo += CADENA_PERFECTOS + 100                  # muy tarde: empieza otra
+    partida._dash_perfecto(0, 0)
+    assert partida.cadena == 1
+    assert partida.estadisticas.mejor_cadena == 2
