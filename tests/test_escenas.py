@@ -29,10 +29,30 @@ def empezar(app):
 def test_inicio_opciones_y_volver(app):
     avanzar(app, 3)
     assert isinstance(app.escena, Inicio)
-    tecla(pygame.K_RIGHT)
+    tecla(pygame.K_LEFT)                    # da la vuelta: JUGAR -> OPCIONES
     tecla(pygame.K_RETURN)
     avanzar(app)
     assert isinstance(app.escena, Opciones)
+    tecla(pygame.K_ESCAPE)
+    avanzar(app)
+    assert isinstance(app.escena, Inicio)
+
+
+def test_inicio_logros_y_elegir_nave(app):
+    from juego.escenas.logros import Logros
+    from juego.config import NAVES
+    app.progreso.desbloquear(NAVES[1][2])           # el logro de la segunda nave
+    avanzar(app, 3)
+    tecla(pygame.K_RIGHT)                   # LOGROS
+    tecla(pygame.K_RETURN)
+    avanzar(app)
+    assert isinstance(app.escena, Logros)
+    tecla(pygame.K_RIGHT)
+    avanzar(app)
+    assert app.progreso.nave == NAVES[1][0]
+    tecla(pygame.K_RIGHT)                   # solo hay dos: vuelve a la primera
+    avanzar(app)
+    assert app.progreso.nave == NAVES[0][0]
     tecla(pygame.K_ESCAPE)
     avanzar(app)
     assert isinstance(app.escena, Inicio)
@@ -209,3 +229,24 @@ def test_cerrar_en_las_iniciales_guarda_el_record(app):
     avanzar(app)
     assert not app.ejecutando
     assert app.records.filas("NORMAL")[0]["puntos"] == 40
+
+
+def test_m_silencia_y_vuelve_a_prender(app):
+    avanzar(app)
+    tecla(pygame.K_m)
+    avanzar(app)
+    assert not app.opciones.musica and not app.opciones.efectos
+    tecla(pygame.K_m)
+    avanzar(app)
+    assert app.opciones.musica and app.opciones.efectos
+
+
+def test_f11_pantalla_completa_y_vuelve(app):
+    avanzar(app)
+    antes = app.opciones.resolucion
+    tecla(pygame.K_F11)
+    avanzar(app)
+    assert app.opciones.resolucion == "COMPLETA"
+    tecla(pygame.K_F11)
+    avanzar(app)
+    assert app.opciones.resolucion == antes

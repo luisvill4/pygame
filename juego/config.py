@@ -45,6 +45,7 @@ VOLUMEN_MAX = 10                # pasos de la barra de volumen (tambien es el vo
 # Archivos que escribe el juego (se crean solos si no existen)
 NOMBRE_RECORDS = "records.json"
 NOMBRE_CONFIG = "config.json"
+NOMBRE_PROGRESO = "progreso.json"   # logros, la nave elegida y cuantas partidas se jugaron
 
 # ================================== #
 # ============ COLORES ============= #
@@ -367,6 +368,20 @@ PROFUNDIDAD = {                 # velocidad de cada capa (las estrellas van de 1
     "planeta_chico": 0.3,
     "planeta_grande": 0.6,
 }
+
+# Naves: colores que se desbloquean con logros (ver logros.py). Se eligen en la pantalla LOGROS.
+# (nombre, color con el que se tiñe el sprite (None = el original), logro que la desbloquea (None = siempre))
+NAVES = [
+    ("ORIGINAL", None, None),
+    ("CIAN", CIAN, "primer_jefe"),
+    ("MAGENTA", MAGENTA, "al_filo"),
+    ("FUEGO", NARANJA, "cazador"),
+    ("HIELO", HIELO, "intocable"),
+    ("DORADA", AMARILLO, "rango_s"),
+    ("VIOLETA", VIOLETA, "arsenal"),
+    ("FANTASMA", BLANCO, "viajero"),
+    ("SANGRE", ROJO, "sin_piedad"),
+]
 
 # Records: letras que se pueden usar en las iniciales
 ALFABETO = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

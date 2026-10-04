@@ -4,16 +4,20 @@ Pausa: la ultima imagen del juego oscurecida y un menu para elegir con ARRIBA/AB
     CONTINUAR        vuelve al juego (tambien con P, ESC o el boton Menu del mando)
     OPCIONES         el menu de opciones (tambien con O o el boton Vista)
     VOLVER AL MENU   pide confirmacion: se pierde la partida y su puntaje
+
+Abajo, como va la partida: el sector, el nivel, el tiempo y las mejoras elegidas.
 """
 import pygame
 
 from juego import dibujo
-from juego.dibujo import texto, CHICA, MEDIA, TITULO
+from juego.dibujo import texto, MINI, CHICA, MEDIA, TITULO
 from juego.config import FONDO, CIAN, BLANCO, GRIS, ROJO, AMARILLO, SECTORES
 from juego.entrada import PAUSA, VOLVER, OPCIONES, ACEPTAR, ARRIBA, ABAJO, IZQUIERDA, DERECHA
 from juego.escenas.base import Escena
 from juego.escenas.opciones import Opciones
 from juego.escenas.inicio import Inicio
+from juego.escenas.fin import reloj
+from juego.mejoras import TIPOS_MEJORA
 
 FILAS_PAUSA = ["CONTINUAR", "OPCIONES", "VOLVER AL MENU"]
 
@@ -97,11 +101,12 @@ class Pausa(Escena):
         pantalla_completa.blit(self.captura, (0, 0))
         dibujo.oscurecer(pantalla_completa, FONDO, 160)
         pantalla = dibujo.zona_central(pantalla_completa)
-        dibujo.texto_3d(pantalla, "PAUSA", TITULO, CIAN, (0, 70, 110), 170)
+        dibujo.texto_3d(pantalla, "PAUSA", TITULO, CIAN, (0, 70, 110), 100)
 
-        dibujo.marco(pantalla, pygame.Rect(200, 240, 400, 170), CIAN)
+        dibujo.marco(pantalla, pygame.Rect(200, 150, 400, 170), CIAN)
         for i, fila in enumerate(FILAS_PAUSA):
-            dibujo.opcion(pantalla, fila, MEDIA, 400, 285 + i * 40, i == self.fila)
+            dibujo.opcion(pantalla, fila, MEDIA, 400, 195 + i * 40, i == self.fila)
+        self._dibujar_partida(pantalla)
 
         if self.confirmando:
             self._dibujar_confirmacion(pantalla_completa, pantalla)
@@ -114,9 +119,33 @@ class Pausa(Escena):
         else:
             lineas = (ayuda("ARRIBA/ABAJO ELEGIR   ENTER ACEPTAR", "ARRIBA/ABAJO ELEGIR   A ACEPTAR"),
                       ayuda("P SEGUIR   O OPCIONES", "MENU SEGUIR   VISTA OPCIONES"))
-        texto(pantalla, lineas[0], CHICA, GRIS, 400, 470)
-        texto(pantalla, lineas[1], CHICA, GRIS, 400, 500)
+        texto(pantalla, lineas[0], CHICA, GRIS, 400, 530)
+        texto(pantalla, lineas[1], CHICA, GRIS, 400, 560)
         dibujo.efecto_crt(pantalla_completa)
+
+    def _dibujar_partida(self, pantalla):
+        # Como va la partida: sector, nivel, tiempo, dash perfectos y las mejoras
+        partida = self.escena_juego.partida
+        director = partida.director
+        marco = pygame.Rect(100, 340, 600, 160)
+        dibujo.marco(pantalla, marco, (60, 60, 90))
+        texto(pantalla, "SECTOR " + str(director.numero_sector) + ": " + director.sector["nombre"], CHICA,
+              director.sector["color"], 400, 368)
+        resumen = ("NIVEL " + str(partida.nivel) + "   TIEMPO " + reloj(partida.tiempo)
+                   + "   PERFECTOS " + str(partida.estadisticas.perfectos))
+        texto(pantalla, resumen, MINI, BLANCO, 400, 394)
+        mejoras = partida.mejoras_elegidas()
+        if not mejoras:
+            texto(pantalla, "SIN MEJORAS TODAVIA", MINI, GRIS, 400, 440)
+            return
+        separacion = min(44, 560 // len(mejoras))
+        primera_x = 400 - separacion * (len(mejoras) - 1) // 2
+        for i, (tipo, veces) in enumerate(mejoras):
+            mejora = TIPOS_MEJORA[tipo]
+            icono_x = primera_x + i * separacion
+            dibujo.pixel_art(pantalla, mejora.icono, icono_x, 438, mejora.color, 4)
+            if veces > 1:
+                texto(pantalla, "x" + str(veces), MINI, BLANCO, icono_x, 470)
 
     def _dibujar_confirmacion(self, pantalla_completa, pantalla):
         dibujo.oscurecer(pantalla_completa, FONDO, 140)

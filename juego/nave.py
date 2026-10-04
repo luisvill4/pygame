@@ -17,12 +17,21 @@ from juego.config import (ALTO, CIAN, ENERGIA, MS_CUADRO_ESCUDO, NAVE_ACELERACIO
 TAMANO = 50
 
 _imagenes = {}      # se cargan la primera vez que se usan
+_color = [None]     # color de la nave elegida (None = el del sprite). Ver NAVES en config.py
+
+
+def cambiar_color(color):
+    # Otra nave (se desbloquean con logros): las imagenes se vuelven a armar con ese color
+    _color[0] = color
+    _imagenes.clear()
 
 
 def imagen(nombre="nave"):
     # "nave", "icono" (vidas del HUD), "icono_vacio" y "fantasma" (estela del dash)
     if not _imagenes:
         nave = recursos.sprite_obligatorio("nave.png")
+        if _color[0] is not None:
+            nave = recursos.tenir(nave, _color[0])
         icono = pygame.transform.scale(nave, (25, 25))
         icono_vacio = icono.copy()
         icono_vacio.set_alpha(40)

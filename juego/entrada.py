@@ -27,6 +27,8 @@ ARRIBA = "arriba"
 ABAJO = "abajo"
 IZQUIERDA = "izquierda"
 DERECHA = "derecha"
+SILENCIO = "silencio"           # M: apaga o prende todo el sonido (en cualquier pantalla)
+PANTALLA_COMPLETA = "pantalla_completa"     # F11
 
 # Que acciones dispara cada tecla
 TECLAS = {
@@ -40,6 +42,8 @@ TECLAS = {
     pygame.K_DOWN: [ABAJO],
     pygame.K_LEFT: [IZQUIERDA],
     pygame.K_RIGHT: [DERECHA],
+    pygame.K_m: [SILENCIO],
+    pygame.K_F11: [PANTALLA_COMPLETA],
 }
 
 # Que accion dispara cada boton del mando (B solo vuelve: en el juego no pausa)

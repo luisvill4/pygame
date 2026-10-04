@@ -14,14 +14,6 @@ class Estadisticas:
         self.perfectos = 0          # dash perfectos (atravesar un peligro con el dash)
         self.powerups = 0           # power-ups recogidos
         self.desafios = 0           # desafios cumplidos
-        self.anomalias_limpias = 0  # anomalias aguantadas sin recibir un golpe
+        self.sectores_limpios = 0   # sectores cerrados sin recibir un golpe
         self.rangos = []            # una letra por sector cerrado ("S", "A"...)
-        self.colores_rangos = []    # el color de cada uno de esos sectores (para dibujarlos)
         self.mejoras = []           # tipos de mejora elegidos, en orden
-
-    def mejor_rango(self):
-        # La mejor letra conseguida (None si no se cerro ningun sector)
-        for letra in ("S", "A", "B", "C"):
-            if letra in self.rangos:
-                return letra
-        return None

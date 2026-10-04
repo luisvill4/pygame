@@ -16,7 +16,7 @@ _imagen = []        # la nave teñida de violeta (se crea la primera vez)
 
 def imagen_eco():
     if not _imagen:
-        _imagen.append(recursos.tenir(modulo_nave.imagen("nave"), VIOLETA))
+        _imagen.append(recursos.tenir(recursos.sprite_obligatorio("nave.png"), VIOLETA))
     return _imagen[0]
 
 

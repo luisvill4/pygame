@@ -74,6 +74,9 @@ def dibujar(pantalla, partida):
                 t - director.tiempo_cartel_nuevo)
     if director.desafio is not None and t - director.tiempo_cartel_desafio < DURACION_FICHA:
         _cartel(pantalla, partida, "desafio", _ficha_desafio, director.desafio, t - director.tiempo_cartel_desafio)
+    for logro, desde in partida.fichas_logro:
+        if 0 <= t - desde < DURACION_FICHA:
+            _cartel(pantalla, partida, "logro", _ficha_logro, logro, t - desde)
     if director.en_oleada and director.restante_oleada() > OLEADA_DURACION - 2000 and dibujo.parpadeo(150):
         _cartel(pantalla, partida, "oleada", dibujo.texto_3d, "¡OLEADA!", GRANDE, ROJO, (110, 0, 30), 200, 4)
     if director.anomalia is not None:
@@ -245,11 +248,15 @@ def _ficha(pantalla, transcurrido, lado, color, titulo, color_titulo, nombre, pi
     alto = 64
     entrada = max(0, min(1, transcurrido / 250, (DURACION_FICHA - transcurrido) / 250))
     escondida = (1 - entrada) * (ancho + 30)
+    y = 104
     if lado == "izquierda":
         x = int(20 - escondida) // 4 * 4
-    else:
+    elif lado == "derecha":
         x = int(lienzo.ancho - 20 - ancho + escondida) // 4 * 4
-    y = 104
+    else:
+        # Al centro: baja desde arriba
+        x = (lienzo.centro_x() - ancho // 2) // 4 * 4
+        y = int(104 - (1 - entrada) * (alto + 110)) // 4 * 4
     dibujo.marco(pantalla, pygame.Rect(x, y, ancho, alto), color)
     texto_x = x + margen
     if imagen is not None:
@@ -276,6 +283,25 @@ def _ficha_desafio(pantalla, desafio, transcurrido):
     else:
         titulo, color_titulo, pista = "DESAFIO (OPCIONAL)", GRIS, desafio.pista
     _ficha(pantalla, transcurrido, "derecha", desafio.color, titulo, color_titulo, desafio.nombre, pista)
+
+
+TROFEO = [
+    "X.XXX.X",
+    "XXXXXXX",
+    "X.XXX.X",
+    "..XXX..",
+    "...X...",
+    "..XXX..",
+    ".XXXXX.",
+]
+
+
+def _ficha_logro(pantalla, logro, transcurrido):
+    # Un logro desbloqueado: la ficha baja al centro, con un trofeo
+    imagen = pygame.Surface((28, 28), pygame.SRCALPHA)
+    dibujo.pixel_art(imagen, TROFEO, 14, 14, AMARILLO, 4)
+    _ficha(pantalla, transcurrido, "centro", AMARILLO, "¡LOGRO!", AMARILLO, logro.nombre, logro.descripcion,
+           imagen)
 
 
 def _desafio(pantalla, desafio):

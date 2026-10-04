@@ -5,3 +5,4 @@ __pycache__/
 # Datos del jugador: los crea el juego al arrancar
 records.json
 config.json
+progreso.json

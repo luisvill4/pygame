@@ -43,15 +43,17 @@ from juego.interpolacion import Interpolador
 from juego.estadisticas import Estadisticas
 from juego.mejoras import TIPOS_MEJORA
 from juego.eco import Eco
+from juego.logros import revisar_logros
 
 
 class Partida:
-    def __init__(self, efectos, sonidos, entrada, records, opciones, dificultad="NORMAL"):
+    def __init__(self, efectos, sonidos, entrada, records, opciones, dificultad="NORMAL", progreso=None):
         # Servicios que usa (los crea la App y se comparten)
         self.efectos = efectos
         self.sonidos = sonidos
         self.entrada = entrada          # solo para vibrar el mando
         self.opciones = opciones        # se leen en vivo (ej: el aviso del jefe)
+        self.progreso = progreso        # logros guardados (None = no se revisan logros)
         # Dificultad: sus reglas (vidas, velocidad, presupuesto...) y su propio record
         self.dificultad = dificultad
         self.reglas = DIFICULTADES[dificultad]
@@ -87,6 +89,9 @@ class Partida:
         self.camino_dash = []           # por donde paso el ultimo dash (para el power-up ECO)
         self.ecos = []                  # copias que repiten un dash (ver eco.py)
         self.ultimo_powerup = None      # el ultimo que cayo (para no repetir tanto)
+        self.logros_nuevos = []         # logros desbloqueados en esta partida (ver logros.py)
+        self.fichas_logro = []          # [logro, desde]: cuando el HUD muestra la ficha de cada uno
+        self.pasos = 0                  # pasos jugados (para revisar los logros cada tanto)
 
         # Moneda y power-ups
         self.moneda = Moneda()
@@ -118,6 +123,10 @@ class Partida:
     def mejora(self, tipo):
         # Cuantas veces se eligio esta mejora (0 = no la tenes)
         return self.mejoras.get(tipo, 0)
+
+    def mejoras_elegidas(self):
+        # [(tipo, veces)] de las mejoras que tenes, en el orden de mejoras.py
+        return [(tipo, self.mejora(tipo)) for tipo in TIPOS_MEJORA if self.mejora(tipo)]
 
     def espera_powerup(self):
         suerte = (1 - MEJORA_SUERTE) ** self.mejora("suerte")
@@ -261,6 +270,7 @@ class Partida:
             self.entrada.vibrar(1, 1, 700)
             self.congelar_frames = 8
             self.termino = True
+            self._al_terminar()
 
     def iniciar_jefe(self):
         # Los enemigos explotan y se guardan hasta que venzas al jefe del sector
@@ -347,6 +357,29 @@ class Partida:
         self.nave.estela(self.tiempo, vel_max, self.efectos)
         self.moneda.brillar(self.efectos)
         self.efectos.actualizar()
+        self.pasos += 1
+        if self.pasos % 30 == 0:
+            self.revisar_logros()
+
+    def revisar_logros(self):
+        # Cada medio segundo: ¿se cumplio algun logro nuevo? Cada uno tiene su ficha en el
+        # HUD, una detras de la otra
+        if self.progreso is None:
+            return
+        for logro in revisar_logros(self, self.progreso):
+            desde = self.tiempo
+            if self.fichas_logro:
+                desde = max(desde, self.fichas_logro[-1][1] + hud.DURACION_FICHA)
+            self.fichas_logro.append([logro, desde])
+            self.logros_nuevos.append(logro)
+            self.sonidos.reproducir("nuevo_record")
+
+    def _al_terminar(self):
+        # Game Over: ultima revision de logros y una partida mas en el progreso
+        self.revisar_logros()
+        if self.progreso is not None:
+            self.progreso.partidas += 1
+            self.progreso.guardar()
 
     def _al_empezar_dash(self):
         self.perfecto_en_este_dash = False

@@ -155,7 +155,8 @@ class Director:
         self.rango["sector"] = self.numero_sector
         self.rango["color"] = self.sector["color"]
         partida.estadisticas.rangos.append(self.rango["letra"])
-        partida.estadisticas.colores_rangos.append(self.sector["color"])
+        if bitacora.golpes == 0:
+            partida.estadisticas.sectores_limpios += 1
         self.tiempo_cartel_rango = partida.tiempo + CARTEL_JEFE
         self.rango_pagado = False
         self.fin_del_cierre = self.tiempo_cartel_rango + CARTEL_RANGO

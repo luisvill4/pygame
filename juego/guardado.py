@@ -1,5 +1,5 @@
 """
-Lo que se guarda en disco: la tabla de records y las opciones.
+Lo que se guarda en disco: la tabla de records, las opciones y el progreso (logros y nave).
 
 Nunca hacen caer el juego:
 - si el archivo no existe, se crea con los valores de fabrica;
@@ -8,7 +8,7 @@ Nunca hacen caer el juego:
 """
 import json
 
-from juego.config import VOLUMEN_MAX, FILAS_RECORDS, FORMATOS, FRECUENCIAS, ORDEN_DIFICULTADES
+from juego.config import VOLUMEN_MAX, FILAS_RECORDS, FORMATOS, FRECUENCIAS, ORDEN_DIFICULTADES, NAVES
 
 
 def _escribir_json(archivo, datos):
@@ -82,6 +82,49 @@ class TablaRecords:
             if fila is nueva:
                 return posicion
         return -1
+
+
+class Progreso:
+    # Lo que se gana jugando y queda entre partidas. En el archivo:
+    #   {"logros": ["primer_jefe", ...], "nave": "CIAN", "partidas": 12}
+
+    def __init__(self, archivo):
+        self.archivo = archivo
+        self.logros = set()             # ids de los logros desbloqueados (ver logros.py)
+        self.nave = NAVES[0][0]         # nombre de la nave elegida
+        self.partidas = 0               # partidas terminadas
+        self._cargar()
+
+    def _cargar(self):
+        try:
+            with open(self.archivo, encoding="utf-8") as abierto:
+                datos = json.load(abierto)
+            self.logros = {str(logro) for logro in datos.get("logros", [])}
+            self.partidas = max(0, int(datos.get("partidas", 0)))
+            if datos.get("nave") in [nombre for nombre, _, _ in self.naves_disponibles()]:
+                self.nave = datos["nave"]
+        except FileNotFoundError:
+            self.guardar()
+        except (ValueError, TypeError, AttributeError):
+            pass        # dañado: se empieza de cero (y se sobrescribe al guardar)
+
+    def guardar(self):
+        _escribir_json(self.archivo, {"logros": sorted(self.logros), "nave": self.nave,
+                                      "partidas": self.partidas})
+
+    def desbloquear(self, id_logro):
+        self.logros.add(id_logro)
+        self.guardar()
+
+    def naves_disponibles(self):
+        # Las naves (nombre, color, logro) que ya se pueden usar
+        return [nave for nave in NAVES if nave[2] is None or nave[2] in self.logros]
+
+    def color_nave(self):
+        for nombre, color, _ in NAVES:
+            if nombre == self.nave:
+                return color
+        return None
 
 
 class Opciones:
