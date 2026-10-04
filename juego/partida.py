@@ -13,6 +13,11 @@ Dos relojes, no mezclarlos:
 Reglas importantes:
 - Todo daño a la nave pasa por danar_jugador().
 - Todos los puntos pasan por sumar_puntos() (aplica DOBLE y detecta el record).
+- Dash perfecto: si el dash atraviesa algo que te habria pegado, _dash_perfecto() premia
+  (una vez por dash): puntos, el combo sigue y el dash se recarga casi enseguida.
+- Lo que pasa queda anotado en self.estadisticas (Game Over y logros).
+- Mejoras (mejoras.py): self.mejoras dice cuantas veces se eligio cada una; las reglas
+  las consultan con self.mejora("tipo").
 """
 import math
 import random
@@ -22,6 +27,10 @@ from juego.config import (COMBO_TIEMPO, COMBO_MAXIMO, MONEDAS_POR_NIVEL, MS_POR_
                           PUNTOS_ENEMIGO_CONGELADO, NAVE_VELOCIDAD, RECARGA_POR_DESTRUIR,
                           TURBO_VELOCIDAD, DASH_RECARGA, RECARGA_RAPIDA, PRIMER_POWERUP, ESPERA_POWERUP,
                           INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, JEFE_CADA_NIVELES, JEFE_PUNTOS,
+                          DASH_PERFECTO_PUNTOS, DASH_PERFECTO_RECARGA, MEJORA_RECARGA, MEJORA_ONDA_RADIO,
+                          MEJORA_FILO_PUNTOS, MEJORA_ROCE, MEJORA_ROCE_ESCUDO, MEJORA_ATRACCION, MEJORA_COMBO,
+                          MEJORA_SUERTE, MEJORA_POTENCIA, MEJORA_MOTOR, FENIX_INVULNERABLE, ATURDIDO_ONDA,
+                          EMPUJE_ONDA, NARANJA, NOVA_RADIO, REPETIR_POWERUP,
                           DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
                           ESCARCHA, EMBESTIDA, ARCOIRIS)
 from juego.nave import Nave
@@ -31,6 +40,9 @@ from juego.progresion import Director
 from juego.powerups import TIPOS_POWERUP, Capsula, HASTA_PERDER_VIDA
 from juego.proyectiles import mover_balas, dibujar_balas
 from juego.interpolacion import Interpolador
+from juego.estadisticas import Estadisticas
+from juego.mejoras import TIPOS_MEJORA
+from juego.eco import Eco
 
 
 class Partida:
@@ -66,6 +78,15 @@ class Partida:
         self.tiempo_cartel_nivel = -10000
         self.tiempo_moneda = -1000      # ultima moneda (para iluminar el puntaje)
         self.tiempo_golpe = -1000       # ultimo golpe (para hacer parpadear las vidas)
+        self.estadisticas = Estadisticas()
+        self.perfecto_en_este_dash = False  # el dash perfecto se premia una sola vez por dash
+        self.tiempo_perfecto = -10000   # ultimo dash perfecto (para el HUD)
+        self.en_dash_antes = False      # para saber cuando termina un dash
+        self.mejoras = {}               # tipo de mejora -> cuantas veces se eligio
+        self.perfectos_para_escudo = 0  # cuenta de la mejora ESCUDO ROCE
+        self.camino_dash = []           # por donde paso el ultimo dash (para el power-up ECO)
+        self.ecos = []                  # copias que repiten un dash (ver eco.py)
+        self.ultimo_powerup = None      # el ultimo que cayo (para no repetir tanto)
 
         # Moneda y power-ups
         self.moneda = Moneda()
@@ -94,12 +115,23 @@ class Partida:
         # Desde el nivel 6 todos los enemigos se aceleran un poco por nivel (y segun la dificultad)
         return min(1 + max(0, self.nivel - 5) * 0.08, 1.5) * self.reglas["velocidad"]
 
+    def mejora(self, tipo):
+        # Cuantas veces se eligio esta mejora (0 = no la tenes)
+        return self.mejoras.get(tipo, 0)
+
     def espera_powerup(self):
-        return random.randint(*ESPERA_POWERUP) * self.reglas["espera_powerup"]
+        suerte = (1 - MEJORA_SUERTE) ** self.mejora("suerte")
+        return random.randint(*ESPERA_POWERUP) * self.reglas["espera_powerup"] * suerte
+
+    def duracion_powerup(self, duracion):
+        # La duracion de un power-up que se recoge (la mejora POTENCIA la alarga)
+        if duracion == HASTA_PERDER_VIDA:
+            return duracion
+        return duracion * (1 + MEJORA_POTENCIA * self.mejora("potencia"))
 
     def tiempo_combo(self):
-        # ms maximos entre monedas para seguir el combo (la fiebre del oro lo alarga)
-        return COMBO_TIEMPO * self.director.factor_combo()
+        # ms maximos entre monedas para seguir el combo (la fiebre del oro y COMBO LARGO lo alargan)
+        return COMBO_TIEMPO * self.director.factor_combo() * (1 + MEJORA_COMBO * self.mejora("combo"))
 
     def multiplicador_combo(self):
         # x1 con 1-2 monedas seguidas, x2 con 3-5, x3 con 6-8... hasta x5
@@ -123,10 +155,16 @@ class Partida:
         self.activos.pop(tipo, None)
 
     def vel_max(self):
-        return TURBO_VELOCIDAD if self.activo("turbo") else NAVE_VELOCIDAD
+        base = TURBO_VELOCIDAD if self.activo("turbo") else NAVE_VELOCIDAD
+        return base * (1 + MEJORA_MOTOR * self.mejora("motor"))
 
     def recarga_dash(self):
-        return RECARGA_RAPIDA if self.activo("recarga") else DASH_RECARGA
+        base = RECARGA_RAPIDA if self.activo("recarga") else DASH_RECARGA
+        return base * (1 - MEJORA_RECARGA) ** self.mejora("recarga")
+
+    def puede_destruir(self, enemigo):
+        # ¿El dash lo destruye? Los 'destruibles' siempre; con la mejora FILO, todos
+        return enemigo.destruible or self.mejora("filo") > 0
 
     # ================================== #
     # ============= REGLAS ============= #
@@ -153,6 +191,18 @@ class Partida:
         self.director.al_subir_nivel()      # sector nuevo cada tanto y mas enemigos
         if self.nivel % JEFE_CADA_NIVELES == 0:
             self.iniciar_jefe()
+
+    def elegir_mejora(self, tipo):
+        # Se eligio una carta del Taller: queda para toda la partida
+        mejora = TIPOS_MEJORA[tipo]
+        self.mejoras[tipo] = self.mejora(tipo) + 1
+        mejora.al_elegir(self)
+        self.estadisticas.mejoras.append(tipo)
+        self.director.ofertas = []
+        nave_x, nave_y = self.nave.centro()
+        self.efectos.anillo(nave_x, nave_y, [(40, 40, 60), mejora.color, BLANCO], 32, 6)
+        self.efectos.texto_flotante(mejora.nombre, nave_x, nave_y - 40, mejora.color)
+        self.sonidos.reproducir("powerup")
 
     def danar_jugador(self, golpe_x, golpe_y):
         # Golpe de un enemigo, del jefe o de una bala: rompe el escudo o quita una vida
@@ -190,6 +240,17 @@ class Partida:
         self.efectos.sacudir(15, ROJO)
         self.entrada.vibrar(0.7, 1, 300)
         self.congelar_frames = 4
+
+        if self.vidas <= 0 and self.mejora("fenix"):
+            # FENIX: vuelve con una vida (y la mejora se gasta: puede volver a salir)
+            self.mejoras["fenix"] -= 1
+            self.vidas = 1
+            nave.invulnerable_hasta = ahora + FENIX_INVULNERABLE
+            self.efectos.explosion(nave_x, nave_y, FUEGO, 60, 8, 5)
+            self.efectos.anillo(nave_x, nave_y, FUEGO, 40, 7, 4)
+            self.efectos.texto_flotante("¡FENIX!", nave_x, nave_y - 40, NARANJA)
+            self.sonidos.reproducir("nuevo_record")
+            return
 
         if self.vidas <= 0:
             # Gran explosion de la nave; el Game Over aparece despues
@@ -237,7 +298,7 @@ class Partida:
 
     def objetos_que_se_mueven(self):
         # Todo lo que se dibuja interpolado (ver interpolacion.py)
-        objetos = [self.nave, self.moneda] + self.enemigos + self.balas + self.efectos.particulas
+        objetos = [self.nave, self.moneda] + self.enemigos + self.balas + self.ecos + self.efectos.particulas
         if self.capsula is not None:
             objetos.append(self.capsula)
         if self.jefe is not None:
@@ -256,13 +317,22 @@ class Partida:
         dash_antes = self.nave.dash_hasta
         self.nave.actualizar(self.tiempo, dx, dy, pidio_dash, vel_max, self.recarga_dash(), self.efectos)
         if self.nave.dash_hasta != dash_antes:
-            self.director.al_usar_dash()        # (para el desafio "SIN DASH")
+            self._al_empezar_dash()
+        en_dash = self.nave.en_dash(self.tiempo)
+        if en_dash:
+            self.camino_dash.append((self.nave.x, self.nave.y))
+        if self.en_dash_antes and not en_dash:
+            self._al_terminar_dash()
+        self.en_dash_antes = en_dash
+        self.ecos = [eco for eco in self.ecos if eco.actualizar(self)]
 
         # El combo se corta si pasa mucho tiempo sin monedas
         if self.combo > 0 and self.tiempo - self.ultima_moneda > self.tiempo_combo():
             self.combo = 0
         if self.activo("iman"):
             self.moneda.atraer(self.nave, self.efectos)
+        elif self.mejora("atraccion"):
+            self.moneda.atraer(self.nave, self.efectos, MEJORA_ATRACCION[self.mejora("atraccion") - 1], 4)
 
         self._revisar_moneda()
         self._actualizar_powerups()
@@ -278,10 +348,83 @@ class Partida:
         self.moneda.brillar(self.efectos)
         self.efectos.actualizar()
 
+    def _al_empezar_dash(self):
+        self.perfecto_en_este_dash = False
+        self.camino_dash = []
+        self.estadisticas.dashes += 1
+        self.director.al_usar_dash()        # (para el desafio "SIN DASH")
+
+    def _al_terminar_dash(self):
+        nave_x, nave_y = self.nave.centro()
+        # Power-up NOVA: el dash termina en una gran explosion (y se gasta)
+        if self.activo("nova"):
+            self.desactivar("nova")
+            self.onda_expansiva(nave_x, nave_y, NOVA_RADIO)
+            self.efectos.explosion(nave_x, nave_y, FUEGO, 60, 9, 6)
+            self.efectos.sacudir(14, NARANJA)
+            self.entrada.vibrar(0.8, 0.8, 250)
+            self.sonidos.reproducir("golpe")
+        # Mejora ONDA: al final de cada dash, una onda alrededor de la nave
+        elif self.mejora("onda"):
+            self.onda_expansiva(nave_x, nave_y, MEJORA_ONDA_RADIO[self.mejora("onda") - 1])
+        # Power-up ECO: una copia va a repetir este dash
+        if self.activo("eco") and self.camino_dash:
+            self.ecos.append(Eco(self.camino_dash, self.nave.angulo))
+        self.camino_dash = []
+
+    def onda_expansiva(self, x, y, radio):
+        # Rompe las balas, destruye a los enemigos destruibles y empuja (y aturde) a los demas.
+        # Al jefe no le hace nada. La usan la mejora ONDA y el power-up NOVA
+        self.efectos.anillo(x, y, [(120, 0, 30), NARANJA, AMARILLO, BLANCO], max(16, radio // 4), radio / 12, 4)
+        for bala in [b for b in self.balas if math.hypot(b.x - x, b.y - y) < radio]:
+            self.balas.remove(bala)
+            self.efectos.explosion(bala.x, bala.y, FUEGO, 4, 2, 2)
+            if bala.destruible:
+                self.sumar_puntos(bala.puntos)
+        for enemigo in list(self.enemigos):
+            if enemigo not in self.enemigos or not enemigo.activo(self.tiempo):
+                continue
+            centro_x, centro_y = enemigo.centro()
+            if math.hypot(centro_x - x, centro_y - y) > radio + enemigo.tamano / 2:
+                continue
+            if self.puede_destruir(enemigo):
+                self.destruir_con_dash(enemigo)
+            else:
+                enemigo.empujar(self, x, y, EMPUJE_ONDA, ATURDIDO_ONDA)
+
+    def _dash_perfecto(self, x, y):
+        # El dash atraveso algo que te habria pegado: premio (una vez por dash)
+        if self.perfecto_en_este_dash:
+            return
+        self.perfecto_en_este_dash = True
+        self.tiempo_perfecto = self.tiempo
+        self.estadisticas.perfectos += 1
+        nave = self.nave
+        nave.dash_listo = min(nave.dash_listo, self.tiempo + DASH_PERFECTO_RECARGA)
+        if self.combo > 0:
+            self.ultima_moneda = self.tiempo        # el combo no se corta
+        ganados = self.sumar_puntos(DASH_PERFECTO_PUNTOS * self.multiplicador_combo())
+        nave_x, nave_y = nave.centro()
+        self.efectos.anillo(x, y, ENERGIA, 20, 5, 3)
+        self.efectos.explosion(x, y, [(0, 70, 110), CIAN, BLANCO], 12, 4, 2)
+        self.efectos.texto_flotante("¡PERFECTO! +" + str(ganados), nave_x, nave_y - 34, CIAN)
+        self.sonidos.reproducir("seleccion")
+        self.entrada.vibrar(0.2, 0.4, 60)
+        self.congelar_frames = max(self.congelar_frames, 3)
+        self.director.al_dash_perfecto()
+        # Mejora ESCUDO ROCE: cada tantos perfectos, un escudo
+        if self.mejora("roce"):
+            self.perfectos_para_escudo += 1
+            if self.perfectos_para_escudo >= MEJORA_ROCE[self.mejora("roce") - 1]:
+                self.perfectos_para_escudo = 0
+                self.activar("escudo", MEJORA_ROCE_ESCUDO)
+                self.efectos.texto_flotante("+ESCUDO", nave_x, nave_y - 60, CIAN)
+
     def _revisar_moneda(self):
         if not self.nave.caja_recoger().colliderect(self.moneda.caja()):
             return
         ahora = self.tiempo
+        self.estadisticas.monedas += 1
         if ahora - self.ultima_moneda < self.tiempo_combo():
             self.combo += 1
         else:
@@ -310,8 +453,7 @@ class Partida:
         # Cada 8 a 13 segundos cae uno desde arriba; si no lo recoges, se va por abajo
         ahora = self.tiempo
         if self.capsula is None and ahora > self.proximo_powerup:
-            disponibles = [p for p in TIPOS_POWERUP.values() if p.disponible(self)]
-            self.capsula = Capsula(random.choice(disponibles), random.randint(30, lienzo.ancho - 30))
+            self.capsula = Capsula(self.elegir_powerup(), random.randint(30, lienzo.ancho - 30))
         if self.capsula is None:
             return
         self.capsula.caer()
@@ -320,12 +462,22 @@ class Partida:
             self.sonidos.reproducir("powerup")
             powerup.al_recoger(self, x, y)
             self.director.al_agarrar_powerup()
+            self.estadisticas.powerups += 1
             self.efectos.texto_flotante(powerup.texto_al_recoger(), x, y - 24, powerup.color)
             self.capsula = None
             self.proximo_powerup = ahora + self.espera_powerup()
         elif self.capsula.salio():
             self.capsula = None
             self.proximo_powerup = ahora + self.espera_powerup()
+
+    def elegir_powerup(self):
+        # Al azar, pero con mas chances para el que mas sirve ahora (peso) y menos para
+        # el mismo que cayo recien
+        disponibles = [p for p in TIPOS_POWERUP.values() if p.disponible(self)]
+        pesos = [p.peso(self) * (REPETIR_POWERUP if p.tipo == self.ultimo_powerup else 1) for p in disponibles]
+        elegido = random.choices(disponibles, weights=pesos)[0]
+        self.ultimo_powerup = elegido.tipo
+        return elegido
 
     def _devolver_enemigos(self):
         # Despues del jefe, los enemigos vuelven cuando se cierra el sector (cuando se van
@@ -367,10 +519,12 @@ class Partida:
                     self.destruir_enemigo(enemigo, con_dash=False)
                 else:
                     enemigo.reaparecer(self)
-            elif congelados:
-                continue
-            elif enemigo.destruible and nave.en_dash(ahora) and caja_nave.colliderect(enemigo.caja()):
+            elif congelados or enemigo.aturdido(ahora):
+                continue        # (congelado o aturdido no lastima)
+            elif self.puede_destruir(enemigo) and nave.en_dash(ahora) and caja_nave.colliderect(enemigo.caja()):
                 self.destruir_con_dash(enemigo)
+            elif nave.en_dash(ahora) and enemigo.hace_danio() and nave.toca_circulo(golpe_x, golpe_y, enemigo.radio):
+                self._dash_perfecto(golpe_x, golpe_y)       # lo atravesaste: te habria pegado
             elif (enemigo.hace_danio() and nave.toca_circulo(golpe_x, golpe_y, enemigo.radio)
                   and not nave.atraviesa(ahora)):
                 self.danar_jugador(golpe_x, golpe_y)
@@ -385,15 +539,17 @@ class Partida:
     def destruir_con_dash(self, enemigo):
         # El dash destruye a los enemigos 'destruibles': puntos, chispas, y el dash se recarga un poco
         centro_x, centro_y = enemigo.centro()
-        ganados = self.sumar_puntos(enemigo.puntos_dash)
+        botin = self.mejora("botin")
+        ganados = self.sumar_puntos((enemigo.puntos_dash or MEJORA_FILO_PUNTOS) * (1 + botin))
         self.sonidos.reproducir("golpe")
         self.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color, BLANCO], 24, 6, 4)
         self.efectos.texto_flotante("+" + str(ganados), centro_x, centro_y - 20, enemigo.color)
         self.efectos.sacudir(4)
         self.entrada.vibrar(0.3, 0.5, 80)
         self.congelar_frames = 2
-        self.nave.dash_listo = max(self.tiempo, self.nave.dash_listo - RECARGA_POR_DESTRUIR)
+        self.nave.dash_listo = max(self.tiempo, self.nave.dash_listo - RECARGA_POR_DESTRUIR * (1 + botin))
         self.destruir_enemigo(enemigo, con_dash=True)
+        self.estadisticas.enemigos += 1
         self.director.al_destruir_enemigo()
 
     def destruir_enemigo(self, enemigo, con_dash):
@@ -429,6 +585,8 @@ class Partida:
                 self._rebotar_en(*jefe.centro_nucleo())
                 jefe.recibir_golpe(self)
                 return
+        if nave.en_dash(ahora):
+            self._rozar_balas()
         if jefe.muriendo() or nave.atraviesa(ahora):
             return      # el dash y la invulnerabilidad atraviesan al jefe y sus balas
         if self._tocar_balas():
@@ -445,8 +603,16 @@ class Partida:
         nave, ahora = self.nave, self.tiempo
         if nave.en_dash(ahora):
             self._destruir_proyectiles(nave.caja_recoger())
+            self._rozar_balas()
         if not nave.atraviesa(ahora):
             self._tocar_balas()
+
+    def _rozar_balas(self):
+        # En dash: una bala que te habria pegado es un dash perfecto
+        for bala in self.balas:
+            if self.nave.toca_circulo(bala.x, bala.y, bala.radio):
+                self._dash_perfecto(bala.x, bala.y)
+                return
 
     def _tocar_balas(self):
         # Si una bala toca a la nave: se borra, hace daño y devuelve True
@@ -493,6 +659,8 @@ class Partida:
         if self.jefe is not None:
             self.jefe.dibujar(pantalla, self)
         dibujar_balas(pantalla, self.balas)
+        for eco in self.ecos:
+            eco.dibujar(pantalla)
         self.nave.dibujar_fantasmas(pantalla)
         if con_nave:
             self.nave.dibujar(pantalla, self.tiempo, self.restante("escudo"))

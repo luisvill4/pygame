@@ -189,6 +189,15 @@ def _marcador(pantalla, partida):
 
     # Nivel y dash (abajo a la derecha)
     texto(pantalla, "NIVEL " + str(partida.nivel), CHICA, AMARILLO, derecha, 575, alinear="derecha")
+    # Dashes extra (mejora DOBLE DASH): cuadraditos a la izquierda, llenos si se pueden usar
+    nave_jugador = partida.nave
+    for i in range(nave_jugador.dash_extra_max):
+        disponible = ahora >= nave_jugador.dash_listo or i < nave_jugador.dash_extra
+        cuadrito = pygame.Rect(derecha - 84 - i * 12, 539, 8, 12)
+        if disponible:
+            pantalla.fill(CIAN, cuadrito)
+        else:
+            pygame.draw.rect(pantalla, GRIS, cuadrito, 2)
     if ahora >= partida.nave.dash_listo:
         texto(pantalla, "DASH", CHICA, CIAN, derecha, 545, alinear="derecha")
     else:

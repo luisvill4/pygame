@@ -17,7 +17,8 @@ los demas son metodos vacios de la clase base (patron Template Method, otra vez)
 Para agregar uno: una clase con @registrar_desafio, su 'tipo', 'nombre', 'pista' y
 'color', y los avisos que necesite (llamando a self.fallar() o self.avanzar()).
 """
-from juego.config import CIAN, AMARILLO, ROJO, VERDE, MAGENTA, DESAFIO_COMBO, DESAFIO_CAZADOR, DESBLOQUEO_ENEMIGO
+from juego.config import (CIAN, AMARILLO, ROJO, VERDE, MAGENTA, BLANCO, DESAFIO_COMBO, DESAFIO_CAZADOR,
+                          DESAFIO_ROCE, DESBLOQUEO_ENEMIGO)
 
 TIPOS_DESAFIO = {}          # nombre -> clase
 
@@ -86,6 +87,9 @@ class Desafio:
     def al_destruir_enemigo(self):
         pass
 
+    def al_dash_perfecto(self):
+        pass
+
 
 @registrar_desafio
 class SinDash(Desafio):
@@ -147,4 +151,16 @@ class Cazador(Desafio):
         return partida.nivel >= DESBLOQUEO_ENEMIGO["divisor"]
 
     def al_destruir_enemigo(self):
+        self.avanzar(self.progreso + 1)
+
+
+@registrar_desafio
+class AlFilo(Desafio):
+    tipo = "roce"
+    nombre = "AL FILO"
+    pista = "ATRAVESA " + str(DESAFIO_ROCE) + " PELIGROS CON EL DASH"
+    color = BLANCO
+    meta = DESAFIO_ROCE
+
+    def al_dash_perfecto(self):
         self.avanzar(self.progreso + 1)

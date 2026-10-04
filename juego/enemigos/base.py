@@ -28,7 +28,7 @@ import random
 import pygame
 
 from juego import recursos, dibujo, lienzo
-from juego.config import (ALTO, BLANCO, HIELO, AVISO_APARICION, DISTANCIA_APARICION, MS_CUADRO_ENEMIGO,
+from juego.config import (ALTO, BLANCO, HIELO, AMARILLO, AVISO_APARICION, DISTANCIA_APARICION, MS_CUADRO_ENEMIGO,
                           PUNTOS_ENEMIGO_CONGELADO, SEPARACION_ENEMIGOS, FUERZA_SEPARACION, RADIO_ENEMIGO,
                           COSTO_ENEMIGO, ENEMIGO_VELOCIDAD_MAX)
 
@@ -130,6 +130,7 @@ class Enemigo:
         self.desfase = random.randint(0, 1000)      # para que no se animen todos al mismo tiempo
         self.costo = COSTO_ENEMIGO.get(self.tipo, 0)    # lo que ocupa del presupuesto del nivel
         self.naciendo = False       # recien nacido en un lugar (parpadea en vez de mostrar la X)
+        self.aturdido_hasta = 0     # aturdido por una onda: quieto y sin lastimar hasta este momento
         self.reaparecer(partida)
 
     def reaparecer(self, partida):
@@ -138,6 +139,7 @@ class Enemigo:
         self.vx, self.vy = 0, 0
         self.aparece_en = partida.tiempo + AVISO_APARICION
         self.naciendo = False
+        self.aturdido_hasta = 0
         self.al_aparecer(partida)
 
     def nacer_en(self, partida, centro_x, centro_y, espera):
@@ -169,6 +171,20 @@ class Enemigo:
         # Para las subclases: un enemigo que por un rato no lastima (ej: una abeja volviendo a casa)
         return True
 
+    def aturdido(self, tiempo):
+        return tiempo < self.aturdido_hasta
+
+    def empujar(self, partida, desde_x, desde_y, distancia, ms_aturdido):
+        # Una onda lo empuja lejos de (desde_x, desde_y) y lo deja aturdido
+        centro_x, centro_y = self.centro()
+        lejos_x, lejos_y = centro_x - desde_x, centro_y - desde_y
+        largo = math.hypot(lejos_x, lejos_y) or 1
+        self.x += lejos_x / largo * distancia
+        self.y += lejos_y / largo * distancia
+        self.vx, self.vy = 0, 0
+        self.aturdido_hasta = partida.tiempo + ms_aturdido
+        self._bordes()
+
     def centro(self):
         return self.x + self.tamano / 2, self.y + self.tamano / 2
 
@@ -192,7 +208,7 @@ class Enemigo:
     # ---------- Movimiento ----------
 
     def actualizar(self, partida, congelado):
-        if not self.activo(partida.tiempo) or congelado:
+        if not self.activo(partida.tiempo) or congelado or self.aturdido(partida.tiempo):
             return
         self.naciendo = False
         self.mover(partida)
@@ -266,6 +282,17 @@ class Enemigo:
                 self.dibujar_animado(pantalla)
             return
         self.dibujar_cuerpo(pantalla, partida)
+        if self.aturdido(partida.tiempo):
+            self._dibujar_estrellitas(pantalla, centro_x, self.y - 6)
+
+    def _dibujar_estrellitas(self, pantalla, centro_x, arriba):
+        # Aturdido: tres estrellitas que giran sobre la cabeza (en saltos, estilo retro)
+        vuelta = pygame.time.get_ticks() // 120
+        for i in range(3):
+            angulo = (vuelta + i * 3) % 8 * math.pi / 4
+            punto_x = centro_x + round(math.cos(angulo) * self.tamano * 0.35 / 2) * 2
+            punto_y = arriba + round(math.sin(angulo) * 2) * 2
+            pantalla.fill(AMARILLO, (punto_x - 2, punto_y - 2, 4, 4))
 
     def dibujar_cuerpo(self, pantalla, partida):
         # Para las subclases que se dibujan distinto segun lo que estan haciendo

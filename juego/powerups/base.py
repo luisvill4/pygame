@@ -12,9 +12,14 @@ Para agregar un power-up nuevo:
     3. Si hace algo al recogerlo, sobrescribir al_recoger() (llamando a super()).
     4. Si cambia algo mientras esta activo, preguntar en la partida con
        partida.activo("mi_tipo") donde haga falta (ej: partida.vel_max()).
+    5. (Opcional) peso(partida): las chances de que caiga segun lo que pasa en el juego.
     (Opcional) Un cuadro de 30x30 al final de sprites/powerups.png y su 'cuadro_sprite'.
        Si no tiene, se dibuja un cuadro con su letra.
 El HUD, la aparicion al azar y el panel de la pantalla de inicio lo toman solos.
+
+Power-ups "inteligentes": la capsula no cae del todo al azar. Cada power-up dice con
+peso() que tan util es AHORA (la vida si te queda una, el hielo si hay muchos enemigos,
+el escudo contra un jefe...) y se elige con esas chances.
 """
 import pygame
 
@@ -55,10 +60,14 @@ class PowerUp:
             return not partida.activo(self.tipo)
         return True
 
+    def peso(self, partida):
+        # Chances de caer (1 = normal). Las subclases lo suben cuando el power-up sirve mas
+        return 1
+
     def al_recoger(self, partida, x, y):
         # Lo activa (si dura) y hace el anillo de particulas
         if self.duracion is not None:
-            partida.activar(self.tipo, self.duracion)
+            partida.activar(self.tipo, partida.duracion_powerup(self.duracion))
         partida.efectos.anillo(x, y, self.paleta, 24, 5)
 
     def texto_al_recoger(self):

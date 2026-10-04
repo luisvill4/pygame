@@ -43,5 +43,6 @@ def partida(app):
     nueva.director.proxima_oleada = math.inf
     nueva.director.con_anomalias = False        # (tienen sus propios tests)
     nueva.director.con_desafios = False
+    nueva.director.con_mejoras = False         # (las cartas del Taller tambien)
     nueva.moneda.x, nueva.moneda.y = -500, -500
     return nueva

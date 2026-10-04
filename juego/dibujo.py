@@ -74,6 +74,18 @@ def opcion(pantalla, mensaje, tamano, x, y, elegida, alinear="centro"):
         pygame.draw.polygon(pantalla, AMARILLO, [(punta - lado, y - lado), (punta - lado, y + lado), (punta, y)])
 
 
+def pixel_art(pantalla, filas, centro_x, centro_y, color, tamano_pixel=4):
+    # Dibuja un dibujo hecho con texto: cada "X" es un cuadrado de 'tamano_pixel' (centrado)
+    ancho = len(filas[0]) * tamano_pixel
+    alto = len(filas) * tamano_pixel
+    izquierda, arriba = int(centro_x - ancho // 2), int(centro_y - alto // 2)
+    for fila, linea in enumerate(filas):
+        for columna, celda in enumerate(linea):
+            if celda == "X":
+                pantalla.fill(color, (izquierda + columna * tamano_pixel, arriba + fila * tamano_pixel,
+                                      tamano_pixel, tamano_pixel))
+
+
 def numero_arcade(numero):
     # 42 -> "000042"
     return str(numero).zfill(6)

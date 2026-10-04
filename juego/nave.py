@@ -44,6 +44,9 @@ class Nave:
         self.dash_listo = 0                 # desde este momento se puede volver a usar
         self.dash_pedido_en = -10000        # ultima vez que se apreto el dash (para el buffer)
         self.dash_avisado = True            # si ya destello avisando que el dash esta listo
+        self.duracion_dash = DASH_DURACION  # ms que dura cada dash (la mejora COMETA lo alarga)
+        self.dash_extra_max = 0             # dashes seguidos de mas (la mejora DOBLE DASH)
+        self.dash_extra = 0                 # los que quedan: se recargan junto con el dash
         self.fantasmas = []                 # copias que deja el dash: [x, y, angulo, vida]
 
     # ---------- Consultas ----------
@@ -149,15 +152,27 @@ class Nave:
         self.vx = avance * dir_x + deriva_x
         self.vy = avance * dir_y + deriva_y
 
+    def dash_disponible(self, tiempo):
+        # Se puede usar si ya se recargo, o si quedan dashes extra (y no esta en medio de uno)
+        if self.en_dash(tiempo):
+            return False
+        return tiempo >= self.dash_listo or self.dash_extra > 0
+
     def _dash(self, tiempo, dx, dy, pidio_dash, recarga_dash, efectos):
         # Impulso hacia donde presionas (o hacia donde mira la nave).
         # Si lo apretas justo antes de que se recargue, se guarda y sale apenas este listo
         cx, cy = self.centro()
+        if tiempo >= self.dash_listo:
+            self.dash_extra = self.dash_extra_max       # recargado: vuelven los dashes extra
         if pidio_dash:
             self.dash_pedido_en = tiempo
-        if tiempo - self.dash_pedido_en <= BUFFER_DASH and tiempo >= self.dash_listo:
+        if tiempo - self.dash_pedido_en <= BUFFER_DASH and self.dash_disponible(tiempo):
             self.dash_pedido_en = -10000
-            self.dash_avisado = False
+            if tiempo >= self.dash_listo:
+                self.dash_listo = tiempo + recarga_dash
+                self.dash_avisado = False
+            else:
+                self.dash_extra -= 1                    # uno extra: no reinicia la recarga
             if self.acelerando:
                 largo = math.hypot(dx, dy)
                 dash_x, dash_y = dx / largo, dy / largo
@@ -165,8 +180,7 @@ class Nave:
                 dash_x = -math.sin(math.radians(self.angulo))
                 dash_y = -math.cos(math.radians(self.angulo))
             self.vx, self.vy = dash_x * DASH_FUERZA, dash_y * DASH_FUERZA
-            self.dash_hasta = tiempo + DASH_DURACION
-            self.dash_listo = tiempo + recarga_dash
+            self.dash_hasta = tiempo + self.duracion_dash
             efectos.anillo(cx, cy, ENERGIA, 16, 3, 2)
         elif tiempo >= self.dash_listo and not self.dash_avisado:
             # Destello chico en la nave: el dash ya esta listo

@@ -42,14 +42,14 @@ class Moneda:
     def mover_a_lugar_nuevo(self, partida):
         self.x, self.y = lugar_para_moneda(partida)
 
-    def atraer(self, nave, efectos):
-        # Iman: si esta cerca, vuela hacia la nave
+    def atraer(self, nave, efectos, alcance=250, rapidez=6):
+        # Iman (y la mejora ATRACCION): si esta cerca, vuela hacia la nave
         nave_x, nave_y = nave.centro()
         centro_x, centro_y = self.centro()
         hacia_x, hacia_y = nave_x - centro_x, nave_y - centro_y
         distancia = math.hypot(hacia_x, hacia_y)
-        if 0 < distancia < 250:
-            paso = min(distancia, 6)
+        if 0 < distancia < alcance:
+            paso = min(distancia, rapidez)
             self.x += hacia_x / distancia * paso
             self.y += hacia_y / distancia * paso
             if random.random() < 0.3:

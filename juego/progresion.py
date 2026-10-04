@@ -14,6 +14,8 @@ llega una OLEADA. (Los juegos le dicen "director" a esta parte: dirige la tensio
 - Desafios: un reto opcional por sector (desafios.py).
 - Rango: al vencer al jefe, una nota de S a C para el sector (rango.py). Mientras se ve
   el cartel, el sector se esta "cerrando": los enemigos esperan para volver.
+- Mejoras: en el nivel MEJORA_PRIMER_NIVEL y al cerrar cada sector deja 3 cartas en
+  'ofertas' (mejoras.py). La escena Juego las ve y abre el Taller para elegir una.
 
 La Partida le avisa lo que pasa (al_subir_nivel, al_recibir_golpe, al_usar_dash...) y
 le pide actualizar() en cada paso.
@@ -26,11 +28,13 @@ from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, PRESUPUESTO_INICIAL
                           RECAMBIO_SECTOR, OLEADA_DESDE_NIVEL, OLEADA_ESPERA, OLEADA_DURACION,
                           OLEADA_PRESUPUESTO, OLEADA_PUNTOS, REFUERZO_ESPERA, CARTEL_JEFE, AMARILLO, ROJO,
                           JEFE_CADA_NIVELES, ANOMALIA_NIVEL, ANOMALIA_ESPERA, RESPIRO_ANOMALIA,
-                          DESAFIO_DESDE_NIVEL, DESAFIO_ESPERA, DESAFIO_PUNTOS, CARTEL_RANGO, RANGO_SELLO, VERDE)
+                          DESAFIO_DESDE_NIVEL, DESAFIO_ESPERA, DESAFIO_PUNTOS, CARTEL_RANGO, RANGO_SELLO, VERDE,
+                          MEJORA_PRIMER_NIVEL)
 from juego.enemigos import crear_enemigos, TIPOS_ENEMIGO
 from juego.anomalias import TIPOS_ANOMALIA, crear_anomalia
 from juego.desafios import TIPOS_DESAFIO
 from juego.rango import Bitacora, calcular_rango
+from juego.mejoras import sortear_mejoras
 
 
 class Director:
@@ -65,6 +69,10 @@ class Director:
         self.tiempo_cartel_rango = -10000
         self.rango_pagado = True
         self.fin_del_cierre = -10000
+        # Mejoras (con_mejoras = False las apaga): las cartas ofrecidas, esperando que elijas una
+        self.con_mejoras = True
+        self.ofertas = []
+        self.mejora_tras_cierre = False
 
     # ---------- Presupuesto ----------
 
@@ -133,6 +141,8 @@ class Director:
             self.proxima_anomalia = partida.tiempo + ANOMALIA_ESPERA
         if partida.nivel == DESAFIO_DESDE_NIVEL and self.numero_sector == 1:
             self.proximo_desafio = partida.tiempo + DESAFIO_ESPERA
+        if partida.nivel == MEJORA_PRIMER_NIVEL:
+            self.ofrecer_mejoras()
 
     def al_vencer_al_jefe(self):
         # Vencido el jefe, se cierra el sector: "¡JEFE VENCIDO!", el cartel del rango, y
@@ -144,6 +154,8 @@ class Director:
         self.rango = calcular_rango(bitacora, self.sector["jefe"], self.vuelta())
         self.rango["sector"] = self.numero_sector
         self.rango["color"] = self.sector["color"]
+        partida.estadisticas.rangos.append(self.rango["letra"])
+        partida.estadisticas.colores_rangos.append(self.sector["color"])
         self.tiempo_cartel_rango = partida.tiempo + CARTEL_JEFE
         self.rango_pagado = False
         self.fin_del_cierre = self.tiempo_cartel_rango + CARTEL_RANGO
@@ -153,6 +165,7 @@ class Director:
         self.bitacora = Bitacora()
         self.desafio = None
         self.proximo_desafio = self.fin_del_cierre + DESAFIO_ESPERA
+        self.mejora_tras_cierre = True      # al terminar el cierre, a elegir una mejora
 
     def cerrando_sector(self):
         # Despues del jefe, mientras se ven "¡JEFE VENCIDO!" y el rango
@@ -202,6 +215,12 @@ class Director:
         self.bitacora.mejor_combo = max(self.bitacora.mejor_combo, combo)
         if self.desafio_en_curso():
             self.desafio.al_recoger_moneda(combo)
+            self.revisar_desafio()
+
+    def al_dash_perfecto(self):
+        self.bitacora.perfectos += 1
+        if self.desafio_en_curso():
+            self.desafio.al_dash_perfecto()
             self.revisar_desafio()
 
     def al_destruir_enemigo(self):
@@ -255,6 +274,9 @@ class Director:
             self.proponer_desafio()
         if not self.rango_pagado and partida.tiempo >= self.tiempo_cartel_rango + RANGO_SELLO:
             self.pagar_rango()
+        if self.mejora_tras_cierre and not self.cerrando_sector():
+            self.mejora_tras_cierre = False
+            self.ofrecer_mejoras()
         self._refuerzos()
 
     def _refuerzos(self):
@@ -368,6 +390,7 @@ class Director:
         if desafio.estado == "fallado":
             return
         self.bitacora.desafio_cumplido = True
+        partida.estadisticas.desafios += 1
         ganados = partida.sumar_puntos(DESAFIO_PUNTOS * self.numero_sector)
         nave_x, nave_y = partida.nave.centro()
         partida.efectos.texto_flotante("¡DESAFIO! +" + str(ganados), nave_x, nave_y - 40, VERDE)
@@ -375,6 +398,12 @@ class Director:
         partida.sonidos.reproducir("powerup")
         if partida.capsula is None:
             partida.proximo_powerup = partida.tiempo     # de premio, un power-up enseguida
+
+    # ---------- Mejoras ----------
+
+    def ofrecer_mejoras(self):
+        if self.con_mejoras:
+            self.ofertas = sortear_mejoras(self.partida)
 
     # ---------- Rango ----------
 

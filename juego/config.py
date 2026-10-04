@@ -58,6 +58,8 @@ CIAN = (0, 230, 255)
 MAGENTA = (255, 0, 170)
 VERDE = (60, 255, 120)
 HIELO = (140, 190, 255)
+NARANJA = (255, 140, 0)
+VIOLETA = (190, 120, 255)
 FONDO = (6, 6, 18)
 ARCOIRIS = [ROJO, AMARILLO, VERDE, CIAN, MAGENTA]
 
@@ -98,6 +100,10 @@ DASH_FUERZA = 14
 DASH_DURACION = 180             # ms que dura el impulso (sin recibir daño)
 DASH_RECARGA = 1500             # ms hasta poder usarlo otra vez
 BUFFER_DASH = 150               # si apretas el dash hasta estos ms antes de que se recargue, sale igual
+# Dash perfecto: atravesar un enemigo o una bala CON el dash (sin el, te habria pegado).
+# Premio: puntos, el combo no se corta y el dash se recarga casi enseguida (se pueden encadenar)
+DASH_PERFECTO_PUNTOS = 3        # por el multiplicador del combo
+DASH_PERFECTO_RECARGA = 200     # ms hasta poder usar el dash otra vez despues de un perfecto
 
 # Choques que hacen daño: circulos, asi la nave recibe el mismo golpe aunque este girada
 RADIO_NAVE = 11
@@ -119,7 +125,32 @@ DURACION = {                    # milisegundos que dura cada power-up temporal
     "hielo": 5000,
     "iman": 7000,
     "doble": 8000,
+    "eco": 10000,
 }
+NOVA_RADIO = 180                # NOVA: radio de la explosion al terminar el dash
+ECO_RETRASO = 20                # ECO: pasos que espera la copia antes de repetir tu dash
+REPETIR_POWERUP = 0.35          # el mismo power-up dos veces seguidas tiene estas chances (de 1)
+
+# Mejoras: cartas que se eligen durante la partida y duran hasta el Game Over (ver mejoras.py).
+# Se ofrecen 3 al azar al llegar a MEJORA_PRIMER_NIVEL y al cerrar cada sector.
+# Las listas tienen un valor por nivel de la mejora (elegirla dos veces = segundo valor)
+MEJORA_PRIMER_NIVEL = 3
+MEJORA_RECARGA = 0.2            # RECARGA: el dash se recarga esta parte mas rapido (por nivel)
+MEJORA_ONDA_RADIO = [70, 100]   # ONDA: radio de la onda al terminar el dash
+MEJORA_COMETA = 1.5             # COMETA: el dash dura esto por su duracion normal
+MEJORA_FILO_PUNTOS = 3          # FILO: puntos por un enemigo que normalmente el dash no destruye
+MEJORA_ROCE = [4, 3]            # ESCUDO ROCE: dash perfectos para ganar un escudo
+MEJORA_ROCE_ESCUDO = 8000       # ms que dura ese escudo
+MEJORA_ATRACCION = [110, 170]   # ATRACCION: px desde los que la moneda viene sola
+MEJORA_COMBO = 0.3              # COMBO LARGO: el combo tarda esta parte mas en cortarse (por nivel)
+MEJORA_SUERTE = 0.25            # SUERTE: esta parte menos de espera entre power-ups (por nivel)
+MEJORA_POTENCIA = 0.4           # POTENCIA: esta parte mas de duracion de los power-ups (por nivel)
+MEJORA_MOTOR = 0.12             # MOTOR: esta parte mas de velocidad (por nivel)
+FENIX_INVULNERABLE = 2500       # FENIX: ms sin recibir daño al volver
+# Ondas (la mejora ONDA y el power-up NOVA): rompen balas, destruyen a los destruibles y a
+# los demas los empujan y los dejan ATURDIDOS (quietos y sin lastimar) un rato
+ATURDIDO_ONDA = 1200            # ms
+EMPUJE_ONDA = 60                # px
 
 # Enemigos
 AVISO_APARICION = 800           # ms que se ve la "X" antes de que aparezca un enemigo
@@ -255,6 +286,7 @@ DESAFIO_ESPERA = 3000           # ms despues de eso (para que no se pise con los
 DESAFIO_PUNTOS = 50             # premio por el numero de sector (el sector 3 da 150)
 DESAFIO_COMBO = 12              # "SIN CORTAR EL COMBO": monedas seguidas
 DESAFIO_CAZADOR = 6             # "CAZADOR": enemigos destruidos con el dash
+DESAFIO_ROCE = 5                # "AL FILO": dash perfectos
 
 # Rango: al vencer al jefe, una nota de S a C para el sector (ver rango.py)
 CARTEL_RANGO = 4500             # ms que se ve el cartel del rango (despues de "¡JEFE VENCIDO!")

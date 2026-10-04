@@ -2,8 +2,9 @@
 Todos los power-ups. El orden en que estan aca es el orden del HUD y del panel de inicio
 (los cinco primeros, ademas, son los cuadros de sprites/powerups.png).
 """
-from juego.config import (CIAN, HIELO, ROJO, MAGENTA, VERDE, AMARILLO, ENERGIA, ESCARCHA,
-                          CORAZON, IMANTADO, TREBOL, ORO, DURACION)
+from juego.config import (CIAN, HIELO, ROJO, MAGENTA, VERDE, AMARILLO, NARANJA, VIOLETA, ENERGIA, ESCARCHA,
+                          CORAZON, IMANTADO, TREBOL, ORO, FUEGO, DURACION)
+from juego.config import BLANCO
 from juego.powerups.base import PowerUp, registrar_powerup, HASTA_PERDER_VIDA
 from juego.proyectiles import romper_balas
 
@@ -19,6 +20,9 @@ class Escudo(PowerUp):
     cuadro_sprite = 0
     duracion = DURACION["escudo"]
 
+    def peso(self, partida):
+        return 2 if partida.jefe is not None else 1         # contra un jefe sirve mas
+
 
 @registrar_powerup
 class Hielo(PowerUp):
@@ -28,6 +32,10 @@ class Hielo(PowerUp):
     paleta = ESCARCHA
     cuadro_sprite = 1
     duracion = DURACION["hielo"]
+
+    def peso(self, partida):
+        # Mas enemigos y balas, mas util
+        return 1 + min(2, (len(partida.enemigos) + len(partida.balas) / 3) / 5)
 
     def al_recoger(self, partida, x, y):
         super().al_recoger(partida, x, y)
@@ -55,6 +63,9 @@ class Vida(PowerUp):
     def disponible(self, partida):
         return partida.vidas < partida.vidas_max       # solo si falta alguna
 
+    def peso(self, partida):
+        return 4 if partida.vidas == 1 else 1.5         # con una sola vida, casi seguro
+
     def al_recoger(self, partida, x, y):
         super().al_recoger(partida, x, y)
         partida.vidas += 1
@@ -75,6 +86,9 @@ class Iman(PowerUp):
     cuadro_sprite = 3
     duracion = DURACION["iman"]
 
+    def peso(self, partida):
+        return 1.5 if partida.combo >= 3 else 1         # ayuda a no cortar el combo
+
 
 @registrar_powerup
 class Doble(PowerUp):
@@ -84,6 +98,9 @@ class Doble(PowerUp):
     paleta = TREBOL
     cuadro_sprite = 4
     duracion = DURACION["doble"]
+
+    def peso(self, partida):
+        return 1.5 if partida.multiplicador_combo() >= 3 else 1     # con el combo alto rinde mas
 
 
 # ---------- Duran hasta perder una vida (el escudo los protege) ----------
@@ -105,3 +122,37 @@ class Recarga(PowerUp):
     descripcion = "DASH x2 HASTA PERDER VIDA"
     paleta = ENERGIA
     duracion = HASTA_PERDER_VIDA
+
+    def peso(self, partida):
+        return 1.5 if partida.jefe is not None else 1
+
+
+# ---------- Para el dash ----------
+
+
+@registrar_powerup
+class Nova(PowerUp):
+    # Tu proximo dash termina en una explosion: lo maneja Partida._al_terminar_dash()
+    tipo, letra, color, nombre = "nova", "N", NARANJA, "NOVA"
+    descripcion = "TU PROXIMO DASH EXPLOTA"
+    paleta = FUEGO
+    duracion = HASTA_PERDER_VIDA        # hasta que la uses (o pierdas una vida)
+
+    def peso(self, partida):
+        return 1 + min(2, len(partida.balas) / 8 + len(partida.enemigos) / 10)
+
+    def texto_al_recoger(self):
+        return "NOVA: ¡DASH!"
+
+
+@registrar_powerup
+class Eco(PowerUp):
+    # Una copia repite cada dash: lo maneja Partida (ver eco.py)
+    tipo, letra, color, nombre = "eco", "O", VIOLETA, "ECO"
+    descripcion = "UNA COPIA REPITE TU DASH"
+    paleta = [(60, 20, 90), VIOLETA, BLANCO]
+    duracion = DURACION["eco"]
+
+    def peso(self, partida):
+        destruibles = sum(1 for e in partida.enemigos if partida.puede_destruir(e))
+        return 1 + min(2, destruibles / 4)

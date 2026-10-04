@@ -3,12 +3,14 @@ Jugando: avanza la partida un frame, con hit-stop y pausa.
 
 Hit-stop: mientras partida.congelar_frames > 0 no se actualiza ni se redibuja
 nada (la pantalla queda quieta un instante despues de un impacto).
+Si el director ofrece mejoras, se abre el Taller (y al elegir, se vuelve aca).
 """
 from juego import dibujo
 from juego.entrada import PAUSA, DASH
 from juego.escenas.base import Escena
 from juego.escenas.pausa import Pausa
 from juego.escenas.explosion import Explosion
+from juego.escenas.taller import Taller
 
 
 class Juego(Escena):
@@ -44,6 +46,9 @@ class Juego(Escena):
 
         if partida.termino:
             self.app.cambiar_escena(Explosion(self.app, partida))
+        elif partida.director.ofertas:
+            # Hay cartas para elegir: se abre el Taller con la imagen del juego de fondo
+            self.app.cambiar_escena(Taller(self.app, self, self.app.pantalla.copy()))
 
     def dibujar(self, pantalla):
         if self.saltar_dibujo:
