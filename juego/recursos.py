@@ -13,7 +13,7 @@ import pygame
 from juego.config import ruta
 
 _sprites = {}       # archivo -> Surface (o None si no existe)
-_hojas = {}         # (archivo, ancho del cuadro) -> lista de cuadros (o None)
+_hojas = {}         # (archivo, ancho del cuadro) -> lista de cuadros (o None); por filas: un diccionario
 _fuentes = {}       # tamaño -> Font
 
 
@@ -59,6 +59,20 @@ def hoja(archivo, ancho_cuadro):
     if clave not in _hojas:
         imagen = sprite(archivo)
         _hojas[clave] = cortar_hoja(imagen, ancho_cuadro) if imagen is not None else None
+    return _hojas[clave]
+
+
+def hoja_por_filas(archivo, lado, nombres_filas):
+    # Hoja con una animacion por fila (ej: una por direccion), de cuadros de lado x lado.
+    # Devuelve {nombre de la fila: [cuadros]}, o None si el archivo no existe o le faltan filas
+    clave = (archivo, lado, tuple(nombres_filas))
+    if clave not in _hojas:
+        imagen = sprite(archivo)
+        if imagen is None or imagen.get_height() < lado * len(nombres_filas):
+            _hojas[clave] = None
+        else:
+            _hojas[clave] = {nombre: cortar_hoja(imagen.subsurface((0, fila * lado, imagen.get_width(), lado)), lado)
+                             for fila, nombre in enumerate(nombres_filas)}
     return _hojas[clave]
 
 

@@ -167,8 +167,8 @@ class Filo(Mejora):
 @registrar_mejora
 class Roce(Mejora):
     tipo, nombre, color = "roce", "ESCUDO ROCE", HIELO
-    descripcion = ["CADA " + str(MEJORA_ROCE[0]) + " DASH PERFECTOS", "GANAS UN ESCUDO",
-                   "(NIVEL 2: CADA " + str(MEJORA_ROCE[1]) + ")"]
+    descripcion = ["TU ESCUDO SE REGENERA", "CON DASH PERFECTOS:",
+                   " / ".join(str(n) for n in MEJORA_ROCE) + " SEGUN NIVEL.", "DURA HASTA UN GOLPE"]
     maximo = len(MEJORA_ROCE)
     icono = ["...X...",
              ".X.X.X.",

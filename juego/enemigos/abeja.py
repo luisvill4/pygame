@@ -129,7 +129,7 @@ class Abeja(Enemigo):
         if self.estado == "aviso" and dibujo.parpadeo(60):
             if not _blancas:
                 _blancas.append(recursos.blanquear(self.cuadros()[0]))
-            pantalla.blit(_blancas[0], (self.x, self.y))
+            dibujo.pegar(pantalla, _blancas[0], self.x, self.y)
         else:
             self.dibujar_animado(pantalla)
         if self.estado == "aviso":

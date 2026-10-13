@@ -8,7 +8,8 @@ Nunca hacen caer el juego:
 """
 import json
 
-from juego.config import VOLUMEN_MAX, FILAS_RECORDS, FORMATOS, FRECUENCIAS, ORDEN_DIFICULTADES, NAVES
+from juego.config import (VOLUMEN_MAX, FILAS_RECORDS, FRECUENCIAS, ORDEN_DIFICULTADES, NAVES, ORDEN_VIBRACION,
+                          ORDEN_TEMBLOR, ORDEN_DESTELLOS, ORDEN_CRT, ORDEN_NEON, ORDEN_ESCALADO)
 
 
 def _escribir_json(archivo, datos):
@@ -128,19 +129,24 @@ class Progreso:
 
 
 class Opciones:
-    # Opciones elegidas en el menu. La resolucion es su nombre ("800x600"); si no sirve
-    # para el formato o el monitor, la App la cambia por una que si
+    # Opciones elegidas en el menu. La resolucion es su nombre ("1280x720"); si ya no existe
+    # o no entra en el monitor, la App la cambia por una que si
 
     def __init__(self, archivo):
         self.archivo = archivo
         # Valores de fabrica
-        self.formato = "4:3"
-        self.resolucion = None      # None = la primera del formato
+        self.resolucion = None      # None = la primera de la lista
         self.fps = 60               # cuadros por segundo al dibujar (0 = sin limite)
         self.volumen = VOLUMEN_MAX
         self.musica = True
         self.efectos = True
         self.aviso_jefe = True      # el jefe muestra hacia donde van a salir sus balas
+        self.vibracion = "NORMAL"   # intensidad de la vibracion del mando (ORDEN_VIBRACION)
+        self.crt = "NORMAL"         # lineas de pantalla vieja (ORDEN_CRT)
+        self.neon = "NORMAL"        # brillo de balas, moneda y explosiones (ORDEN_NEON)
+        self.escalado = "NITIDO"    # como se agranda a la ventana (ORDEN_ESCALADO)
+        self.temblor = "NORMAL"     # cuanto tiembla la pantalla en los golpes (ORDEN_TEMBLOR)
+        self.destellos = "NORMALES"  # "REDUCIDOS": sin destellos ni parpadeos rapidos (ORDEN_DESTELLOS)
         self.dificultad = "NORMAL"   # la ultima elegida (el selector arranca en esa)
         self.cargar()
 
@@ -149,8 +155,6 @@ class Opciones:
         try:
             with open(self.archivo, encoding="utf-8") as abierto:
                 datos = json.load(abierto)
-            if datos.get("formato") in FORMATOS:
-                self.formato = datos["formato"]
             if isinstance(datos.get("resolucion"), str):
                 self.resolucion = datos["resolucion"]
             if type(datos.get("fps")) is int and datos["fps"] in FRECUENCIAS:
@@ -159,6 +163,18 @@ class Opciones:
             self.musica = bool(datos.get("musica", True))
             self.efectos = bool(datos.get("efectos", True))
             self.aviso_jefe = bool(datos.get("aviso_jefe", True))
+            if datos.get("vibracion") in ORDEN_VIBRACION:
+                self.vibracion = datos["vibracion"]
+            if datos.get("crt") in ORDEN_CRT:
+                self.crt = datos["crt"]
+            if datos.get("neon") in ORDEN_NEON:
+                self.neon = datos["neon"]
+            if datos.get("escalado") in ORDEN_ESCALADO:
+                self.escalado = datos["escalado"]
+            if datos.get("temblor") in ORDEN_TEMBLOR:
+                self.temblor = datos["temblor"]
+            if datos.get("destellos") in ORDEN_DESTELLOS:
+                self.destellos = datos["destellos"]
             if datos.get("dificultad") in ORDEN_DIFICULTADES:
                 self.dificultad = datos["dificultad"]
         except FileNotFoundError:
@@ -168,12 +184,17 @@ class Opciones:
 
     def guardar(self):
         _escribir_json(self.archivo, {
-            "formato": self.formato,
             "resolucion": self.resolucion,
             "fps": self.fps,
             "volumen": self.volumen,
             "musica": self.musica,
             "efectos": self.efectos,
             "aviso_jefe": self.aviso_jefe,
+            "vibracion": self.vibracion,
+            "crt": self.crt,
+            "neon": self.neon,
+            "escalado": self.escalado,
+            "temblor": self.temblor,
+            "destellos": self.destellos,
             "dificultad": self.dificultad,
         })

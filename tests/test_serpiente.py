@@ -3,7 +3,7 @@ import math
 
 import pytest
 
-from juego.config import SERPIENTE_ESPACIO, SERPIENTE_CUELLO, MS_POR_FRAME
+from juego.config import ANCHO, SERPIENTE_ESPACIO, SERPIENTE_CUELLO, MS_POR_FRAME
 from juego.jefes import crear_jefe
 from tests.ayudas import jugar, avanzar, empezar_partida
 
@@ -64,7 +64,7 @@ def test_la_mordida_queda_fija_en_el_ultimo_pulso(partida):
 def test_al_chocar_con_un_borde_queda_aturdida_y_la_cola_se_puede_cortar(partida):
     jefe = llegar_a_la_serpiente(partida)
     assert not jefe.puede_recibir_golpe()
-    jefe.x, jefe.y = 600, 300
+    jefe.x, jefe.y = ANCHO - 200, 300
     jefe.angulo = jefe.mordida = 0              # hacia la derecha: se estrella enseguida
     jefe.recorrido = 0
     jefe.cambiar_fase("morder", 5000, partida.tiempo)

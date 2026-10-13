@@ -9,12 +9,18 @@ import random
 
 import pygame
 
-from juego import recursos, lienzo
+from juego import recursos, dibujo
 from juego.hud import posicion_libre
-from juego.config import (AMARILLO, ORO, IMANTADO, MS_CUADRO_MONEDA,
+from juego.config import (CENTRO_X, AMARILLO, BLANCO, ORO, IMANTADO, MS_CUADRO_MONEDA,
                           MONEDA_DISTANCIA_MIN, MONEDA_DISTANCIA_MAX)
 
 TAMANO = 20
+DESTELLO_CADA, DESTELLO_MS = 1300, 140     # cada cuanto destella la moneda y cuanto dura
+ESTRELLITA = ["..X..",
+              "..X..",
+              "XXXXX",
+              "..X..",
+              "..X.."]
 
 
 def imagen_moneda():
@@ -31,7 +37,7 @@ def imagen_moneda():
 class Moneda:
     def __init__(self):
         # Empieza en el centro de la pantalla; (x, y) es su esquina de arriba a la izquierda
-        self.x, self.y = lienzo.centro_x(), 300
+        self.x, self.y = CENTRO_X, 300
 
     def centro(self):
         return self.x + TAMANO / 2, self.y + TAMANO / 2
@@ -62,8 +68,15 @@ class Moneda:
                               0, -0.3, ORO, 14, 2)
 
     def dibujar(self, pantalla):
+        # Un resplandor dorado que late, la moneda y cada tanto un destello en forma de
+        # estrella arriba a la derecha (reloj real: es solo visual)
+        centro_x, centro_y = int(self.x) + 10, int(self.y) + 10
+        ticks = pygame.time.get_ticks()
+        dibujo.halo(pantalla, centro_x, centro_y, 24, AMARILLO, 0.75 + 0.25 * math.sin(ticks / 220))
         imagen = imagen_moneda()
-        pantalla.blit(imagen, imagen.get_rect(center=(int(self.x) + 10, int(self.y) + 10)))
+        dibujo.pegar(pantalla, imagen, centro_x, centro_y, centrado=True)
+        if ticks % DESTELLO_CADA < DESTELLO_MS:
+            dibujo.pixel_art(pantalla, ESTRELLITA, centro_x + 8, centro_y - 8, BLANCO, 2)
 
 
 def lugar_para_moneda(partida):

@@ -46,7 +46,7 @@ def test_filo_no_sale_en_el_primer_sector(partida):
     assert TIPOS_MEJORA["filo"].disponible(partida)
 
 
-def test_se_ofrecen_en_el_nivel_3_y_al_cerrar_un_sector(partida):
+def test_gratis_en_el_nivel_3_y_gasolinera_al_cerrar_un_sector(partida):
     director = partida.director
     director.con_mejoras = True
     partida.nivel = MEJORA_PRIMER_NIVEL - 1
@@ -54,15 +54,17 @@ def test_se_ofrecen_en_el_nivel_3_y_al_cerrar_un_sector(partida):
     assert len(director.ofertas) == 3
     partida.elegir_mejora(director.ofertas[0].tipo)
     assert director.ofertas == []
-    # Al vencer a un jefe: cuando termina el cierre del sector
+    # Al vencer a un jefe: cuando termina el cierre del sector se para en la gasolinera
+    # (ahi se compran: el Taller gratis ya no se abre)
     partida.nivel = 4
     partida.nave.invulnerable_hasta = math.inf
     partida.subir_nivel()
     partida.jefe_vencido()
     jugar(partida, int((CARTEL_JEFE + CARTEL_RANGO) / MS_POR_FRAME) - 5)
-    assert director.ofertas == []
+    assert not director.gasolinera
     jugar(partida, 10)
-    assert len(director.ofertas) == 3
+    assert director.gasolinera
+    assert director.ofertas == []
 
 
 def test_el_taller_se_abre_y_al_elegir_vuelve_al_juego(app):
@@ -153,12 +155,48 @@ def test_filo_destruye_a_los_que_el_dash_atraviesa(partida):
     assert partida.puntaje >= MEJORA_FILO_PUNTOS
 
 
-def test_escudo_roce(partida):
-    partida.elegir_mejora("roce")
-    for _ in range(MEJORA_ROCE[0]):
+def hacer_perfectos(partida, cantidad):
+    for _ in range(cantidad):
         partida.perfecto_en_este_dash = False
         partida._dash_perfecto(0, 0)
-    assert partida.activo("escudo")
+
+
+def test_escudo_roce_se_regenera_toda_la_partida(partida):
+    partida.elegir_mejora("roce")
+    partida.ganar_energia = lambda cantidad: None       # (que tantos perfectos no traigan al jefe)
+    partida.director.proximo_refuerzo = math.inf        # (ni enemigos que rompan el escudo)
+    assert MEJORA_ROCE == [6, 4, 3]
+    for _ in range(3):              # tres veces seguidas: no se gasta
+        hacer_perfectos(partida, MEJORA_ROCE[0] - 1)
+        assert not partida.activo("escudo")
+        hacer_perfectos(partida, 1)
+        assert partida.activo("escudo")
+        jugar(partida, 60 * 12)     # dura hasta el golpe (antes se iba a los 8 s)
+        assert partida.activo("escudo")
+        hacer_perfectos(partida, 10)        # con el escudo puesto no se cuenta
+        assert partida.perfectos_para_escudo == 0
+        partida.nave.invulnerable_hasta = 0
+        partida.danar_jugador(partida.nave.x, partida.nave.y)
+        assert not partida.activo("escudo")
+        assert partida.vidas == partida.vidas_max
+
+
+def test_escudo_roce_pide_menos_perfectos_por_nivel(partida):
+    for nivel, necesarios in enumerate(MEJORA_ROCE, start=1):
+        partida.elegir_mejora("roce")
+        assert partida.perfectos_para_regenerar() == necesarios
+        hacer_perfectos(partida, necesarios)
+        assert partida.activo("escudo"), nivel
+        partida.desactivar("escudo")
+    assert TIPOS_MEJORA["roce"].maximo == 3
+
+
+def test_la_capsula_no_acorta_el_escudo_roce(partida):
+    partida.elegir_mejora("roce")
+    hacer_perfectos(partida, MEJORA_ROCE[0])
+    assert not TIPOS_POWERUP["escudo"].disponible(partida)
+    partida.activar("escudo", 5000)
+    assert partida.restante("escudo") == math.inf
 
 
 def test_atraccion_acerca_la_moneda(partida):

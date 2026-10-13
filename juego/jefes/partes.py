@@ -17,6 +17,8 @@ import pygame
 
 
 class Parte:
+    margen_golpe = 0        # px de mas alrededor para pegarle con el dash (para el daño no cuenta)
+
     def __init__(self, dx, dy, ancho, alto, vida):
         self.dx, self.dy = dx, dy           # posicion relativa a la esquina del jefe
         self.ancho, self.alto = ancho, alto
@@ -29,6 +31,10 @@ class Parte:
 
     def caja(self, jefe):
         return pygame.Rect(int(jefe.x) + self.dx, int(jefe.y) + self.dy, self.ancho, self.alto)
+
+    def caja_golpe(self, jefe):
+        # La caja para pegarle: la de siempre agrandada (asi es mas facil acertarle)
+        return self.caja(jefe).inflate(2 * self.margen_golpe, 2 * self.margen_golpe)
 
     def centro(self, jefe):
         return jefe.x + self.dx + self.ancho / 2, jefe.y + self.dy + self.alto / 2

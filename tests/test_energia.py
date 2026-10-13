@@ -3,9 +3,9 @@ import math
 
 import pygame
 
-from juego import hud, lienzo
-from juego.config import (ALTO, ENERGIA_MONEDA, ENERGIA_COMBO, ENERGIA_PERFECTO, ENERGIA_ENEMIGO, ENERGIA_DESAFIO,
-                          ENERGIA_INICIAL, ENERGIA_POR_NIVEL, ENERGIA_MAXIMA, JEFE_CADA_NIVELES)
+from juego import hud
+from juego.config import (ANCHO, ALTO, ENERGIA_MONEDA, ENERGIA_COMBO, ENERGIA_PERFECTO, ENERGIA_ENEMIGO,
+                          ENERGIA_DESAFIO, ENERGIA_INICIAL, ENERGIA_POR_NIVEL, ENERGIA_MAXIMA, JEFE_CADA_NIVELES)
 from juego.desafios import TIPOS_DESAFIO
 from juego.enemigos import crear_enemigo
 from tests.ayudas import jugar
@@ -77,10 +77,10 @@ def test_con_el_jefe_no_se_gana_y_su_nivel_vacia_la_barra(partida):
 
 
 def test_la_barra_se_dibuja(partida):
-    pantalla = pygame.Surface((lienzo.ancho, ALTO))
+    pantalla = pygame.Surface((ANCHO, ALTO))
     partida.energia = partida.energia_necesaria() / 2
     hud.dibujar(pantalla, partida)
     # Algun bloque amarillo dentro de la barra (abajo a la derecha)
-    barra = pygame.Rect(lienzo.ancho - 148, 576, 128, 12)
+    barra = pygame.Rect(ANCHO - 148, 576, 128, 12)
     colores = {tuple(pantalla.get_at((x, barra.centery)))[:3] for x in range(barra.left, barra.right)}
     assert any(color[0] > 200 and color[1] > 150 and color[2] < 100 for color in colores)

@@ -17,8 +17,14 @@ python main.py
 | Pausa | P o Esc | Menú (≡) |
 | Opciones (en pausa) | O | Vista (⧉) |
 | Volver | Esc | B |
+| Cambiar de pestaña o sección (menús) | Q / E | LB / RB |
 | Silenciar / activar el sonido | M | |
 | Pantalla completa / ventana | F11 | |
+| Modo desarrollador (en la partida) | F1 | |
+
+**Vibración del mando.** Es suave y solo aparece en los momentos importantes: subir el combo, romper enemigos con el dash, power-ups, golpes, subir de nivel, logros y jefes (llega con un latido, cuando le pegás y cuando explota). Lo que pasa todo el tiempo, como agarrar cada moneda o hacer un dash, no vibra. Los dos motores del mando suben y bajan de a poco, y los gatillos no vibran. La intensidad se elige en **Opciones → ACCESIBILIDAD → VIBRACION** (NO, SUAVE, NORMAL, FUERTE).
+
+**Los menús.** Abajo de cada pantalla hay una barra con los botones que sirven ahí, dibujados como en tu control: si tocás el teclado muestra las teclas y si tocás el mando muestra sus botones (A verde, B roja, LB/RB...). En el inicio, ARRIBA/ABAJO elige (JUGAR, LOGROS, OPCIONES o SALIR) y LB/RB o IZQ/DER cambia la página del panel de la derecha. Entre pantalla y pantalla hay una transición de rombos.
 
 Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. En FÁCIL y NORMAL el embestidor deja de seguirte con la mira un momento antes de embestir (la línea roja deja de parpadear): ahí es cuando hay que correrse. En DIFÍCIL y PESADILLA te sigue hasta el último instante.
 
@@ -43,8 +49,8 @@ El dash es la herramienta principal: te lanza hacia adelante y durante ese insta
 - **Interceptar:** si le pegás con el dash al **embestidor mientras embiste**, lo frenás en seco: queda aturdido 2 s (no lastima), da 10 puntos y cuenta como dash perfecto ("¡INTERCEPTADO!").
 - Contra los jefes, el dash es la única forma de pegarles.
 
-### Mejoras (el Taller)
-En el **nivel 3** y **al cerrar cada sector** el juego se detiene y te ofrece **3 cartas**: elegís una y dura toda la partida. Se pueden repetir hasta su nivel máximo. Así cada partida termina con una nave distinta:
+### Mejoras (el Taller y la gasolinera)
+En el **nivel 3** el juego se detiene y te ofrece **3 cartas gratis** (el Taller): elegís una y dura toda la partida. Después, las cartas se **compran en la gasolinera** (ver abajo). Se pueden repetir hasta su nivel máximo. Así cada partida termina con una nave distinta:
 
 | Mejora | Qué hace |
 |---|---|
@@ -54,7 +60,7 @@ En el **nivel 3** y **al cerrar cada sector** el juego se detiene y te ofrece **
 | **ONDA** | Al terminar cada dash, una onda rompe balas, destruye a los enemigos destruibles y empuja (y aturde) a los demás. |
 | **COMETA** | Dash un 50% más largo. |
 | **FILO** *(rara)* | El dash destruye a **todos** los enemigos. Desde el sector 2. |
-| **ESCUDO ROCE** | Cada 4 dash perfectos (3 en nivel 2) ganás un escudo. |
+| **ESCUDO ROCE** | Tu escudo se regenera: cada 6 dash perfectos (4 en nivel 2, 3 en nivel 3) ganás un escudo que dura hasta el próximo golpe, y después se vuelve a cargar. La carga se ve abajo a la izquierda. |
 | **BOTIN** | Destruir con el dash da el doble de puntos y recarga más. |
 | **MOTOR** | La nave va un 12% más rápido. |
 | **ATRACCION** | La moneda viene sola si estás cerca. |
@@ -78,13 +84,36 @@ Caen desde arriba cada tanto. No caen del todo al azar: el juego elige **el que 
 | **RECARGA** | El dash se recarga el doble de rápido, hasta perder una vida. |
 | **NOVA** | Tu próximo dash termina en una gran explosión (rompe balas, destruye y aturde). |
 
+### La gasolinera y los créditos
+Cada moneda da **créditos** además de puntos: tantos como el multiplicador del combo (con x5, 5 por moneda; en la fiebre del oro, el doble). Se ven arriba a la izquierda, al lado del puntaje. **No son puntos:** gastarlos no te baja el puntaje ni el récord.
+
+Después de cada jefe (cuando terminan los carteles del rango) parás en la **gasolinera espacial "La Última Gota"**: tu nave carga combustible mientras comprás en el mostrador. IZQ/DER elige, ENTER compra (todo lo que te alcance) y ESC sigue viaje. Lo que no gastes queda para la próxima parada.
+
+- **Cartas:** 3 mejoras al azar. Una carta nueva cuesta 40; cada nivel que ya tengas de ella suma 25; las raras cuestan 50% más; y todo sube un 20% en cada sector.
+- **Servicios,** según la dificultad:
+
+  | | SORTEAR (cambia las cartas; cada vez más caro) | ESCUDO (hasta el próximo golpe) | REPARAR (+1 vida) |
+  |---|---|---|---|
+  | FÁCIL | ✓ | ✓ | ✓ |
+  | NORMAL | ✓ | ✓ | |
+  | DIFÍCIL | ✓ | | |
+  | PESADILLA | | | |
+
+Todo se paga: si llegás sin créditos, no te llevás nada. Jugar con combo alto rinde el doble, porque da más energía **y** más créditos.
+
 ### Logros y naves
-Hay **16 logros** (vencer a tu primer jefe, 10 dash perfectos, rango S, 5000 puntos...). Se guardan entre partidas en `progreso.json` y cuando desbloqueás uno aparece una ficha "¡LOGRO!". Varios logros desbloquean **naves de otro color**: se eligen en **LOGROS** (desde el inicio) con IZQ/DER.
+Hay **16 logros** (vencer a tu primer jefe, 10 dash perfectos, rango S, 5000 puntos...). Se guardan entre partidas en `progreso.json` y cuando desbloqueás uno aparece abajo al centro, con un trofeo (y si regala una nave, te lo dice). Varios logros desbloquean **naves de otro color**: se eligen en **LOGROS** (desde el inicio) con IZQ/DER.
 
 Al perder, el **Game Over** muestra el resumen de la partida: tiempo, sector, monedas, mejor combo, enemigos destruidos, dash perfectos (y la mejor cadena), desafíos, el rango de cada sector y las mejoras que elegiste. ENTER juega otra vez; ESC vuelve al menú. En la **pausa** también se ve cómo va la partida y tus mejoras.
 
 ### Carteles
-Los carteles ("NIVEL 3", "¡JEFE VENCIDO!", el rango...) y las fichas (enemigo nuevo, desafío) se vuelven casi transparentes cuando tienen algo abajo (la nave, la moneda, un enemigo, una bala), así nunca te tapan el juego. Cada tanto llega una **oleada**: muchos enemigos durante unos segundos; si la pasás sin perder una vida, ganás puntos y un power-up. Los enemigos de cada nivel se eligen al azar según un "presupuesto", así que cada partida es distinta.
+Cada cosa tiene su lugar, así nunca se pisan:
+- **Arriba al centro, los avisos:** NIVEL (y cuántos niveles faltan para el jefe), ¡OLEADA!, ¡OLEADA SUPERADA!, cada anomalía con su consejo y ¡NUEVO RECORD!. Salen **de a uno**: el que llega espera su turno, salvo una amenaza (oleada o anomalía), que pasa primero.
+- **A los costados, las fichas:** enemigo nuevo (izquierda) y desafío (derecha). Si el aviso de arriba es ancho, bajan para no tocarlo.
+- **Abajo al centro, los logros.**
+- **De lado a lado, los grandes momentos:** ¡JEFE VENCIDO! (con el premio), el rango del sector (las estrellas salen de a una y al final cae la letra como un sello) y, al volver de la gasolinera, el nombre del sector nuevo.
+
+Todos se vuelven casi transparentes cuando tienen algo abajo (la nave, la moneda, un enemigo, una bala), así nunca te tapan el juego. Cada tanto llega una **oleada**: muchos enemigos durante unos segundos; si la pasás sin perder una vida, ganás puntos y un power-up. Los enemigos de cada nivel se eligen al azar según un "presupuesto", así que cada partida es distinta.
 
 ### Sectores y jefes
 El viaje pasa por 5 **sectores**, cada uno con su ambiente (asteroides, brasas, luciérnagas, un panal gigante, polvo que cae en un agujero negro), sus enemigos favoritos y **su jefe**, que llega cada 5 niveles. Al vencerlo se pasa al sector siguiente; después del último se vuelve a empezar, más difícil.
@@ -100,22 +129,30 @@ Las peleas son un **baile**: cada jefe avisa antes de atacar, ataca al ritmo de 
 | Abismo azul | **La Singularidad** | Te atrae (el dash te libera). El anillo de asteroides gira a ritmo; cuando colapsa, entrá por un hueco y dash al núcleo. |
 
 ### Anomalías, desafíos y rango
-- **Anomalías:** a mitad de cada sector (en su 3er nivel) el espacio se pone raro durante 20 segundos. Siempre avisan antes de atacar:
+- **Anomalías:** a mitad de cada sector (en su 3er nivel) el espacio se pone raro durante 20 segundos. Cada sector tiene la suya, que llega la mitad de las veces; la otra mitad llega una de las otras, así las cuatro se pueden ver desde el primer sector. Siempre avisan antes de atacar:
 
-  | Sector | Anomalía | Qué pasa |
+  | Sector | Suele traer | Qué pasa |
   |---|---|---|
   | Cinturón exterior | **Lluvia de asteroides** | Una columna roja punteada marca por dónde cae cada asteroide. El dash los rompe y dan puntos. |
   | Nebulosa carmesí | **Tormenta solar** | Una franja (vertical u horizontal) parpadea y después quema: salí antes. |
   | Campo esmeralda | **Niebla cerrada** | Solo ves cerca de la nave; de los enemigos lejanos ves los ojos, y la moneda brilla a través de la niebla. |
-  | Mar de ámbar | **Fiebre del oro** | La buena: las monedas valen el doble y el combo tarda más en cortarse. |
-  | Abismo azul | Una al azar | Desde la segunda vuelta, todos los sectores la sortean. |
+  | Mar de ámbar | **Fiebre del oro** | La buena: las monedas valen el doble (y dan el doble de créditos) y el combo tarda más en cortarse. |
+  | Abismo azul | Una al azar | No tiene una propia: siempre la sortea. |
 
 - **Desafíos (opcionales):** al llegar a cada sector (en el primero, en el nivel 2) aparece un reto a la derecha, debajo de las vidas: **SIN DASH**, **INTOCABLE** (sin recibir golpes), **SIN AYUDA** (sin agarrar power-ups), **SIN CORTAR EL COMBO** (12 monedas seguidas), **CAZADOR** (destruir 6 enemigos con el dash) o **INTERCEPTOR** (frenar 3 embestidas con el dash). Los tres primeros se cumplen al llegar al jefe; los otros, apenas los lográs. Premio: puntos y un power-up.
 - **Rango:** al vencer al jefe, el sector se califica de **S** a **C** con estrellas: sin golpes (2), combo de 12 (1), desafío cumplido (1) y jefe vencido rápido (1). S = 5 estrellas, A = 4, B = 2 o 3. Cada letra da puntos extra.
 
-En **Opciones → FORMATO** se elige entre 4:3 (800x600) y 16:9 (1066x600, un campo de juego más ancho). Se cambia desde el menú de inicio, no en medio de una partida.
+**Opciones** tiene tres secciones, a la izquierda: se cambia con **LB/RB** (o **Q/E**). Debajo de cada opción hay una explicación de lo que hace:
 
-En **Opciones → FPS** se elige cuántas veces por segundo se dibuja: 30, 60, 90, 120, 144 o SIN LIMITE. El juego va siempre a la misma velocidad: la lógica avanza 60 veces por segundo y, por encima de 60 FPS, el movimiento se dibuja interpolado (más suave en monitores de alta frecuencia).
+- **VIDEO:** RESOLUCION, FPS, CRT (las líneas de pantalla antigua: NO, SUAVE o NORMAL), ESCALADO (NITIDO, o SUAVE para que en pantallas grandes todos los píxeles se vean del mismo tamaño; es un poco más lento) y NEON (el brillo de las balas, la moneda, las cápsulas y las explosiones: NO, SUAVE o NORMAL).
+- **SONIDO:** VOLUMEN, MUSICA y EFECTOS (la tecla **M** apaga y prende todo el sonido).
+- **ACCESIBILIDAD:** TEMBLOR (cuánto se sacude la pantalla con los golpes: NO, SUAVE o NORMAL; el marcador nunca tiembla), DESTELLOS (REDUCIDOS: sin destellos de pantalla completa y nada parpadea más de 3 veces por segundo, para personas con fotosensibilidad), AVISO JEFE y VIBRACION.
+
+El juego es panorámico (16:9): se dibuja en 1066x600 y se agranda a la ventana sin perder los píxeles. En **Opciones → VIDEO → RESOLUCION** se elige el tamaño de la ventana o la pantalla completa (también con **F11**).
+
+En **Opciones → VIDEO → FPS** se elige cuántas veces por segundo se dibuja: 30, 60, 90, 120, 144 o SIN LIMITE. El juego va siempre a la misma velocidad: la lógica avanza 60 veces por segundo y, por encima de 60 FPS, el movimiento se dibuja interpolado (más suave en monitores de alta frecuencia).
+
+**Modo desarrollador.** En plena partida, **F1** abre un panel para probar cosas sin llegar jugando: traer cualquier **jefe** (si ya hay uno, lo cambia), traer un **enemigo** de cualquier tipo, darte un **power-up** al instante, traer una **anomalía**, ponerte **invencible**, **limpiar** la pantalla de enemigos y balas, o abrir la **gasolinera** con 200 créditos de regalo. ARRIBA/ABAJO elige la fila, IZQ/DER cambia el valor y ENTER lo hace y vuelve al juego; F1 o Esc vuelven sin hacer nada. Una partida en la que se usó el panel dice **MODO DEV** abajo y **no guarda récord ni logros**. Para apagarlo (por ejemplo, si le pasás el juego a otros), poné `MODO_DESARROLLADOR = False` en `juego/config.py`.
 
 ## Cómo correr los tests
 
@@ -136,18 +173,23 @@ juego/
   nave.py  moneda.py  proyectiles.py
   progresion.py         # el "director": enemigos de cada nivel, sectores, oleadas, mejoras
   anomalias.py  desafios.py  rango.py   # lo que pasa en cada sector
-  mejoras.py            # las cartas del Taller
+  mejoras.py            # las cartas del Taller y de la gasolinera
+  tienda.py             # la gasolinera: que se vende, los precios y que pasa al comprar
   estadisticas.py       # lo que pasa en la partida (para el Game Over y los logros)
+  avisos.py             # la cola de avisos: los carteles de arriba salen de a uno
+  carteles.py           # como se ven los carteles: avisos, fichas, logro, jefe vencido, rango, sector
   logros.py             # los logros (y que nave desbloquea cada uno)
   eco.py                # la copia de la mejora ECO
   enemigos/             # un archivo por enemigo + base.py
   jefes/                # un archivo por jefe + base.py
   powerups/             # tipos.py (todos los power-ups) + base.py
-  escenas/              # una clase por pantalla: inicio, dificultad, logros, listo, juego, taller, pausa,
-                        # opciones, explosion, iniciales, fin
+  escenas/              # una clase por pantalla: inicio, dificultad, logros, listo, juego, taller,
+                        # gasolinera, pausa, opciones, explosion, iniciales, fin
   entrada.py            # teclado + mando -> acciones (aceptar, dash, pausa...)
+  haptica.py            # la vibracion del mando: patrones (en config.VIBRACIONES) y prioridades
   sonido.py  ventana.py  guardado.py  recursos.py
   dibujo.py  efectos.py  fondo.py  hud.py
+  accesibilidad.py      # temblor, destellos y CRT: todos los efectos le preguntan a este modulo
 tests/                  # pytest
 ```
 
@@ -216,7 +258,10 @@ Entrar (con la presentación de su `nombre` y `apodo`), morir, la vida, el conge
 El HUD, la caída y el panel de la pantalla de inicio lo muestran solos.
 
 ### Una mejora (carta del Taller)
-En `juego/mejoras.py`, una clase que herede de `Mejora`, con `@registrar_mejora`, `tipo`, `nombre` (hasta 12 letras), `descripcion` (líneas de hasta 22), `color`, un `icono` de 7x7 (pixel art con "X") y `maximo`. Si cambia algo una sola vez, escribí `al_elegir()` (como `Corazon`); si no, preguntá `partida.mejora("mi_tipo")` donde tenga efecto (devuelve cuántas veces la elegiste). Con `peso` < 1 sale menos (y la carta dice RARA).
+En `juego/mejoras.py`, una clase que herede de `Mejora`, con `@registrar_mejora`, `tipo`, `nombre` (hasta 12 letras), `descripcion` (líneas de hasta 22), `color`, un `icono` de 7x7 (pixel art con "X") y `maximo`. Si cambia algo una sola vez, escribí `al_elegir()` (como `Corazon`); si no, preguntá `partida.mejora("mi_tipo")` donde tenga efecto (devuelve cuántas veces la elegiste). Con `peso` < 1 sale menos (y la carta dice RARA). Aparece sola en el Taller y en la gasolinera (con su precio calculado).
+
+### Un servicio de la gasolinera
+En `juego/tienda.py`, una clase que herede de `Articulo` con `tipo`, `nombre`, `descripcion`, `color` e `icono`, y sus métodos `precio(tienda)`, `al_comprar(tienda)` y, si no siempre tiene sentido, `disponible(partida)`. Anotala en `SERVICIOS` y sumá su `tipo` a `"servicios"` en las dificultades de `config.py` que la vendan.
 
 ### Un logro
 En `juego/logros.py`, sumá un `Logro(id, nombre, descripcion, condicion)` a `LOGROS`. La condición recibe la partida y devuelve True cuando se cumplió (usá `partida.estadisticas`). Para que dé una nave, agregala a `NAVES` en `config.py` con el id del logro.

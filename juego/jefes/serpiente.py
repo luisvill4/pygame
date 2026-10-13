@@ -31,8 +31,8 @@ import random
 
 import pygame
 
-from juego import recursos, dibujo, lienzo
-from juego.config import (ALTO, VERDE, AMARILLO, BLANCO, ROJO, HIELO, ORO, MS_POR_FRAME,
+from juego import recursos, dibujo
+from juego.config import (ANCHO, ALTO, VERDE, AMARILLO, BLANCO, ROJO, HIELO, ORO, MS_POR_FRAME,
                           SERPIENTE_PULSOS, SERPIENTE_VELOCIDAD, SERPIENTE_GIRO, SERPIENTE_MORDIDA,
                           SERPIENTE_ESPACIO, SERPIENTE_CUELLO, SERPIENTE_VENTANA, SERPIENTE_CORTES_EXTRA)
 from juego.jefes.base import Jefe, registrar_jefe
@@ -235,10 +235,10 @@ class Serpiente(Jefe):
             anterior_x, anterior_y = segmento.x, segmento.y
 
     def choco_con_un_borde(self):
-        return self.x < 4 or self.x > lienzo.ancho - CABEZA - 4 or self.y < 90 or self.y > ALTO - CABEZA - 4
+        return self.x < 4 or self.x > ANCHO - CABEZA - 4 or self.y < 90 or self.y > ALTO - CABEZA - 4
 
     def dentro_de_la_pantalla(self):
-        self.x = max(4, min(self.x, lienzo.ancho - CABEZA - 4))
+        self.x = max(4, min(self.x, ANCHO - CABEZA - 4))
         self.y = max(90, min(self.y, ALTO - CABEZA - 4))
 
     # ---------- Fases ----------
@@ -248,7 +248,7 @@ class Serpiente(Jefe):
         self.angulo = math.sin(partida.tiempo / 300) * 0.5
         self.avanzar(2.2)
         self.arrastrar_cuerpo()
-        if self.x > lienzo.ancho * 0.3:
+        if self.x > ANCHO * 0.3:
             self.al_terminar_de_entrar(partida)
 
     def al_terminar_de_entrar(self, partida):
@@ -270,7 +270,7 @@ class Serpiente(Jefe):
         if fase == "nadar":
             # Da vueltas a tu alrededor, a unos 230 px, buscando el angulo
             self.orbita += 0.012 * self.sentido * self.factor()
-            objetivo_x = max(60, min(nave_x + math.cos(self.orbita) * 230, lienzo.ancho - 60))
+            objetivo_x = max(60, min(nave_x + math.cos(self.orbita) * 230, ANCHO - 60))
             objetivo_y = max(130, min(nave_y + math.sin(self.orbita) * 230, ALTO - 60))
             self.girar_hacia(objetivo_x, objetivo_y, SERPIENTE_GIRO * self.factor())
             self.avanzar(SERPIENTE_VELOCIDAD * self.factor())
@@ -301,7 +301,7 @@ class Serpiente(Jefe):
             if self.choco_con_un_borde():
                 self.dentro_de_la_pantalla()
                 self.estrellarse(partida)
-            elif self.recorrido > lienzo.ancho:
+            elif self.recorrido > ANCHO:
                 self.cambiar_fase_pulsos("mareada", SERPIENTE_VENTANA - 1, ahora)
 
         elif fase == "enroscarse":
@@ -358,7 +358,7 @@ class Serpiente(Jefe):
         centro_x, centro_y = self.centro()
         partida.efectos.explosion(centro_x, centro_y, ESCAMAS, 24, 6, 4)
         partida.efectos.sacudir(14, VERDE)
-        partida.entrada.vibrar(0.6, 0.8, 200)
+        partida.entrada.vibrar("impacto")
         partida.congelar_frames = 4
         partida.sonidos.reproducir("golpe")
         self.cambiar_fase_pulsos("aturdida", SERPIENTE_VENTANA, partida.tiempo)
@@ -390,11 +390,11 @@ class Serpiente(Jefe):
                 imagen = self.imagen_cola(partida, variante, anterior[i])
             else:
                 imagen = cuadros("cuerpo", variante)[i % 2]
-            pantalla.blit(imagen, imagen.get_rect(center=(int(segmento.x), int(segmento.y))))
+            dibujo.pegar(pantalla, imagen, segmento.x, segmento.y, centrado=True)
         abierta = 1 if self.fase in ("acechar", "morder") else 0
         cabeza = rotar_hacia(cuadros("cabeza", variante)[abierta], self.angulo)
         centro_x, centro_y = self.centro()
-        pantalla.blit(cabeza, cabeza.get_rect(center=(int(centro_x), int(centro_y))))
+        dibujo.pegar(pantalla, cabeza, centro_x, centro_y, centrado=True)
         self.dibujar_cara(pantalla, partida)
 
     def imagen_cola(self, partida, variante, delante):

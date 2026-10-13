@@ -3,13 +3,17 @@ Jugando: avanza la partida un frame, con hit-stop y pausa.
 
 Hit-stop: mientras partida.congelar_frames > 0 no se actualiza ni se redibuja
 nada (la pantalla queda quieta un instante despues de un impacto).
-Si el director ofrece mejoras, se abre el Taller (y al elegir, se vuelve aca).
+Si el director ofrece mejoras, se abre el Taller (y al elegir, se vuelve aca); despues
+de cada jefe, la Gasolinera (y al seguir viaje, se vuelve aca).
+F1 abre el panel del modo desarrollador (si MODO_DESARROLLADOR esta prendido en config).
 """
-from juego import dibujo
-from juego.entrada import PAUSA, DASH
+from juego.config import MODO_DESARROLLADOR
+from juego.entrada import PAUSA, DASH, DESARROLLADOR
 from juego.escenas.base import Escena
+from juego.escenas.desarrollador import Desarrollador
 from juego.escenas.pausa import Pausa
 from juego.escenas.explosion import Explosion
+from juego.escenas.gasolinera import Gasolinera
 from juego.escenas.taller import Taller
 
 
@@ -18,11 +22,12 @@ class Juego(Escena):
         super().__init__(app)
         self.partida = partida
         self.saltar_dibujo = False
+        self.dash_pendiente = False     # dash apretado durante el hit-stop (sale al terminar)
 
     def actualizar(self, entrada):
         partida = self.partida
         if partida.termino:
-            self.app.cambiar_escena(Explosion(self.app, partida))
+            self.app.cambiar_escena(Explosion(self.app, partida), transicion=False)
             return
         # Si la ventana pierde el foco o se desconecta el mando, se pausa solo
         if entrada.foco_perdido or entrada.mando_desconectado:
@@ -30,29 +35,44 @@ class Juego(Escena):
 
         self.saltar_dibujo = False
         if partida.congelar_frames > 0:
+            # Hit-stop: el juego no avanza, pero lo que se aprieta no se pierde (la App borra
+            # las acciones en cada paso): el dash sale y la pausa se abre apenas termina
             partida.congelar_frames -= 1
             self.saltar_dibujo = True
+            self.dash_pendiente = self.dash_pendiente or entrada.pulso(DASH)
+            if entrada.pulso(PAUSA):
+                partida.pausa_pendiente = True
             return
 
         if partida.pausa_pendiente or entrada.pulso(PAUSA):
             partida.pausa_pendiente = False
             self.app.sonidos.pausar_todo()
-            self.app.cambiar_escena(Pausa(self.app, self, self.app.pantalla.copy()))
+            self.app.entrada.haptica.parar()        # en la pausa el mando no vibra
+            self.app.cambiar_escena(Pausa(self.app, self, self.captura_del_mundo(partida)), transicion=False)
+            return
+
+        if MODO_DESARROLLADOR and entrada.pulso(DESARROLLADOR):
+            self.app.sonidos.pausar_todo()
+            self.app.entrada.haptica.parar()
+            self.app.cambiar_escena(Desarrollador(self.app, self, self.captura_del_mundo(partida)), transicion=False)
             return
 
         dx, dy = entrada.direccion()
-        partida.actualizar(dx, dy, entrada.pulso(DASH))
+        pidio_dash = entrada.pulso(DASH) or self.dash_pendiente
+        self.dash_pendiente = False
+        partida.actualizar(dx, dy, pidio_dash)
         self.mover_fondo(partida)       # con paralaje: el fondo se corre al reves de la nave
 
         if partida.termino:
-            self.app.cambiar_escena(Explosion(self.app, partida))
+            self.app.cambiar_escena(Explosion(self.app, partida), transicion=False)
         elif partida.director.ofertas:
             # Hay cartas para elegir: se abre el Taller con la imagen del juego de fondo
-            self.app.cambiar_escena(Taller(self.app, self, self.app.pantalla.copy()))
+            self.app.cambiar_escena(Taller(self.app, self, self.captura_del_mundo(partida)))
+        elif partida.director.gasolinera:
+            # Termino el cierre del sector: parada en la gasolinera antes del sector nuevo
+            self.app.cambiar_escena(Gasolinera(self.app, self))
 
     def dibujar(self, pantalla):
         if self.saltar_dibujo:
             return
         self.dibujar_partida(pantalla, self.partida, con_nave=True)
-        self.app.efectos.dibujar_temblor_y_destello(pantalla)
-        dibujo.efecto_crt(pantalla)

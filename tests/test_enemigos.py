@@ -3,9 +3,12 @@ import math
 
 import pytest
 
-from juego.config import (RANGO_EMBESTIDOR, DISTANCIA_APARICION, COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, SECTORES,
-                          DIFICULTADES, ENEMIGO_VELOCIDAD_MAX, NAVE_VELOCIDAD)
+from juego.config import (ANCHO, RANGO_EMBESTIDOR, DISTANCIA_APARICION, COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, SECTORES,
+                          DIFICULTADES, ENEMIGO_VELOCIDAD_MAX, NAVE_VELOCIDAD, ALTO, MS_CUADRO_REBOTE, MS_POR_FRAME,
+                          ATURDIDO_ONDA)
+from juego import recursos
 from juego.enemigos import TIPOS_ENEMIGO, crear_enemigo
+from juego.enemigos.rebotador import CHOQUE, PEGADO
 from tests.ayudas import jugar
 
 
@@ -81,11 +84,89 @@ def test_el_embestidor_embiste_si_estas_cerca(partida):
 def test_el_rebotador_rebota_en_los_bordes(partida):
     rebotador = crear_enemigo("rebotador", partida)
     rebotador.aparece_en = 0
-    rebotador.x, rebotador.y, rebotador.vx, rebotador.vy = 755, 300, 3, 0
+    rebotador.x, rebotador.y, rebotador.vx, rebotador.vy = ANCHO - 45, 300, 3, 0
     partida.enemigos.append(rebotador)
     partida.nave.invulnerable_hasta = math.inf
     jugar(partida, 3)
     assert rebotador.vx < 0
+
+
+def _rebotador_en(partida, x, y, vx, vy):
+    rebotador = crear_enemigo("rebotador", partida)
+    rebotador.aparece_en = 0
+    rebotador.x, rebotador.y, rebotador.vx, rebotador.vy = x, y, vx, vy
+    partida.enemigos.append(rebotador)
+    partida.nave.invulnerable_hasta = math.inf
+    return rebotador
+
+
+def test_el_rebotador_se_aplasta_contra_la_pared_y_vuelve_a_volar(partida):
+    pared_x = ANCHO - 40
+    rebotador = _rebotador_en(partida, pared_x - 2, 300, 3, 0)
+    jugar(partida, 1)
+    assert (rebotador.estado, rebotador.pared, rebotador.x) == ("choque", "derecha", pared_x)
+    # Pegado a la pared durante los primeros PEGADO cuadros del choque
+    while partida.tiempo - rebotador.inicio_choque < PEGADO * MS_CUADRO_REBOTE - 20:
+        jugar(partida)
+        assert rebotador.x == pared_x
+    # Despues sale con la velocidad ya invertida...
+    jugar(partida, 3)
+    assert rebotador.x < pared_x and rebotador.estado == "choque"
+    # ...y al terminar la animacion vuelve a volar
+    jugar(partida, round(len(CHOQUE) * MS_CUADRO_REBOTE / MS_POR_FRAME))
+    assert rebotador.estado == "volando"
+
+
+def test_el_rebotador_reinicia_el_choque_si_toca_otra_pared(partida):
+    # En una esquina: toca la derecha, sale y enseguida toca el piso
+    rebotador = _rebotador_en(partida, ANCHO - 41, ALTO - 60, 3, 3)
+    jugar(partida, 1)
+    assert rebotador.pared == "derecha"
+    primer_choque = rebotador.inicio_choque
+    for _ in range(40):
+        jugar(partida)
+        if rebotador.pared == "abajo":
+            break
+    assert rebotador.pared == "abajo" and rebotador.estado == "choque"
+    assert rebotador.inicio_choque > primer_choque
+
+
+def test_la_hoja_del_rebotador_tiene_una_fila_por_pared():
+    filas = TIPOS_ENEMIGO["rebotador"].cuadros_por_pared()
+    assert sorted(filas) == ["abajo", "arriba", "derecha", "izquierda"]
+    for cuadros in filas.values():
+        assert len(cuadros) == 8 and all(c.get_size() == (40, 40) for c in cuadros)
+    # La ficha del HUD y el congelado siguen usando cuadros de 40x40
+    assert TIPOS_ENEMIGO["rebotador"].cuadros()[0].get_size() == (40, 40)
+
+
+def test_el_rebotador_queda_pegado_justo_en_las_columnas_1_a_3():
+    assert set(CHOQUE[:PEGADO]) == {1, 2, 3} and CHOQUE[PEGADO] == 4
+    assert CHOQUE[-1] == 7
+
+
+def test_el_vuelo_del_rebotador_sin_su_sprite_es_la_columna_0(monkeypatch):
+    rebotador = TIPOS_ENEMIGO["rebotador"]
+    # Con rebotador_vuelo.png: sus cuadros de 40x40
+    for cuadro in rebotador.cuadros():
+        assert cuadro.get_size() == (40, 40)
+    # Sin el archivo: un solo cuadro, la columna 0 de la hoja (vuela quieto)
+    monkeypatch.setattr(recursos, "hoja", lambda archivo, ancho: None)
+    assert rebotador.cuadros() == [rebotador.cuadros_por_pared()["abajo"][0]]
+
+
+def test_el_rebotador_aturdido_por_una_onda_vuelve_a_rebotar(partida):
+    # Antes la onda lo dejaba con velocidad 0 y se quedaba quieto para siempre
+    rebotador = _rebotador_en(partida, 400, 300, 3, 3)
+    partida.onda_expansiva(380, 360, 200)     # abajo a la izquierda de su centro (420, 320)
+    assert rebotador.aturdido(partida.tiempo)
+    jugar(partida, round(ATURDIDO_ONDA / MS_POR_FRAME) + 1)
+    antes_x, antes_y = rebotador.x, rebotador.y
+    jugar(partida, 10)
+    assert math.hypot(rebotador.x - antes_x, rebotador.y - antes_y) > 20
+    # Sale lejos de la onda (hacia la derecha y arriba) con la rapidez que traia
+    assert rebotador.vx > 0 and rebotador.vy < 0
+    assert math.hypot(rebotador.vx, rebotador.vy) == pytest.approx(math.hypot(3, 3))
 
 
 @pytest.mark.parametrize("tipo", ["perseguidor", "rebotador", "divisor_chico"])

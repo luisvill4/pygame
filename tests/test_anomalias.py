@@ -1,14 +1,15 @@
 """Anomalias: cuando llegan, cuanto duran, y que cada una avisa antes de atacar."""
 import math
+import random
 
 import pygame
 import pytest
 
-from juego import lienzo
+
 from juego.anomalias import TIPOS_ANOMALIA, crear_anomalia
-from juego.config import (ALTO, ANOMALIA_DURACION, ANOMALIA_ESPERA, RESPIRO_ANOMALIA, ASTEROIDES_AVISO,
+from juego.config import (ANCHO, ALTO, ANOMALIA_DURACION, ANOMALIA_ESPERA, RESPIRO_ANOMALIA, ASTEROIDES_AVISO,
                           ASTEROIDES_PUNTOS, ASTEROIDES_ESPERA, TORMENTA_AVISO, COMBO_TIEMPO, ORO_COMBO, ORO_MULTIPLICADOR,
-                          MS_POR_FRAME, SECTORES, BLANCO)
+                          MS_POR_FRAME, SECTORES, BLANCO, ANOMALIA_PROPIA)
 from juego.proyectiles import Meteoro
 from tests.ayudas import jugar, avanzar, empezar_partida
 
@@ -19,7 +20,7 @@ def poner(partida, tipo):
     return partida.director.anomalia
 
 
-def test_llega_en_el_tercer_nivel_del_sector_y_es_la_del_sector(partida):
+def test_llega_en_el_tercer_nivel_del_sector(partida):
     director = partida.director
     director.con_anomalias = True
     partida.nivel = 2
@@ -27,7 +28,7 @@ def test_llega_en_el_tercer_nivel_del_sector_y_es_la_del_sector(partida):
     jugar(partida, int(ANOMALIA_ESPERA / MS_POR_FRAME) - 5)
     assert director.anomalia is None                # todavia no
     jugar(partida, 10)
-    assert director.anomalia.tipo == SECTORES[0]["anomalia"]
+    assert director.anomalia.tipo in TIPOS_ANOMALIA
     # Mientras dura (y un rato despues) no hay oleadas
     assert director.proxima_oleada >= director.anomalia.hasta + RESPIRO_ANOMALIA
 
@@ -43,6 +44,16 @@ def test_el_jefe_la_corta(partida):
     partida.director.empezar_anomalia()
     partida.iniciar_jefe()
     assert partida.director.anomalia is None
+
+
+def test_la_del_sector_la_mitad_de_las_veces_y_todas_desde_el_principio(partida):
+    # Antes cada sector traia siempre la suya: la fiebre del oro recien salia en el nivel 18
+    random.seed(7)
+    director = partida.director
+    elegidas = [director.elegir_anomalia() for _ in range(2000)]
+    propia = SECTORES[0]["anomalia"]
+    assert abs(elegidas.count(propia) / len(elegidas) - ANOMALIA_PROPIA) < 0.05
+    assert set(elegidas) == set(TIPOS_ANOMALIA)     # en el primer sector se pueden ver todas
 
 
 def test_en_un_sector_sin_anomalia_propia_sale_una_al_azar(partida):
@@ -117,11 +128,11 @@ def test_la_niebla_solo_deja_ver_cerca_de_la_nave(partida):
     niebla = poner(partida, "niebla")
     jugar(partida, int(2000 / MS_POR_FRAME))        # ya termino de cerrarse
     partida.nave.x, partida.nave.y = 100, 300
-    pantalla = pygame.Surface((lienzo.ancho, ALTO))
+    pantalla = pygame.Surface((ANCHO, ALTO))
     pantalla.fill(BLANCO)
     niebla.dibujar(pantalla, partida)
     assert pantalla.get_at((125, 325))[:3] == BLANCO            # al lado de la nave se ve
-    assert sum(pantalla.get_at((lienzo.ancho - 60, 500))[:3]) < 200     # lejos, oscuro
+    assert sum(pantalla.get_at((ANCHO - 60, 500))[:3]) < 200     # lejos, oscuro
 
 
 def test_en_la_fiebre_del_oro_las_monedas_valen_doble_y_el_combo_dura_mas(partida):

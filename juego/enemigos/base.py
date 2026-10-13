@@ -27,10 +27,12 @@ import random
 
 import pygame
 
-from juego import recursos, dibujo, lienzo
-from juego.config import (ALTO, BLANCO, HIELO, AMARILLO, AVISO_APARICION, DISTANCIA_APARICION, MS_CUADRO_ENEMIGO,
+from juego import recursos, dibujo
+from juego.config import (ANCHO, ALTO, BLANCO, HIELO, AMARILLO, AVISO_APARICION, DISTANCIA_APARICION, MS_CUADRO_ENEMIGO,
                           PUNTOS_ENEMIGO_CONGELADO, SEPARACION_ENEMIGOS, FUERZA_SEPARACION, RADIO_ENEMIGO,
-                          COSTO_ENEMIGO, ENEMIGO_VELOCIDAD_MAX)
+                          COSTO_ENEMIGO, ENEMIGO_VELOCIDAD_MAX, CONTORNO)
+
+DISTANCIA_PUNTOS_HIELO = 170    # el "+5" de un congelado solo se ve si la nave esta a menos de esto
 
 TIPOS_ENEMIGO = {}          # nombre -> clase
 
@@ -62,7 +64,7 @@ def crear_enemigo(tipo, partida):
 def lugar_lejos_de_la_nave(nave, tamano):
     # Un lugar al azar lejos de la nave (y fuera del marcador de arriba)
     while True:
-        nuevo_x = random.randint(0, lienzo.ancho - tamano)
+        nuevo_x = random.randint(0, ANCHO - tamano)
         nuevo_y = random.randint(70, ALTO - tamano)
         if math.hypot(nuevo_x - nave.x, nuevo_y - nave.y) > DISTANCIA_APARICION:
             return nuevo_x, nuevo_y
@@ -234,7 +236,7 @@ class Enemigo:
         return 1
 
     def _bordes(self):
-        limite_x, limite_y = lienzo.ancho - self.tamano, ALTO - self.tamano
+        limite_x, limite_y = ANCHO - self.tamano, ALTO - self.tamano
         if self.x < 0 or self.x > limite_x:
             self.vx = -self.vx if self.rebota_en_bordes else 0
         if self.y < 0 or self.y > limite_y:
@@ -281,11 +283,14 @@ class Enemigo:
             return
         restante_hielo = partida.restante("hielo")
         if restante_hielo > 0:
-            # Congelado: azul y con los puntos que da encima (parpadea al final)
+            # Congelado: azul (parpadea al final). Los puntos que da se ven encima solo si
+            # la nave esta cerca (con muchos congelados, tantos "+5" llenaban la pantalla)
             if restante_hielo > 1000 or dibujo.parpadeo(100):
-                pantalla.blit(self.imagen_congelado(), (self.x, self.y))
-                dibujo.texto(pantalla, "+" + str(PUNTOS_ENEMIGO_CONGELADO), dibujo.CHICA, HIELO,
-                             centro_x, self.y - 14)
+                dibujo.pegar(pantalla, self.imagen_congelado(), self.x, self.y)
+                nave_x, nave_y = partida.nave.centro()
+                if math.hypot(nave_x - centro_x, nave_y - centro_y) < DISTANCIA_PUNTOS_HIELO:
+                    dibujo.texto(pantalla, "+" + str(PUNTOS_ENEMIGO_CONGELADO), dibujo.CHICA, HIELO,
+                                 centro_x, self.y - 14, sombra=CONTORNO, contorno=CONTORNO)
             else:
                 self.dibujar_animado(pantalla)
             return
@@ -307,4 +312,4 @@ class Enemigo:
         self.dibujar_animado(pantalla)
 
     def dibujar_animado(self, pantalla):
-        pantalla.blit(recursos.cuadro_animado(self.cuadros(), MS_CUADRO_ENEMIGO, self.desfase), (self.x, self.y))
+        dibujo.pegar(pantalla, recursos.cuadro_animado(self.cuadros(), MS_CUADRO_ENEMIGO, self.desfase), self.x, self.y)

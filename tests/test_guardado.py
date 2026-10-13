@@ -54,12 +54,11 @@ def test_records_sin_poder_escribir_no_se_cae(tmp_path):
 
 
 def test_opciones_de_fabrica_y_claves_que_faltan(tmp_path):
-    # Un config.json viejo (sin "formato" ni "aviso_jefe") sigue sirviendo
+    # Un config.json viejo (sin "aviso_jefe") sigue sirviendo
     archivo = tmp_path / "config.json"
     archivo.write_text(json.dumps({"volumen": 4, "resolucion": "COMPLETA"}))
     opciones = Opciones(str(archivo))
     assert opciones.volumen == 4 and opciones.resolucion == "COMPLETA"
-    assert opciones.formato == "4:3"
     assert opciones.musica and opciones.efectos and opciones.aviso_jefe
 
 
@@ -67,22 +66,26 @@ def test_opciones_dañadas_usan_las_de_fabrica(tmp_path):
     archivo = tmp_path / "config.json"
     archivo.write_text("[1, 2")
     opciones = Opciones(str(archivo))
-    assert opciones.volumen == 10 and opciones.resolucion is None and opciones.formato == "4:3"
+    assert opciones.volumen == 10 and opciones.resolucion is None
 
 
-def test_formato_invalido_usa_4_3(tmp_path):
+def test_el_formato_viejo_se_ignora(tmp_path):
+    # Antes se podia elegir 4:3 o 16:9; ahora el juego es siempre 16:9
     archivo = tmp_path / "config.json"
-    archivo.write_text(json.dumps({"formato": "21:9"}))
-    assert Opciones(str(archivo)).formato == "4:3"
+    archivo.write_text(json.dumps({"formato": "4:3", "volumen": 3}))
+    opciones = Opciones(str(archivo))
+    assert opciones.volumen == 3 and not hasattr(opciones, "formato")
+    opciones.guardar()
+    assert "formato" not in json.loads(archivo.read_text())
 
 
 def test_opciones_se_guardan(tmp_path):
     archivo = tmp_path / "config.json"
     opciones = Opciones(str(archivo))
     opciones.aviso_jefe = False
-    opciones.formato = "16:9"
+    opciones.resolucion = "1280x720"
     opciones.guardar()
     guardado = json.loads(archivo.read_text())
-    assert guardado["aviso_jefe"] is False and guardado["formato"] == "16:9"
+    assert guardado["aviso_jefe"] is False and guardado["resolucion"] == "1280x720"
     otra_vez = Opciones(str(archivo))
-    assert otra_vez.aviso_jefe is False and otra_vez.formato == "16:9"
+    assert otra_vez.aviso_jefe is False and otra_vez.resolucion == "1280x720"

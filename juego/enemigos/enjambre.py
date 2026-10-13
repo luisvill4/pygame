@@ -16,8 +16,8 @@ import random
 
 import pygame
 
-from juego import dibujo, lienzo, recursos
-from juego.config import (CIAN, BLANCO, AMARILLO, ALTO, AVISO_APARICION, COSTO_ENEMIGO, ENJAMBRE_CANTIDAD,
+from juego import dibujo, recursos
+from juego.config import (ANCHO, CIAN, BLANCO, AMARILLO, ALTO, AVISO_APARICION, COSTO_ENEMIGO, ENJAMBRE_CANTIDAD,
                           ENJAMBRE_VELOCIDAD, ENJAMBRE_PICADA, ENJAMBRE_ESPERA_PICADA, ENJAMBRE_PUNTOS,
                           ENJAMBRE_BONUS, ARCOIRIS)
 from juego.enemigos.base import Enemigo, registrar_enemigo, lugar_lejos_de_la_nave
@@ -93,7 +93,7 @@ class Bandada:
             self.vy *= 0.4
             self.proxima_picada = ahora + random.randint(*ENJAMBRE_ESPERA_PICADA)
 
-        self.x = max(40, min(self.x + self.vx, lienzo.ancho - 40))
+        self.x = max(40, min(self.x + self.vx, ANCHO - 40))
         self.y = max(80, min(self.y + self.vy, ALTO - 40))
         self.angulo += 0.04
 
@@ -187,6 +187,6 @@ class Dron(Enemigo):
         if self.bandada.fase == "aviso" and dibujo.parpadeo(60):
             if not _blancos:
                 _blancos.append(recursos.blanquear(self.cuadros()[0]))
-            pantalla.blit(_blancos[0], (self.x, self.y))
+            dibujo.pegar(pantalla, _blancos[0], self.x, self.y)
         else:
             self.dibujar_animado(pantalla)

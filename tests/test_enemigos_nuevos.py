@@ -177,3 +177,27 @@ def test_el_enjambre_vuelve_junto_despues_del_jefe(partida):
     for dron in drones:
         centro_x, centro_y = dron.centro()
         assert math.hypot(centro_x - bandada.x, centro_y - bandada.y) < 80
+
+
+def test_dron_congelado_roto_justo_cuando_llega_el_jefe_no_vuelve(partida):
+    # Bug: la energia del hielo roto llegaba antes de sacar al dron. Si llenaba la barra
+    # y llegaba el jefe, el dron quedaba guardado (fuera de su bandada) y al volver
+    # despues del jefe el juego se caia
+    partida.nivel = 9
+    partida.energia = partida.energia_necesaria() - 0.1
+    drones = crear_enemigos("enjambre", partida)
+    partida.enemigos.extend(drones)
+    partida.activar("hielo", 5000)
+    roto = poner_encima(partida, drones[0])
+    jugar(partida)
+    assert partida.jefe is not None
+    assert roto not in partida.enemigos_guardados
+    # Despues del jefe vuelven los enemigos y se mueven sin problema (al cambiar de sector
+    # se va una parte al azar: por eso no se pregunta por cada dron)
+    partida.desactivar("hielo")
+    partida.nave.invulnerable_hasta = math.inf
+    partida.jefe_vencido()
+    partida.director.ofertas = []
+    jugar(partida, int((CARTEL_JEFE + CARTEL_RANGO) / MS_POR_FRAME) + 30)
+    assert roto not in partida.enemigos
+    assert all(d in d.bandada.drones for d in partida.enemigos if d.tipo == "enjambre")

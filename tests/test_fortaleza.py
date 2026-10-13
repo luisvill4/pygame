@@ -3,9 +3,10 @@ import math
 
 import pytest
 
-from juego.config import (JEFE_VIDA, FORTALEZA_VIDA_CANON, FORTALEZA_PUNTOS_CANON, FORTALEZA_PULSOS,
-                          MS_POR_FRAME)
+from juego.config import (ANCHO, JEFE_VIDA, FORTALEZA_VIDA_CANON, FORTALEZA_PUNTOS_CANON, FORTALEZA_PULSOS,
+                          MS_POR_FRAME, FORTALEZA_MARGEN_GOLPE, RADIO_NAVE)
 from juego.jefes import crear_jefe
+from juego.jefes.fortaleza import ABAJO_CASCO
 from juego.proyectiles import Misil, Mina, Obus
 from tests.ayudas import jugar, avanzar, empezar_partida
 
@@ -204,7 +205,7 @@ def test_las_cortinas_siempre_dejan_un_hueco(partida):
         partida.balas.clear()
         jefe.soltar_cortina(partida, hueco)
         xs = sorted(b.x for b in partida.balas)
-        mayor_hueco = max(b - a for a, b in zip([0] + xs, xs + [800]))
+        mayor_hueco = max(b - a for a, b in zip([0] + xs, xs + [ANCHO]))
         assert mayor_hueco >= 150           # entra la nave con margen
 
 
@@ -270,3 +271,53 @@ def test_se_dibuja_en_todas_sus_fases(app):
     for fase in ("cortinas", "apuntar", "fijar", "aturdida", "subir", "morir"):
         jefe.cambiar_fase(fase, 5000, partida.tiempo)
         avanzar(app, 5)
+
+
+def test_medidas_de_la_fortaleza_y_sus_canones(partida):
+    # Las medidas de los sprites (fortaleza.png: 6 cuadros de 384x192; fortaleza_canon.png: 2 de 48x48)
+    jefe = llegar_a_la_fortaleza(partida)
+    assert (jefe.ancho, jefe.alto) == (384, 192)
+    assert all((c.ancho, c.alto) == (48, 48) for c in jefe.partes)
+    for c in jefe.partes:
+        assert jefe.caja_cuerpo().left <= c.caja(jefe).left and c.caja(jefe).right <= jefe.caja_cuerpo().right
+
+
+def test_al_canon_se_le_pega_con_margen(partida):
+    # El dash le pega aunque roce apenas afuera del dibujo (el margen solo sirve para pegarle)
+    jefe = llegar_a_la_fortaleza(partida)
+    rafaga = canon(jefe, "rafaga")
+    jefe.compas = [rafaga]
+    jefe.recalentar(partida)
+    caja = rafaga.caja(jefe)
+    nave_justo_afuera = caja.move(0, caja.height + FORTALEZA_MARGEN_GOLPE - 2)
+    assert not nave_justo_afuera.colliderect(caja)
+    assert jefe.parte_golpeable(nave_justo_afuera) is rafaga
+
+
+def test_se_puede_escapar_de_la_caida_sin_dash(partida):
+    # Arrancando justo debajo del centro: al fijarse, alcanza con moverse hacia un costado
+    jefe = llegar_a_la_fortaleza(partida)
+    for c in jefe.partes:
+        c.vida = 0
+    jefe.con_coraza = False
+    jefe.ms_pulso = FORTALEZA_PULSOS[-1]
+    partida.director.proximo_refuerzo = math.inf
+    partida.nave.x, partida.nave.y = 375, 420
+    jefe.x = jefe.x_sobre(400)
+    jefe.cambiar_fase_pulsos("apuntar", 2, partida.tiempo)
+    while jefe.fase == "apuntar":
+        jugar(partida)
+    vidas = partida.vidas
+    afuera = False
+    while jefe.fase in ("fijar", "caer"):
+        jugar(partida, dx=1)
+        nave = partida.nave
+        afuera = afuera or nave.x + 25 - RADIO_NAVE > jefe.x + jefe.ancho
+        if jefe.y + ABAJO_CASCO >= nave.y + 25 - RADIO_NAVE:
+            # El casco llego a la altura de la nave: tiene que estar afuera de la columna,
+            # con margen (no salvarse de casualidad)
+            assert afuera
+            break
+    jugar(partida, 60)
+    assert jefe.fase == "aturdida"
+    assert partida.vidas == vidas

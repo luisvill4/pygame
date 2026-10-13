@@ -11,7 +11,7 @@ calcular_rango() la convierte en estrellas:
 
     5 estrellas = S, 4 = A, 2 o 3 = B, menos = C
 
-El cartel con el detalle lo dibuja el HUD (hud.py).
+El cartel con el detalle lo dibuja carteles.rango().
 """
 from juego.config import RANGO_COMBO, RANGO_TIEMPO_JEFE, RANGO_PUNTOS
 

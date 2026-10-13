@@ -8,14 +8,16 @@ esa dificultad (cada una tiene su propia tabla). ENTER empieza la partida.
 """
 import pygame
 
-from juego import dibujo
-from juego.dibujo import texto, CHICA, MEDIA, GRANDE
-from juego.config import (BLANCO, GRIS, CIAN, AMARILLO, ROJO, ORDEN_DIFICULTADES, DIFICULTADES)
+from juego import dibujo, interfaz
+from juego.dibujo import texto, CHICA, GRANDE
+from juego.config import (CENTRO_X, FONDO, BLANCO, CIAN, AMARILLO, ROJO, ORDEN_DIFICULTADES, DIFICULTADES)
 from juego.entrada import ACEPTAR, VOLVER, IZQUIERDA, DERECHA
 from juego.escenas.base import Escena
 
 PASOS_ANIMACION = 14        # pasos (1/60 s) que dura la entrada del nombre
 DESLIZAMIENTO = 160         # px desde donde entra el nombre
+FILA_DIFICULTADES = pygame.Rect(CENTRO_X - 340, 140, 680, 30)     # las cuatro, arriba
+TARJETA = pygame.Rect(CENTRO_X - 300, 192, 600, 330)              # la elegida
 
 # Calavera de 7x7 pixeles (se dibuja a 4x, en la cuadricula retro)
 CALAVERA = [
@@ -79,65 +81,66 @@ class Dificultad(Escena):
         reglas = DIFICULTADES[self.nombre()]
         self.app.sonidos.reproducir("seleccion")
         # Chispas del color de la dificultad (en coordenadas de la zona central)
-        self.app.efectos.explosion(400, 255, reglas["paleta"], 30, 6, 4)
-        self.app.efectos.anillo(400, 255, reglas["paleta"], 20, 5, 3)
+        self.app.efectos.explosion(CENTRO_X, TARJETA.top + 116, reglas["paleta"], 30, 6, 4)
+        self.app.efectos.anillo(CENTRO_X, TARJETA.top + 116, reglas["paleta"], 20, 5, 3)
         if self.nombre() == "PESADILLA":
             self.app.efectos.sacudir(10, ROJO)
-            self.app.entrada.vibrar(0.6, 0.9, 200)
+            self.app.entrada.vibrar("pesadilla")
 
     # ---------- Dibujo ----------
 
-    def dibujar(self, pantalla_completa):
-        self.dibujar_fondo(pantalla_completa)
-        pantalla = dibujo.zona_central(pantalla_completa)
+    def dibujar(self, pantalla):
+        self.dibujar_fondo(pantalla)
         nombre = self.nombre()
         reglas = DIFICULTADES[nombre]
         color = reglas["color"]
         recien_cambiada = self.animacion > PASOS_ANIMACION - 4     # los primeros pasos destella
 
-        dibujo.texto_3d(pantalla, "ELIGE DIFICULTAD", GRANDE, CIAN, (0, 70, 110), 80, 4)
-        dibujo.marco(pantalla, pygame.Rect(150, 140, 500, 320), BLANCO if recien_cambiada else color)
+        interfaz.titulo(pantalla, "DIFICULTAD", 64, 76, CIAN, (0, 70, 110))
+        # Las cuatro, arriba: se ve donde estas parado
+        dibujo.pestanas(pantalla, FILA_DIFICULTADES, ORDEN_DIFICULTADES, self.elegida, color,
+                        interfaz.mezclar(color, FONDO, 0.75))
+        interfaz.panel(pantalla, TARJETA, BLANCO if recien_cambiada else color)
         self.app.efectos.dibujar(pantalla)
-
         self._dibujar_calaveras(pantalla, reglas, color)
 
         # Nombre: entra deslizandose desde el costado (en saltos de 4 px, estilo retro)
         avance = self.animacion / PASOS_ANIMACION
         corrimiento = round(self.direccion * avance * avance * DESLIZAMIENTO / 4) * 4
-        texto(pantalla, nombre, GRANDE, BLANCO if recien_cambiada else color, 400 + corrimiento, 255)
+        dibujo.texto_3d(pantalla, nombre, GRANDE, BLANCO if recien_cambiada else color,
+                        interfaz.mezclar(color, FONDO, 0.7), TARJETA.top + 116, 4, None, CENTRO_X + corrimiento)
 
-        # Flechas: parpadean, y la apretada se corre un poco hacia afuera
-        for lado, x in ((-1, 190), (1, 610)):
+        # Flechas grandes a los costados: la apretada se corre hacia afuera
+        for lado in (-1, 1):
             empujada = self.empujon_flecha > 0 and lado == self.direccion
-            x_flecha = x + lado * 8 if empujada else x
-            if empujada or dibujo.parpadeo(400):
-                texto(pantalla, "<" if lado < 0 else ">", MEDIA, AMARILLO if empujada else GRIS, x_flecha, 255)
+            x = (TARJETA.right + 44 if lado > 0 else TARJETA.left - 44) + (lado * 10 if empujada else 0)
+            dibujo.flecha(pantalla, x, TARJETA.centery, 18, lado, AMARILLO if empujada else color)
 
         # Que cambia y el record de esta dificultad
         for i, linea in enumerate(reglas["descripcion"]):
             if linea:
-                texto(pantalla, linea, CHICA, BLANCO, 400, 315 + i * 28)
-        texto(pantalla, "RECORD " + dibujo.numero_arcade(self.app.records.maximo(nombre)), CHICA, color, 400, 420)
-
-        ayuda = self.app.entrada.ayuda
-        texto(pantalla, ayuda("IZQ/DER ELEGIR   ENTER JUGAR", "IZQ/DER ELEGIR   A JUGAR"), CHICA, GRIS, 400, 520)
-        texto(pantalla, ayuda("ESC VOLVER", "B VOLVER"), CHICA, GRIS, 400, 550)
-        self.app.efectos.dibujar_temblor_y_destello(pantalla_completa)
-        dibujo.efecto_crt(pantalla_completa)
+                texto(pantalla, linea, CHICA, BLANCO, CENTRO_X, TARJETA.top + 172 + i * 28)
+        interfaz.separador(pantalla, TARJETA.left + 40, TARJETA.bottom - 58, TARJETA.width - 80)
+        texto(pantalla, "RECORD " + dibujo.numero_arcade(self.app.records.maximo(nombre)), CHICA, color,
+              CENTRO_X, TARJETA.bottom - 32)
+        self.app.efectos.dibujar_temblor_y_destello(pantalla)
+        interfaz.ayudas(pantalla, self.app.entrada, [("cambiar", "ELEGIR"), ("aceptar", "JUGAR"),
+                                                     ("volver", "VOLVER")])
 
     def _dibujar_calaveras(self, pantalla, reglas, color):
         # Una calavera por nivel de dificultad; despues de cambiar aparecen de a una
         pasos_desde_cambio = PASOS_ANIMACION - self.animacion
+        y = TARJETA.top + 52
         for i in range(len(ORDEN_DIFICULTADES)):
-            x = 400 + (i - 1.5) * 44
+            x = CENTRO_X + (i - 1.5) * 44
             llena = i < reglas["calaveras"]
             if not llena:
-                dibujar_calavera(pantalla, x, 192, (40, 40, 60))
+                dibujar_calavera(pantalla, x, y, (40, 40, 60))
                 continue
             aparece_en = i * 3
             if self.animacion > 0 and pasos_desde_cambio < aparece_en:
-                dibujar_calavera(pantalla, x, 192, (40, 40, 60))        # todavia no aparecio
+                dibujar_calavera(pantalla, x, y, (40, 40, 60))        # todavia no aparecio
             elif self.animacion > 0 and pasos_desde_cambio < aparece_en + 3:
-                dibujar_calavera(pantalla, x, 192, BLANCO, 5)           # aparece grande y blanca
+                dibujar_calavera(pantalla, x, y, BLANCO, 5)           # aparece grande y blanca
             else:
-                dibujar_calavera(pantalla, x, 192, color)
+                dibujar_calavera(pantalla, x, y, color)

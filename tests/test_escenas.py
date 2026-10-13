@@ -11,7 +11,7 @@ from juego.escenas.explosion import Explosion
 from juego.escenas.iniciales import Iniciales
 from juego.escenas.fin import Fin
 from juego.escenas.dificultad import Dificultad
-from tests.ayudas import avanzar, tecla, boton
+from tests.ayudas import avanzar, tecla, boton, ir_al_ajuste
 
 
 def empezar(app):
@@ -29,7 +29,9 @@ def empezar(app):
 def test_inicio_opciones_y_volver(app):
     avanzar(app, 3)
     assert isinstance(app.escena, Inicio)
-    tecla(pygame.K_LEFT)                    # da la vuelta: JUGAR -> OPCIONES
+    tecla(pygame.K_UP)                      # da la vuelta: JUGAR -> SALIR -> OPCIONES
+    avanzar(app)
+    tecla(pygame.K_UP)
     tecla(pygame.K_RETURN)
     avanzar(app)
     assert isinstance(app.escena, Opciones)
@@ -43,7 +45,7 @@ def test_inicio_logros_y_elegir_nave(app):
     from juego.config import NAVES
     app.progreso.desbloquear(NAVES[1][2])           # el logro de la segunda nave
     avanzar(app, 3)
-    tecla(pygame.K_RIGHT)                   # LOGROS
+    tecla(pygame.K_DOWN)                    # LOGROS
     tecla(pygame.K_RETURN)
     avanzar(app)
     assert isinstance(app.escena, Logros)
@@ -60,8 +62,7 @@ def test_inicio_logros_y_elegir_nave(app):
 
 def test_opcion_aviso_jefe_se_cambia_y_se_guarda(app):
     app.cambiar_escena(Opciones(app, volver_a=app.escena))
-    for _ in range(6):              # hasta la fila AVISO JEFE
-        tecla(pygame.K_DOWN)
+    ir_al_ajuste(app, "AVISO JEFE")
     tecla(pygame.K_RETURN)
     avanzar(app)
     assert app.opciones.aviso_jefe is False
@@ -250,3 +251,24 @@ def test_f11_pantalla_completa_y_vuelve(app):
     tecla(pygame.K_F11)
     avanzar(app)
     assert app.opciones.resolucion == antes
+
+
+def test_el_dash_apretado_en_el_hit_stop_sale_al_terminar(app):
+    # Bug: durante el hit-stop las acciones se borraban y el dash se perdia
+    app.nueva_partida()
+    avanzar(app, 101)
+    partida = app.escena.partida
+    partida.congelar_frames = 3
+    tecla(pygame.K_SPACE)
+    avanzar(app, 5)
+    assert partida.estadisticas.dashes == 1
+
+
+def test_la_pausa_apretada_en_el_hit_stop_se_abre_al_terminar(app):
+    app.nueva_partida()
+    avanzar(app, 101)
+    partida = app.escena.partida
+    partida.congelar_frames = 3
+    tecla(pygame.K_p)
+    avanzar(app, 5)
+    assert isinstance(app.escena, Pausa)

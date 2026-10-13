@@ -7,12 +7,14 @@ Mapa del paquete (cada modulo tiene una sola responsabilidad):
     recursos.py     carga de imagenes y fuentes, con cache
     sonido.py       efectos de sonido y musica (funciona aunque no haya placa de audio)
     entrada.py      teclado + mando de Xbox -> "acciones" (aceptar, dash, pausa...)
-    ventana.py      ventana real y escalado del lienzo de 800x600
+    ventana.py      ventana real y escalado del lienzo de 1066x600
     guardado.py     records.json y config.json
     dibujo.py       ayudas de dibujo: texto, marcos, efecto CRT...
     efectos.py      particulas, textos flotantes, temblor y destello
     fondo.py        estrellas, nebulosas y planetas con paralaje
-    hud.py          marcador (puntos, vidas, dash, power-ups activos)
+    hud.py          marcador (puntos, vidas, dash, power-ups activos) y la llegada del jefe
+    avisos.py       la cola de avisos de arriba (salen de a uno)
+    carteles.py     como se ven los carteles: avisos, fichas, logro, momentos y rango
 
     nave.py         la nave del jugador
     moneda.py       la moneda

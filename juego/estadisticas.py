@@ -9,6 +9,7 @@ Los rangos de cada sector y las mejoras elegidas tambien quedan anotados aca.
 class Estadisticas:
     def __init__(self):
         self.monedas = 0            # monedas recogidas
+        self.creditos = 0           # creditos ganados (los gastados no se restan)
         self.enemigos = 0           # enemigos destruidos (con el dash, una onda, una nova...)
         self.dashes = 0             # veces que se uso el dash
         self.perfectos = 0          # dash perfectos (romper o interceptar enemigos con el dash)

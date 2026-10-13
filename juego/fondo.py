@@ -21,11 +21,15 @@ import random
 
 import pygame
 
-from juego import recursos, lienzo
-from juego.config import ALTO, ANCHO_MENU, PROFUNDIDAD, TRANSICION_SECTOR, SECTORES
+from juego import recursos, accesibilidad
+from juego.dibujo import en_grilla
+from juego.config import ANCHO, ALTO, ANCHO_MENU, PROFUNDIDAD, TRANSICION_SECTOR, SECTORES, PIXEL_ARTE
 from juego.interpolacion import Interpolador
 
 MAXIMO_MOTAS = {"asteroides": 14, "brasas": 45, "esporas": 40, "panal": 24, "abismo": 70}
+HIPERESPACIO_PASOS = 90     # cuanto dura el salto al hiperespacio (1.5 s)
+HIPERESPACIO_VELOCIDAD = 14 # cuanto se aceleran las estrellas en lo mas rapido del salto
+TITILAR_MS, TITILAR_CADA = 90, 61   # cada estrella titila un instante cada TITILAR_CADA * TITILAR_MS ms
 
 
 class ObjetoFondo:
@@ -70,11 +74,11 @@ def panal(ancho, alto, color):
 
 class Fondo:
     def __init__(self):
-        # El fondo se arma para el ancho actual (al cambiar el formato se crea uno nuevo)
-        escala = lienzo.ancho / ANCHO_MENU
+        # 90 estrellas cada 800 px de ancho
+        escala = ANCHO / ANCHO_MENU
         self.estrellas = []
         for _ in range(round(90 * escala)):
-            self.estrellas.append(Estrella(random.randint(0, lienzo.ancho), random.randint(0, ALTO),
+            self.estrellas.append(Estrella(random.randint(0, ANCHO), random.randint(0, ALTO),
                                            random.choice([1, 1, 1, 2, 2, 3])))
         # Nebulosas y planetas, en orden de dibujo: primero lo mas lejano
         self.objetos = []
@@ -93,6 +97,7 @@ class Fondo:
         self.pasos = 0
         self.relampago = 0              # pasos que le quedan al destello de un relampago (brasas)
         self.ondas = []                 # radios de las ondas de gravedad (abismo)
+        self.salto = 0                  # pasos que le quedan al salto al hiperespacio
         self.desplazamiento_panal = 0
         self._panal = None
 
@@ -141,10 +146,25 @@ class Fondo:
 
     # ---------- Cada paso ----------
 
+    def saltar_al_hiperespacio(self):
+        # Las estrellas se estiran en rayas y pasan volando (al empezar y al salir de la
+        # gasolinera). Dura HIPERESPACIO_PASOS: arranca, toma velocidad y frena
+        self.salto = HIPERESPACIO_PASOS
+
+    def velocidad_salto(self):
+        # Cuanto mas rapido van las estrellas por el salto (0 si no hay salto)
+        if self.salto <= 0:
+            return 0
+        avance = 1 - self.salto / HIPERESPACIO_PASOS
+        return math.sin(math.pi * avance) * HIPERESPACIO_VELOCIDAD
+
     def mover(self, empuje_x=0, empuje_y=0):
         # Un paso de logica: cada capa cae a 0.6 * profundidad px, mas el empuje (paralaje)
         self.interpolador.guardar(self.objetos + self.estrellas + self.motas)
         self.pasos += 1
+        salto = self.velocidad_salto()
+        if self.salto > 0:
+            self.salto -= 1
         if self.transicion > 0:
             self.transicion -= 1
         for objeto in self.objetos:
@@ -153,36 +173,36 @@ class Fondo:
             objeto.y += (0.6 + empuje_y) * objeto.profundidad
             # Si sale por un costado entra por el otro
             if objeto.x < -ancho:
-                objeto.x = lienzo.ancho
-            elif objeto.x > lienzo.ancho:
+                objeto.x = ANCHO
+            elif objeto.x > ANCHO:
                 objeto.x = -ancho
             # Si sale por arriba o por abajo vuelve por el otro lado, en otro lugar
             if objeto.y > ALTO:
-                objeto.x = random.randint(-ancho // 2, lienzo.ancho - ancho // 2)
+                objeto.x = random.randint(-ancho // 2, ANCHO - ancho // 2)
                 objeto.y = -alto
             elif objeto.y < -alto:
-                objeto.x = random.randint(-ancho // 2, lienzo.ancho - ancho // 2)
+                objeto.x = random.randint(-ancho // 2, ANCHO - ancho // 2)
                 objeto.y = ALTO
 
         for estrella in self.estrellas:
             estrella.x += empuje_x * estrella.velocidad
-            estrella.y += (0.6 + empuje_y) * estrella.velocidad
+            estrella.y += (0.6 + empuje_y + salto) * estrella.velocidad
             if estrella.x < 0:
-                estrella.x += lienzo.ancho
-            elif estrella.x > lienzo.ancho:
-                estrella.x -= lienzo.ancho
+                estrella.x += ANCHO
+            elif estrella.x > ANCHO:
+                estrella.x -= ANCHO
             if estrella.y > ALTO:
-                estrella.x = random.randint(0, lienzo.ancho)
+                estrella.x = random.randint(0, ANCHO)
                 estrella.y = 0
             elif estrella.y < 0:
-                estrella.x = random.randint(0, lienzo.ancho)
+                estrella.x = random.randint(0, ANCHO)
                 estrella.y = ALTO
         self._mover_ambiente(empuje_x, empuje_y)
 
     def _mover_ambiente(self, empuje_x, empuje_y):
         ambiente = self.sector["ambiente"]
         self._crear_motas(ambiente)
-        centro_x, centro_y = lienzo.ancho / 2, ALTO / 2
+        centro_x, centro_y = ANCHO / 2, ALTO / 2
         for mota in self.motas[:]:
             if mota.tipo == "polvo":
                 # Gira alrededor del centro y se va acercando (como el agua en un desague)
@@ -197,12 +217,12 @@ class Fondo:
             mota.x += mota.vx + empuje_x * 0.8
             mota.y += mota.vy + empuje_y * 0.8
             mota.vida -= 1
-            fuera = mota.x < -40 or mota.x > lienzo.ancho + 40 or mota.y < -40 or mota.y > ALTO + 40
+            fuera = mota.x < -40 or mota.x > ANCHO + 40 or mota.y < -40 or mota.y > ALTO + 40
             if mota.vida <= 0 or fuera or (mota.tipo != "polvo" and self._de_otro_ambiente(mota, ambiente)):
                 self.motas.remove(mota)
         if self.relampago > 0:
             self.relampago -= 1
-        self.ondas = [radio + 3 for radio in self.ondas if radio < lienzo.ancho]
+        self.ondas = [radio + 3 for radio in self.ondas if radio < ANCHO]
         self.desplazamiento_panal = (self.desplazamiento_panal + 0.3 + empuje_y * 0.3) % 84
 
     def _de_otro_ambiente(self, mota, ambiente):
@@ -214,7 +234,7 @@ class Fondo:
     def _crear_motas(self, ambiente):
         cuantas = sum(1 for mota in self.motas if mota.tipo != "fugaz")
         hay_lugar = cuantas < MAXIMO_MOTAS[ambiente]
-        ancho = lienzo.ancho
+        ancho = ANCHO
         if ambiente == "asteroides":
             if hay_lugar and random.random() < 0.02:
                 self.motas.append(Mota(random.randint(0, ancho), -20, random.uniform(-0.3, 0.3),
@@ -254,16 +274,18 @@ class Fondo:
     def dibujar(self, pantalla, fraccion=1):
         etapa = self._etapa()
         color = [round(a + (b - a) * etapa) for a, b in zip(self.sector_anterior["fondo"], self.sector["fondo"])]
-        if self.relampago > 0 and self.relampago % 4 < 2:
+        # El relampago titila dos veces; con DESTELLOS REDUCIDOS es un solo resplandor quieto
+        titila = self.relampago % 4 < 2 or accesibilidad.destellos_reducidos()
+        if self.relampago > 0 and titila:
             color = [min(110, c + 14) if i == 0 else c + 4 for i, c in enumerate(color)]
         pantalla.fill(color)
         if self.sector["ambiente"] == "panal" and etapa == 1:
             self._dibujar_panal(pantalla)
         for radio in self.ondas:
-            pygame.draw.circle(pantalla, (22, 30, 64), (lienzo.ancho // 2, ALTO // 2), int(radio), 2)
+            pygame.draw.circle(pantalla, (22, 30, 64), (ANCHO // 2, ALTO // 2), int(radio), 2)
         with self.interpolador.aplicar(self.objetos + self.estrellas + self.motas, fraccion):
             for objeto in self.objetos:
-                posicion = (int(objeto.x), int(objeto.y))
+                posicion = (en_grilla(objeto.x), en_grilla(objeto.y))      # (grilla de pixeles de arte)
                 if etapa < 1:
                     # Durante el cambio: los colores viejos y encima los nuevos, cada vez mas
                     pantalla.blit(self._imagen(objeto, self.sector_anterior["tinte"]), posicion)
@@ -273,19 +295,33 @@ class Fondo:
                         pantalla.blit(nueva, posicion)
                 else:
                     pantalla.blit(self._imagen(objeto, self.tinte), posicion)
-            rojo, verde, azul = self.sector["estrellas"]
-            for estrella in self.estrellas:
-                brillo = 60 + estrella.velocidad * 60
-                tamano = 1 if estrella.velocidad < 3 else 2
-                pantalla.fill((brillo * rojo, brillo * verde, brillo * azul),
-                              (int(estrella.x), int(estrella.y), tamano, tamano))
+            self._dibujar_estrellas(pantalla)
             for mota in self.motas:
                 self._dibujar_mota(pantalla, mota)
 
+    def _dibujar_estrellas(self, pantalla):
+        # Un pixel de arte cada una (mas oscuras las lejanas). Cada tanto una titila (una
+        # crucecita blanca un momento). En el salto al hiperespacio son rayas que se estiran
+        rojo, verde, azul = self.sector["estrellas"]
+        salto = self.velocidad_salto()
+        ticks = pygame.time.get_ticks()
+        for i, estrella in enumerate(self.estrellas):
+            brillo = 30 + estrella.velocidad * 55       # (las lejanas, mas oscuras)
+            color = (brillo * rojo, brillo * verde, brillo * azul)
+            x, y = en_grilla(estrella.x), en_grilla(estrella.y)
+            if salto > 0:
+                largo = en_grilla(salto * estrella.velocidad * 2.5) + PIXEL_ARTE
+                pantalla.fill(color, (x, y - largo, PIXEL_ARTE, largo))
+            elif (ticks // TITILAR_MS + i * 7) % TITILAR_CADA == 0:
+                pantalla.fill((230, 230, 255), (x - PIXEL_ARTE, y, PIXEL_ARTE * 3, PIXEL_ARTE))
+                pantalla.fill((230, 230, 255), (x, y - PIXEL_ARTE, PIXEL_ARTE, PIXEL_ARTE * 3))
+            else:
+                pantalla.fill(color, (x, y, PIXEL_ARTE, PIXEL_ARTE))
+
     def _dibujar_panal(self, pantalla):
-        if self._panal is None or self._panal.get_width() != lienzo.ancho:
-            self._panal = panal(lienzo.ancho, ALTO + 84, (30, 22, 6))
-        pantalla.blit(self._panal, (0, int(self.desplazamiento_panal) - 84))
+        if self._panal is None or self._panal.get_width() != ANCHO:
+            self._panal = panal(ANCHO, ALTO + 84, (30, 22, 6))
+        pantalla.blit(self._panal, (0, en_grilla(self.desplazamiento_panal) - 84))
 
     def _dibujar_mota(self, pantalla, mota):
         x, y = int(mota.x) // 2 * 2, int(mota.y) // 2 * 2

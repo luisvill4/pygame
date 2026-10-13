@@ -2,6 +2,7 @@
 import pygame
 
 from juego.config import MS_POR_FRAME
+from juego.escenas.opciones import AJUSTES, PESTANAS, ajustes_de
 
 
 class TeclasFalsas:
@@ -26,6 +27,16 @@ def tecla(codigo):
 
 def boton(numero):
     pygame.event.post(pygame.event.Event(pygame.JOYBUTTONDOWN, button=numero, instance_id=0, joy=0))
+
+
+def ir_al_ajuste(app, nombre):
+    # En Opciones recien abierto: pasa a la seccion del ajuste (con E) y baja hasta el.
+    # Solo aprieta las teclas (despues hay que avanzar la App)
+    ajuste = next(a for a in AJUSTES if a.nombre == nombre)
+    for _ in range(PESTANAS.index(ajuste.pestana)):
+        tecla(pygame.K_e)
+    for _ in range(ajustes_de(ajuste.pestana).index(ajuste)):
+        tecla(pygame.K_DOWN)
 
 
 def empezar_partida(app):

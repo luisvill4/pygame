@@ -2,6 +2,8 @@
 Todos los power-ups. El orden en que estan aca es el orden del HUD y del panel de inicio
 (los cinco primeros, ademas, son los cuadros de sprites/powerups.png).
 """
+import math
+
 from juego.config import (CIAN, HIELO, ROJO, MAGENTA, VERDE, AMARILLO, NARANJA, ENERGIA, ESCARCHA,
                           CORAZON, IMANTADO, TREBOL, ORO, FUEGO, DURACION)
 from juego.powerups.base import PowerUp, registrar_powerup, HASTA_PERDER_VIDA
@@ -18,6 +20,10 @@ class Escudo(PowerUp):
     paleta = ENERGIA
     cuadro_sprite = 0
     duracion = DURACION["escudo"]
+
+    def disponible(self, partida):
+        # Con el escudo de ESCUDO ROCE (dura hasta un golpe) no sirve otro
+        return partida.restante(self.tipo) != math.inf
 
     def peso(self, partida):
         return 2 if partida.jefe is not None else 1         # contra un jefe sirve mas

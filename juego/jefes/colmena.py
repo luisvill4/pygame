@@ -29,8 +29,8 @@ import random
 
 import pygame
 
-from juego import recursos, dibujo, lienzo
-from juego.config import (ALTO, AMARILLO, BLANCO, ROJO, HIELO, ORO, COLMENA_PULSO, COLMENA_ABEJAS,
+from juego import recursos, dibujo
+from juego.config import (ANCHO, ALTO, AMARILLO, BLANCO, ROJO, HIELO, ORO, COLMENA_PULSO, COLMENA_ABEJAS,
                           COLMENA_ABEJAS_MAX, COLMENA_EXPUESTA, COLMENA_EMBESTIDA, COLMENA_REBOTES,
                           COLMENA_ATURDIDA)
 from juego.enemigos import crear_enemigo
@@ -45,10 +45,12 @@ CERA = (90, 50, 0)
 MIEL = [CERA, AMBAR, AMARILLO]
 PEDAZOS = [(60, 30, 0), CERA, AMBAR, AMARILLO]
 
-# Las 4 compuertas en los lados del hexagono: (x, y de la esquina dentro de la Colmena,
-# angulo hacia donde salen las abejas)
-COMPUERTAS = [(4, 30, math.radians(210)), (124, 30, math.radians(330)),
-              (4, 98, math.radians(150)), (124, 98, math.radians(30))]
+# Las 4 compuertas en los lados inclinados del hexagono: (x, y de la esquina dentro de la
+# Colmena, angulo hacia donde salen las abejas). Van un poco hacia adentro del borde: las
+# esquinas de afuera del hexagono son transparentes y, mas afuera, la compuerta (y el
+# agujero que deja al romperse) quedaba flotando en el vacio
+COMPUERTAS = [(16, 30, math.radians(210)), (112, 30, math.radians(330)),
+              (16, 98, math.radians(150)), (112, 98, math.radians(30))]
 
 
 # ================================== #
@@ -288,7 +290,7 @@ class Colmena(Jefe):
                 partida.quitar_enemigo(abeja)
 
     def pasear(self, ahora):
-        centro = (lienzo.ancho - LADO) / 2
+        centro = (ANCHO - LADO) / 2
         objetivo_x = centro + math.sin(ahora / 1600) * (centro - 30)
         objetivo_y = self.y_final + math.sin(ahora / 700) * 6
         self.x += (objetivo_x - self.x) * 0.03
@@ -342,6 +344,7 @@ class Colmena(Jefe):
         self.rebotes = COLMENA_REBOTES + (self.vida_max - self.vida)
         self.apuntar(partida)
         self.cambiar_fase_pulsos("temblar", 3, partida.tiempo)
+        partida.entrada.vibrar("zumbido")          # el aviso tambien se siente en las manos
         for abeja in self.abejas(partida):          # por si alguna no llego a casa
             partida.quitar_enemigo(abeja)
 
@@ -358,8 +361,8 @@ class Colmena(Jefe):
         # Lo usan el movimiento y el aviso (asi el aviso muestra justo el camino real)
         x, y = x + vx, y + vy
         reboto = False
-        if x < 0 or x > lienzo.ancho - LADO:
-            x = max(0, min(x, lienzo.ancho - LADO))
+        if x < 0 or x > ANCHO - LADO:
+            x = max(0, min(x, ANCHO - LADO))
             vx = -vx
             reboto = True
         if y < 90 or y > ALTO - LADO:
@@ -423,7 +426,7 @@ class Colmena(Jefe):
         centro_x, centro_y = self.centro()
         partida.efectos.pedazos(centro_x, centro_y, PEDAZOS, 8, 4)
         partida.efectos.sacudir(12, AMARILLO)
-        partida.entrada.vibrar(0.5, 0.7, 150)
+        partida.entrada.vibrar("impacto")
         partida.sonidos.reproducir("golpe")
         if self.rebotes > 0:
             self.rebotes -= 1
@@ -433,7 +436,7 @@ class Colmena(Jefe):
             self.cambiar_fase_pulsos("aturdida", COLMENA_ATURDIDA, partida.tiempo)
 
     def volver(self, partida):
-        self.destino = ((lienzo.ancho - LADO) / 2 + random.randint(-150, 150), self.y_final)
+        self.destino = ((ANCHO - LADO) / 2 + random.randint(-150, 150), self.y_final)
         self.cambiar_fase_pulsos("volver", 3, partida.tiempo)
 
     def al_recibir_golpe(self, partida):

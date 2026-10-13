@@ -10,12 +10,14 @@ llega una OLEADA. (Los juegos le dicen "director" a esta parte: dirige la tensio
   (otro ambiente, otro enemigo favorito) y parte de los enemigos se van y llegan otros.
 - Oleadas: picos de tension. Llegan muchos enemigos de golpe, duran unos segundos
   y se van; pasarla sin perder una vida da un bonus y un power-up.
-- Anomalias: a mitad de cada sector el espacio se pone raro un rato (anomalias.py).
+- Anomalias: a mitad de cada sector el espacio se pone raro un rato (anomalias.py): la del
+  sector la mitad de las veces, si no otra (asi se ven todas desde el principio).
 - Desafios: un reto opcional por sector (desafios.py).
 - Rango: al vencer al jefe, una nota de S a C para el sector (rango.py). Mientras se ve
   el cartel, el sector se esta "cerrando": los enemigos esperan para volver.
-- Mejoras: en el nivel MEJORA_PRIMER_NIVEL y al cerrar cada sector deja 3 cartas en
-  'ofertas' (mejoras.py). La escena Juego las ve y abre el Taller para elegir una.
+- Mejoras: en el nivel MEJORA_PRIMER_NIVEL deja 3 cartas gratis en 'ofertas' (mejoras.py)
+  y la escena Juego abre el Taller. Al cerrar cada sector, en cambio, se para en la
+  GASOLINERA ('gasolinera' = True): ahi las cartas se compran con creditos (tienda.py).
 
 La Partida le avisa lo que pasa (al_subir_nivel, al_recibir_golpe, al_usar_dash...) y
 le pide actualizar() en cada paso.
@@ -27,9 +29,10 @@ from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, PRESUPUESTO_INICIAL
                           PRESUPUESTO_MAXIMO, ENEMIGOS_MAX, SECTORES, PESO_FAVORITO,
                           RECAMBIO_SECTOR, OLEADA_DESDE_NIVEL, OLEADA_ESPERA, OLEADA_DURACION,
                           OLEADA_PRESUPUESTO, OLEADA_PUNTOS, REFUERZO_ESPERA, CARTEL_JEFE, AMARILLO, ROJO,
-                          JEFE_CADA_NIVELES, ANOMALIA_NIVEL, ANOMALIA_ESPERA, RESPIRO_ANOMALIA,
+                          JEFE_CADA_NIVELES, ANOMALIA_NIVEL, ANOMALIA_ESPERA, RESPIRO_ANOMALIA, ANOMALIA_PROPIA,
                           DESAFIO_DESDE_NIVEL, DESAFIO_ESPERA, DESAFIO_PUNTOS, CARTEL_RANGO, RANGO_SELLO, VERDE,
-                          MEJORA_PRIMER_NIVEL, ENERGIA_DESAFIO, ENERGIA_OLEADA)
+                          MEJORA_PRIMER_NIVEL, ENERGIA_DESAFIO, ENERGIA_OLEADA, AVISO_OLEADA, AVISO_ANOMALIA)
+from juego.avisos import Aviso
 from juego.enemigos import crear_enemigos, TIPOS_ENEMIGO
 from juego.anomalias import TIPOS_ANOMALIA, crear_anomalia
 from juego.desafios import TIPOS_DESAFIO
@@ -69,10 +72,11 @@ class Director:
         self.tiempo_cartel_rango = -10000
         self.rango_pagado = True
         self.fin_del_cierre = -10000
-        # Mejoras (con_mejoras = False las apaga): las cartas ofrecidas, esperando que elijas una
+        # Mejoras (con_mejoras = False apaga el Taller y la gasolinera)
         self.con_mejoras = True
-        self.ofertas = []
-        self.mejora_tras_cierre = False
+        self.ofertas = []                   # cartas gratis del Taller, esperando que elijas una
+        self.gasolinera_tras_cierre = False # al terminar el cierre del sector, a la gasolinera
+        self.gasolinera = False             # hay que parar ahora (la escena Juego la abre)
 
     # ---------- Presupuesto ----------
 
@@ -166,7 +170,7 @@ class Director:
         self.bitacora = Bitacora()
         self.desafio = None
         self.proximo_desafio = self.fin_del_cierre + DESAFIO_ESPERA
-        self.mejora_tras_cierre = True      # al terminar el cierre, a elegir una mejora
+        self.gasolinera_tras_cierre = True  # al terminar el cierre, a la gasolinera
 
     def cerrando_sector(self):
         # Despues del jefe, mientras se ven "¡JEFE VENCIDO!" y el rango
@@ -274,9 +278,9 @@ class Director:
             self.proponer_desafio()
         if not self.rango_pagado and partida.tiempo >= self.tiempo_cartel_rango + RANGO_SELLO:
             self.pagar_rango()
-        if self.mejora_tras_cierre and not self.cerrando_sector():
-            self.mejora_tras_cierre = False
-            self.ofrecer_mejoras()
+        if self.gasolinera_tras_cierre and not self.cerrando_sector():
+            self.gasolinera_tras_cierre = False
+            self.gasolinera = self.con_mejoras
         self._refuerzos()
 
     def _refuerzos(self):
@@ -299,7 +303,10 @@ class Director:
         self.oleada_hasta = partida.tiempo + OLEADA_DURACION
         self.vidas_al_empezar_oleada = partida.vidas
         partida.sonidos.reproducir("nuevo_record")
+        partida.entrada.vibrar("oleada")
         partida.efectos.sacudir(10, ROJO)
+        partida.avisar(Aviso("ALERTA", "¡OLEADA!", "AGUANTA SIN PERDER VIDAS", ROJO, AVISO_OLEADA, alerta=True),
+                       urgente=True)
         disponible = self.presupuesto() * OLEADA_PRESUPUESTO
         while True:
             tipo = self.elegir_tipo(disponible)
@@ -323,7 +330,9 @@ class Director:
             # Premio: puntos y un power-up que cae enseguida
             ganados = partida.sumar_puntos(OLEADA_PUNTOS * partida.nivel)
             nave_x, nave_y = partida.nave.centro()
-            partida.efectos.texto_flotante("¡OLEADA SUPERADA! +" + str(ganados), nave_x, nave_y - 40, AMARILLO)
+            partida.efectos.texto_flotante("+" + str(ganados), nave_x, nave_y - 40, AMARILLO)
+            partida.avisar(Aviso("PREMIO", "¡OLEADA SUPERADA!", "+" + str(ganados) + " PUNTOS Y UN POWER-UP",
+                                 VERDE, AVISO_OLEADA))
             partida.sonidos.reproducir("powerup")
             if partida.capsula is None:
                 partida.proximo_powerup = partida.tiempo
@@ -334,18 +343,28 @@ class Director:
 
     # ---------- Anomalias ----------
 
-    def empezar_anomalia(self):
-        # La del sector; desde la segunda vuelta (o si el sector no tiene), una al azar
+    def elegir_anomalia(self):
+        # La del sector la mitad de las veces (ANOMALIA_PROPIA); si no, una de las otras.
+        # Asi cada bioma tiene su personalidad, pero las cuatro se ven desde el principio
+        propia = self.sector["anomalia"]
+        if propia is not None and random.random() < ANOMALIA_PROPIA:
+            return propia
+        return random.choice([tipo for tipo in TIPOS_ANOMALIA if tipo != propia])
+
+    def empezar_anomalia(self, tipo=None):
+        # 'tipo' elige cual (lo usa el modo desarrollador); sin tipo, elegir_anomalia()
         partida = self.partida
-        tipo = self.sector["anomalia"]
-        if tipo is None or self.vuelta() > 1:
-            tipo = random.choice(list(TIPOS_ANOMALIA))
+        if tipo is None:
+            tipo = self.elegir_anomalia()
         self.anomalia = crear_anomalia(tipo, partida)
         self.proxima_anomalia = math.inf
         # Ninguna oleada encima de la anomalia ni justo despues
         self.proxima_oleada = max(self.proxima_oleada, self.anomalia.hasta + RESPIRO_ANOMALIA)
         partida.sonidos.reproducir("nuevo_record")
+        partida.entrada.vibrar("anomalia")
         partida.efectos.sacudir(10, self.anomalia.color)
+        partida.avisar(Aviso("ANOMALIA", self.anomalia.nombre, self.anomalia.pista, self.anomalia.color,
+                             AVISO_ANOMALIA), urgente=True)
 
     def terminar_anomalia(self):
         if self.anomalia is not None:
@@ -397,6 +416,7 @@ class Director:
         partida.efectos.texto_flotante("¡DESAFIO! +" + str(ganados), nave_x, nave_y - 40, VERDE)
         partida.efectos.anillo(nave_x, nave_y, [(0, 90, 40), VERDE, (255, 255, 255)], 32, 6)
         partida.sonidos.reproducir("powerup")
+        partida.entrada.vibrar("desafio")
         if partida.capsula is None:
             partida.proximo_powerup = partida.tiempo     # de premio, un power-up enseguida
         partida.ganar_energia(ENERGIA_DESAFIO)
@@ -420,3 +440,5 @@ class Director:
         else:
             partida.sonidos.reproducir("seleccion")
         partida.efectos.sacudir(10)
+        # El sello de la letra: S y A pegan mas fuerte
+        partida.entrada.vibrar("sello", fuerza=1.3 if self.rango["letra"] in ("S", "A") else 1)

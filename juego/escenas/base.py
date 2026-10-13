@@ -13,6 +13,8 @@ self.app.fraccion (0 a 1) es cuanto del paso actual ya paso: para dibujar interp
 Flujo:  Inicio -> Listo -> Juego <-> Pausa <-> Opciones
                           Juego -> Explosion -> Iniciales (si entra al top 5) -> Fin -> Listo
 """
+import pygame
+
 from juego.config import REACCION_PARALAJE
 
 
@@ -47,6 +49,16 @@ class Escena:
         self.app.fondo.dibujar(pantalla, self.app.fraccion)
 
     def dibujar_partida(self, pantalla, partida, con_nave=True):
-        # Fondo + todo el juego, interpolados
+        # Por capas: fondo y mundo (interpolados) -> temblor y destello -> HUD.
+        # El temblor y el destello van antes del HUD: mueven el mundo, no el marcador
         self.dibujar_fondo(pantalla)
         partida.dibujar(pantalla, con_nave, self.app.fraccion)
+        self.app.efectos.dibujar_temblor_y_destello(pantalla)
+        partida.dibujar_hud(pantalla)
+
+    def captura_del_mundo(self, partida):
+        # El fondo y el juego, sin HUD ni temblor: el fondo de la Pausa, el Taller...
+        imagen = pygame.Surface(self.app.pantalla.get_size())
+        self.dibujar_fondo(imagen)
+        partida.dibujar(imagen, True, self.app.fraccion)
+        return imagen

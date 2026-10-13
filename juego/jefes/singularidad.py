@@ -26,8 +26,8 @@ import random
 
 import pygame
 
-from juego import recursos, dibujo, lienzo
-from juego.config import (HIELO, CIAN, MAGENTA, BLANCO, ORO, ENERGIA, SINGULARIDAD_PULSO,
+from juego import recursos, dibujo
+from juego.config import (CENTRO_X, HIELO, CIAN, MAGENTA, BLANCO, ORO, ENERGIA, SINGULARIDAD_PULSO,
                           SINGULARIDAD_GRAVEDAD, SINGULARIDAD_INHALAR, SINGULARIDAD_RADIO, SINGULARIDAD_HUECOS,
                           SINGULARIDAD_EXPUESTA)
 from juego.jefes.base import Jefe, registrar_jefe
@@ -129,7 +129,7 @@ class Singularidad(Jefe):
 
     def __init__(self, partida):
         super().__init__(partida)
-        self.x, self.y = lienzo.centro_x() - LADO / 2, CENTRO_Y - LADO / 2
+        self.x, self.y = CENTRO_X - LADO / 2, CENTRO_Y - LADO / 2
         self.escala = 0                 # al nacer crece desde un punto
         self.angulo_anillo = 0          # cuanto giro el anillo (en lugares)
         self.objetivo_anillo = 0
@@ -325,6 +325,7 @@ class Singularidad(Jefe):
     def empezar_a_inhalar(self, partida):
         self.hueco_nova = random.uniform(0, 2 * math.pi)
         self.cambiar_fase_pulsos("inhalar", 3, partida.tiempo)
+        partida.entrada.vibrar("inhalar")          # un rugido que crece, como la gravedad
 
     def direcciones_nova(self):
         # 20 balas en circulo, menos 5 seguidas: el hueco (el aviso marca sus bordes)
@@ -351,6 +352,7 @@ class Singularidad(Jefe):
         partida.efectos.anillo(centro_x, centro_y, DISCO, 40, 8, 4)
         partida.efectos.sacudir(10, HIELO)
         partida.sonidos.reproducir("golpe")
+        partida.entrada.vibrar("exhalar")
         self.cambiar_fase_pulsos("exhalar", 1, partida.tiempo)
 
     def volver_a_girar(self, partida):
@@ -402,11 +404,11 @@ class Singularidad(Jefe):
         if lado != LADO:
             imagen = pygame.transform.scale(imagen, (lado, lado))
         dibujo_x, dibujo_y = self.posicion_dibujo(partida)
-        pantalla.blit(imagen, imagen.get_rect(center=(dibujo_x + LADO // 2, dibujo_y + LADO // 2)))
+        dibujo.pegar(pantalla, imagen, dibujo_x + LADO // 2, dibujo_y + LADO // 2, centrado=True)
         variante = "hielo" if self.congelado(partida) else "normal"
         for asteroide in self.asteroides:
             roca = cuadros_asteroide(variante)[asteroide.lugar % 2]
-            pantalla.blit(roca, roca.get_rect(center=(int(asteroide.x), int(asteroide.y))))
+            dibujo.pegar(pantalla, roca, asteroide.x, asteroide.y, centrado=True)
 
     def posicion_dibujo(self, partida):
         # No flota: es un agujero en el espacio (al morir tiembla igual)

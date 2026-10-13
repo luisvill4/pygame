@@ -30,6 +30,7 @@ TAMANO = 30
 HASTA_PERDER_VIDA = "hasta perder una vida"
 
 TIPOS_POWERUP = {}          # tipo -> instancia, en el orden en que se registran
+_capsulas = {}              # tipo -> imagen de su capsula (ver PowerUp.imagen_capsula)
 
 
 def registrar_powerup(clase):
@@ -74,17 +75,24 @@ class PowerUp:
         return self.nombre
 
     def dibujar_capsula(self, pantalla, centro_x, centro_y):
-        # Sprite de la capsula; si no hay, cuadro con borde de color y la letra adentro
-        cuadros = recursos.hoja("powerups.png", TAMANO)
-        if cuadros and self.cuadro_sprite is not None and self.cuadro_sprite < len(cuadros):
-            imagen = cuadros[self.cuadro_sprite]
-            pantalla.blit(imagen, imagen.get_rect(center=(centro_x, centro_y)))
-            return
-        rect = pygame.Rect(0, 0, TAMANO, TAMANO)
-        rect.center = (centro_x, centro_y)
-        pygame.draw.rect(pantalla, FONDO, rect)
-        pygame.draw.rect(pantalla, self.color, rect, 3)
-        dibujo.texto(pantalla, self.letra, dibujo.CHICA, self.color, centro_x + 1, centro_y + 1, sombra=None)
+        imagen = self.imagen_capsula()
+        dibujo.pegar(pantalla, imagen, centro_x, centro_y, centrado=True)
+
+    def imagen_capsula(self):
+        # Sprite de la capsula; si no hay, cuadro con borde de color y la letra adentro.
+        # (Tambien es el icono del power-up en el HUD)
+        if self.tipo not in _capsulas:
+            cuadros = recursos.hoja("powerups.png", TAMANO)
+            if cuadros and self.cuadro_sprite is not None and self.cuadro_sprite < len(cuadros):
+                _capsulas[self.tipo] = cuadros[self.cuadro_sprite]
+            else:
+                imagen = pygame.Surface((TAMANO, TAMANO), pygame.SRCALPHA)
+                imagen.fill(FONDO)
+                pygame.draw.rect(imagen, self.color, imagen.get_rect(), 3)
+                dibujo.texto(imagen, self.letra, dibujo.CHICA, self.color, TAMANO // 2 + 1, TAMANO // 2 + 1,
+                             sombra=None)
+                _capsulas[self.tipo] = imagen
+        return _capsulas[self.tipo]
 
 
 class Capsula:
@@ -105,4 +113,5 @@ class Capsula:
         return pygame.Rect(self.x - TAMANO // 2, self.y - TAMANO // 2, TAMANO, TAMANO)
 
     def dibujar(self, pantalla):
+        dibujo.halo(pantalla, self.x, self.y, 30, self.powerup.color)
         self.powerup.dibujar_capsula(pantalla, self.x, self.y)

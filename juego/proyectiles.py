@@ -18,21 +18,26 @@ Proyectiles de los jefes (y de las anomalias). Todos viven en partida.balas y co
 Como todos estan en la misma lista, el hielo los rompe, el dash los atraviesa y el
 choque con la nave se revisa igual para todos (Partida._tocar_balas). Es polimorfismo:
 cada clase resuelve "moverse" y "dibujarse" a su manera.
+
+Ademas cada clase dice:
+    brillo  -> el color de su resplandor de neon (None = no brilla, ej: el metal)
+    estela  -> si deja una estela corta detras (se ve hacia donde va)
+dibujar_balas() dibuja primero todos los resplandores, despues las estelas y encima
+los proyectiles.
 """
 import math
 import random
 
-from juego import lienzo
-from juego.dibujo import parpadeo
-from juego.config import (ALTO, MAGENTA, ROJO, BLANCO, AMARILLO, EMBESTIDA, FUEGO, RADIO_BALA, MS_POR_FRAME,
-                          ASTEROIDES_PUNTOS)
+from juego.dibujo import parpadeo, halo, en_grilla
+from juego.config import (ANCHO, ALTO, FONDO, MAGENTA, ROJO, BLANCO, AMARILLO, VERDE, NARANJA, EMBESTIDA, FUEGO,
+                          RADIO_BALA, MS_POR_FRAME, ASTEROIDES_PUNTOS)
 
 GRIS_METAL = (90, 100, 150)
 METAL_OSCURO = (44, 48, 86)
 
 
 def fuera_de_pantalla(x, y, margen=20):
-    return x < -margen or x > lienzo.ancho + margen or y < -margen or y > ALTO + margen
+    return x < -margen or x > ANCHO + margen or y < -margen or y > ALTO + margen
 
 
 class Bala:
@@ -40,6 +45,8 @@ class Bala:
     radio = RADIO_BALA
     destruible = False
     puntos = 0
+    brillo = MAGENTA        # color del resplandor (None = no brilla)
+    estela = True           # deja una estela corta detras
 
     def __init__(self, x, y, vx, vy):
         self.x, self.y, self.vx, self.vy = x, y, vx, vy
@@ -54,19 +61,22 @@ class Bala:
         return True
 
     def dibujar(self, pantalla, encendido):
-        # Bala pixelada que cambia de color (en la cuadricula de 2 pixeles)
+        # Bala pixelada que cambia de color, en la grilla de pixeles de arte: una cruz de
+        # 5x3 y 3x5 pixeles de arte con el centro claro, centrada en el pixel de (x, y)
         borde, centro = (MAGENTA, BLANCO) if encendido else (ROJO, (255, 150, 230))
-        bala_x = int(self.x) // 2 * 2
-        bala_y = int(self.y) // 2 * 2
-        pantalla.fill(borde, (bala_x - 5, bala_y - 3, 10, 6))
-        pantalla.fill(borde, (bala_x - 3, bala_y - 5, 6, 10))
-        pantalla.fill(centro, (bala_x - 2, bala_y - 2, 4, 4))
+        bala_x = en_grilla(self.x)
+        bala_y = en_grilla(self.y)
+        pantalla.fill(borde, (bala_x - 4, bala_y - 2, 10, 6))
+        pantalla.fill(borde, (bala_x - 2, bala_y - 4, 6, 10))
+        pantalla.fill(centro, (bala_x - 2, bala_y, 6, 2))
+        pantalla.fill(centro, (bala_x, bala_y - 2, 2, 6))
 
 
 class Obus(Bala):
     # Grande y lento: un "¡PUM!" que se ve venir
     __slots__ = ()
     radio = 8
+    brillo = NARANJA
 
     def mover(self, partida):
         self.x += self.vx
@@ -92,6 +102,7 @@ class Misil(Bala):
     radio = 6
     destruible = True
     puntos = 5
+    brillo = ROJO
 
     def __init__(self, x, y, vx, vy, guiado, giro=0.04):
         super().__init__(x, y, vx, vy)
@@ -134,6 +145,7 @@ class Mina(Bala):
     # Viaja frenando hasta quedarse quieta; al rato estalla en una cruz (+ o x) de balas
     __slots__ = ("espera", "rapidez_balas", "forma")
     radio = 8
+    estela = False          # frena y se queda quieta
 
     def __init__(self, x, y, vx, vy, rapidez_balas, espera, forma="+"):
         super().__init__(x, y, vx, vy)
@@ -181,6 +193,7 @@ class Escombro(Bala):
     # Un trozo de metal que cae (las cortinas de la Fortaleza)
     __slots__ = ()
     radio = 9
+    brillo = None           # metal: no brilla
 
     def mover(self, partida):
         self.x += self.vx
@@ -199,6 +212,8 @@ class Onda(Bala):
     # Onda de choque a ras del piso (la Fortaleza al caer)
     __slots__ = ()
     radio = 10
+    brillo = NARANJA
+    estela = False          # ya deja fuego detras
 
     def mover(self, partida):
         self.x += self.vx
@@ -218,6 +233,7 @@ class Veneno(Bala):
     # Gota lenta que gotea mientras viaja
     __slots__ = ()
     radio = 7
+    brillo = VERDE
 
     def mover(self, partida):
         self.x += self.vx
@@ -242,6 +258,7 @@ class Meteoro(Bala):
     # Un asteroide que cae envuelto en fuego; el dash lo rompe
     __slots__ = ()
     radio = 10
+    brillo = NARANJA
     destruible = True
     puntos = ASTEROIDES_PUNTOS
 
@@ -279,6 +296,26 @@ def romper_balas(balas, efectos, paleta):
 
 
 def dibujar_balas(pantalla, balas):
+    # Por capas: los resplandores, las estelas y encima los proyectiles (asi el brillo de
+    # uno no tapa a otro)
     encendido = parpadeo(100)
     for bala in balas:
+        if bala.brillo is not None:
+            halo(pantalla, bala.x, bala.y, bala.radio * 3 + 8, bala.brillo)
+    for bala in balas:
+        if bala.estela:
+            _dibujar_estela(pantalla, bala)
+    for bala in balas:
         bala.dibujar(pantalla, encendido)
+
+
+def _dibujar_estela(pantalla, bala):
+    # Dos cuadraditos detras, cada vez mas chicos y oscuros (en la cuadricula de 2 px)
+    if abs(bala.vx) + abs(bala.vy) < 1:
+        return
+    color = bala.brillo or BLANCO
+    for distancia, tamano, oscuro in ((2.2, 4, 0.45), (4.2, 2, 0.7)):
+        tono = tuple(round(c + (f - c) * oscuro) for c, f in zip(color, FONDO))
+        x = en_grilla(bala.x + 1 - bala.vx * distancia - tamano / 2)
+        y = en_grilla(bala.y + 1 - bala.vy * distancia - tamano / 2)
+        pantalla.fill(tono, (x, y, tamano, tamano))

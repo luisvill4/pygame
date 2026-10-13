@@ -2,7 +2,8 @@
 Clase base de los jefes y su registro.
 
 Todo jefe tiene fases (self.fase). La clase base resuelve las comunes:
-    entrar  -> llega a la pantalla mientras se presenta con su nombre y su apodo
+    entrar  -> llega a la pantalla (mientras, el HUD pasa la cinematica de ALERTA con su
+               nombre y su apodo: hud._presentacion_jefe)
     morir   -> explosiones por todo el cuerpo durante 2 s y despues la grande
 y ademas: la vida, el destello al recibir un golpe, el congelado del hielo, el
 cartel "¡DASH!" cuando se le puede pegar, las variantes de sus sprites y las
@@ -31,10 +32,10 @@ import random
 
 import pygame
 
-from juego import recursos, dibujo, lienzo
+from juego import recursos, dibujo
 from juego.proyectiles import romper_balas
-from juego.config import (ALTO, ROJO, CIAN, ORO, FUEGO, ENERGIA, ARCOIRIS, BLANCO, HIELO, EMBESTIDA, GRIS,
-                          MS_POR_FRAME, MS_CUADRO_JEFE, JEFE_VIDA, JEFE_PULSO)
+from juego.config import (ANCHO, ALTO, ROJO, CIAN, ORO, FUEGO, ENERGIA, ARCOIRIS, BLANCO, HIELO,
+                          EMBESTIDA, MS_POR_FRAME, MS_CUADRO_JEFE, JEFE_VIDA, JEFE_PULSO)
 
 TAMANO = 120                # tamaño del Ojo (y de los jefes que no digan otro)
 
@@ -63,22 +64,24 @@ class Jefe:
     tipo = None
     nombre = ""                 # la presentacion: "LA FORTALEZA"
     apodo = ""                  # y debajo, mas chico: "ACORAZADO IMPERIAL"
-    color = ROJO                # color de su nombre
+    color = ROJO                # color de su nombre (y de su barra de vida)
     ancho = TAMANO
     alto = TAMANO
     y_final = 70                # altura a la que baja al entrar
-    y_presentacion = 310        # altura de su nombre al presentarse
+    y_presentacion = 310        # altura de la franja con su nombre al presentarse
     ms_pulso = JEFE_PULSO       # el tempo de su pelea
     fases_congelables = ("flotar", "atacar", "cansado")    # el hielo no lo congela al entrar ni al morir
 
     def __init__(self, partida):
-        self.x = (lienzo.ancho - self.ancho) // 2   # esquina de arriba a la izquierda del sprite,
+        self.x = (ANCHO - self.ancho) // 2   # esquina de arriba a la izquierda del sprite,
         self.y = -self.alto - 10                    # centrado y arriba de la pantalla
         self.creado_en = partida.tiempo
         self.vida_max = JEFE_VIDA + partida.jefes_vencidos // 2
         self.vida = self.vida_max
         self.golpe_hasta = 0                # destello blanco despues de recibir un golpe
+        self.ultimo_golpe = -10000          # cuando le pegaron (el o una parte): la barra del HUD destella
         self.partes = []                    # piezas que se rompen por separado (ver partes.py)
+        self.fin_entrada = None             # cuando termino de entrar (la cinematica se retira)
         self.cambiar_fase("entrar", 0, partida.tiempo)
 
     # ---------- Sprites ----------
@@ -139,7 +142,7 @@ class Jefe:
         if self.fase not in self.fases_congelables:
             return None
         for parte in self.partes_vivas():
-            if parte.golpeable(self) and caja.colliderect(parte.caja(self)):
+            if parte.golpeable(self) and caja.colliderect(parte.caja_golpe(self)):
                 return parte
         return None
 
@@ -169,6 +172,8 @@ class Jefe:
     # ---------- Fases y pulso ----------
 
     def cambiar_fase(self, fase, duracion, tiempo):
+        if getattr(self, "fase", None) == "entrar" and fase != "entrar":
+            self.fin_entrada = tiempo
         self.fase = fase
         self.fase_desde = tiempo
         self.fase_hasta = tiempo + duracion
@@ -243,11 +248,13 @@ class Jefe:
         nucleo_x, nucleo_y = self.centro_nucleo()
         self.vida -= 1
         self.golpe_hasta = partida.tiempo + 300
+        self.ultimo_golpe = partida.tiempo
         partida.sonidos.reproducir("golpe")
         efectos.explosion(nucleo_x, nucleo_y, ORO, 40, 8, 5)
         efectos.anillo(nucleo_x, nucleo_y, ENERGIA, 24, 6)
+        efectos.onda_de_choque(nucleo_x, nucleo_y, 130, self.color, 22)
         efectos.sacudir(12, BLANCO)
-        partida.entrada.vibrar(0.5, 0.8, 200)
+        partida.entrada.vibrar("jefe_golpe")
         partida.congelar_frames = 6
         if self.vida <= 0:
             self.empezar_a_morir(partida)
@@ -269,10 +276,12 @@ class Jefe:
         parte_x, parte_y = parte.centro(self)
         parte.vida -= 1
         parte.golpe_hasta = partida.tiempo + 300
+        self.ultimo_golpe = partida.tiempo
         partida.sonidos.reproducir("golpe")
         efectos.explosion(parte_x, parte_y, ORO, 24, 6, 4)
+        efectos.onda_de_choque(parte_x, parte_y, 70, self.color, 16)
         efectos.sacudir(8, BLANCO)
-        partida.entrada.vibrar(0.4, 0.6, 150)
+        partida.entrada.vibrar("jefe_parte")
         partida.congelar_frames = 4
         if parte.viva():
             efectos.texto_flotante("¡GOLPE!", parte_x, parte_y - 40, CIAN)
@@ -280,6 +289,7 @@ class Jefe:
         else:
             efectos.explosion(parte_x, parte_y, FUEGO, 40, 8, 5)
             efectos.sacudir(16, BLANCO)
+            partida.entrada.vibrar("parte_rota")
             partida.congelar_frames = 6
             self.al_romper_parte(partida, parte)
 
@@ -300,9 +310,11 @@ class Jefe:
         centro_x, centro_y = self.centro()
         partida.efectos.explosion(centro_x, centro_y, FUEGO, 90, 11, 6)
         partida.efectos.explosion(centro_x, centro_y, ORO, 40, 7, 4)
+        partida.efectos.onda_de_choque(centro_x, centro_y, 260, self.color, 34)
+        partida.efectos.onda_de_choque(centro_x, centro_y, 160, BLANCO, 24)
         partida.efectos.anillo(centro_x, centro_y, ARCOIRIS, 40, 8, 4)
         partida.efectos.sacudir(35, BLANCO)
-        partida.entrada.vibrar(1, 1, 600)
+        partida.entrada.vibrar("jefe_explota")
         partida.congelar_frames = 8
         partida.sonidos.reproducir("golpe")
         partida.sonidos.reproducir("powerup")
@@ -327,7 +339,7 @@ class Jefe:
 
     def posicion_dibujo(self, partida):
         # Flota de a 2 pixeles; al temblar se sacude
-        dibujo_x, dibujo_y = int(self.x), int(self.y)
+        dibujo_x, dibujo_y = dibujo.en_grilla(self.x), dibujo.en_grilla(self.y)      # (grilla de pixeles de arte)
         if self.temblando():
             dibujo_x += random.randint(-2, 2) * 2
             dibujo_y += random.randint(-2, 2) * 2
@@ -338,9 +350,7 @@ class Jefe:
     def dibujar(self, pantalla, partida):
         self.dibujar_cuerpo(pantalla, partida)
         self.dibujar_extra(pantalla, partida)
-        # Avisos: la presentacion al entrar y cuando se le puede pegar
-        if self.fase == "entrar":
-            self.dibujar_presentacion(pantalla, partida)
+        # Aviso de cuando se le puede pegar (la presentacion la dibuja el HUD)
         if dibujo.parpadeo(200):
             if self.puede_recibir_golpe():
                 cartel_x, cartel_y = self.punto_cartel_dash()
@@ -354,18 +364,6 @@ class Jefe:
         pantalla.blit(self.imagen_actual(partida), (dibujo_x, dibujo_y))
         for parte in self.partes:
             parte.dibujar(pantalla, dibujo_x + parte.dx, dibujo_y + parte.dy, self, partida)
-
-    def dibujar_presentacion(self, pantalla, partida):
-        # Como en los arcades: el nombre aparece letra por letra y el apodo debajo
-        transcurrido = partida.tiempo - self.creado_en
-        letras = int(transcurrido // 70)
-        centro = lienzo.centro_x()
-        y = self.y_presentacion
-        if dibujo.parpadeo(250) or letras < len(self.nombre):
-            dibujo.texto(pantalla, "¡CUIDADO!", dibujo.CHICA, ROJO, centro, y - 40)
-        dibujo.texto_3d(pantalla, self.nombre[:letras], dibujo.GRANDE, self.color, (40, 0, 30), y, 4)
-        if letras > len(self.nombre) + 4:
-            dibujo.texto(pantalla, self.apodo, dibujo.CHICA, GRIS, centro, y + 50)
 
     def dibujar_avisos_partes(self, pantalla):
         # Una flechita debajo de cada parte golpeable y un solo "¡DASH!" entre todas

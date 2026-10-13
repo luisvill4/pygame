@@ -1,39 +1,42 @@
 """
 HUD: el marcador que se dibuja encima del juego.
 
-- Arriba: puntos y combo (izquierda), record (centro), vidas (derecha).
+- Arriba: puntos, creditos y combo (izquierda), record (centro), vidas (derecha).
 - Abajo: power-ups activos (izquierda), barra del jefe, de la oleada o de la anomalia
   (centro), dash, nivel y la barra de energia para subir de nivel (derecha).
 - Debajo de las vidas: el desafio del sector y como va.
-- Carteles: "NIVEL X", "¡JEFE VENCIDO!", el rango del sector, la anomalia que llega...
-- Fichas: tarjetas chicas que entran deslizandose (enemigo nuevo a la izquierda,
-  desafio a la derecha), asi no tapan el centro de la pantalla.
+- Carteles (los dibuja carteles.py): el aviso de arriba ("NIVEL 7", "¡OLEADA!"...), las
+  fichas de los costados, el logro de abajo y los momentos (jefe vencido, rango, sector).
 - Carteles y fichas se dibujan primero en una capa aparte (_cartel). Si debajo hay algo
   que importa (la nave, la moneda, un enemigo, una bala...), la capa se pega casi
   transparente: el mensaje se sigue leyendo, pero no tapa el juego.
+- La llegada del jefe: una cinematica que ocupa todo (_presentacion_jefe).
 
-Lo de la izquierda se ancla al borde izquierdo, lo de la derecha al borde derecho y
-lo del centro al centro, asi el HUD se acomoda solo al formato (4:3 o 16:9).
+Lo de la izquierda se ancla al borde izquierdo (x=20), lo de la derecha al borde
+derecho (ANCHO - 20) y lo del centro a CENTRO_X.
 
 zonas_hud() son los rectangulos que ocupa el HUD: ahi no aparecen monedas.
 Si el HUD cambia de lugar o crece, hay que actualizarlas.
 """
+import math
 import random
 
 import pygame
 
-from juego import dibujo, nave, lienzo, recursos
-from juego.dibujo import texto, MINI, CHICA, MEDIA, GRANDE, TITULO
-from juego.config import (ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA, VERDE, NARANJA,
-                          CARTEL_JEFE, CARTEL_RANGO, RANGO_SELLO, OLEADA_DURACION, ANOMALIA_DURACION,
-                          CARTEL_ALFA_TAPANDO, CARTEL_MARGEN, CARTEL_ESPERA_TAPANDO)
+from juego import dibujo, nave, recursos, accesibilidad, carteles
+from juego.carteles import texto, cinta, franja, DURACION_FICHA, FONDO_CINE, ROJO_OSCURO
+from juego.dibujo import MINI, CHICA, GRANDE
+from juego.config import (ANCHO, CENTRO_X, ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA, VERDE, NARANJA,
+                          CARTEL_JEFE, CARTEL_RANGO, CARTEL_SECTOR, OLEADA_DURACION, ANOMALIA_DURACION,
+                          CARTEL_ALFA_TAPANDO, CARTEL_ALFA_MOMENTO, CARTEL_MARGEN, CARTEL_ESPERA_TAPANDO, CONTORNO,
+                          COMBO_MAXIMO)
 from juego.powerups import TIPOS_POWERUP
 
 
 def zonas_hud():
     return [
-        pygame.Rect(0, 0, lienzo.ancho, 100),       # arriba: puntos, combo, record y vidas
-        pygame.Rect(0, 524, lienzo.ancho, 76),      # abajo: dash, nivel, energia y barra del jefe
+        pygame.Rect(0, 0, ANCHO, 100),       # arriba: puntos, combo, record y vidas
+        pygame.Rect(0, 524, ANCHO, 76),      # abajo: dash, nivel, energia y barra del jefe
         pygame.Rect(0, 430, 180, 170),              # abajo a la izquierda: power-ups activos
     ]
 
@@ -42,50 +45,58 @@ def posicion_libre(ancho, alto):
     # Esquina de arriba a la izquierda, al azar, de algo que no tape el HUD
     zonas = zonas_hud()
     while True:
-        nueva_x = random.randint(0, lienzo.ancho - ancho)
+        nueva_x = random.randint(0, ANCHO - ancho)
         nueva_y = random.randint(0, ALTO - alto)
         if pygame.Rect(nueva_x, nueva_y, ancho, alto).collidelist(zonas) == -1:
             return nueva_x, nueva_y
 
 
 def dibujar(pantalla, partida):
+    # Mientras el jefe se presenta, la cinematica ocupa todo: el resto del HUD se esconde
+    jefe = partida.jefe
+    if jefe is not None and (jefe.fin_entrada is None or partida.tiempo - jefe.fin_entrada < MS_FRANJAS):
+        _presentacion_jefe(pantalla, jefe, partida.tiempo, partida.director.numero_sector)
+        return
     _marcador(pantalla, partida)
     _activos(pantalla, partida)
     director = partida.director
     if partida.jefe is not None:
-        _barra_jefe(pantalla, partida.jefe)
+        _barra_jefe(pantalla, partida.jefe, partida.tiempo)
     elif director.en_oleada:
         color = ROJO if dibujo.parpadeo(300) else AMARILLO
         _barra_tiempo(pantalla, "OLEADA", director.restante_oleada() / OLEADA_DURACION, color)
     elif director.anomalia is not None:
         anomalia = director.anomalia
-        _barra_tiempo(pantalla, "ANOMALIA", anomalia.restante(partida) / ANOMALIA_DURACION, anomalia.color)
+        _barra_tiempo(pantalla, anomalia.nombre, anomalia.restante(partida) / ANOMALIA_DURACION, anomalia.color)
     if director.desafio is not None and partida.jefe is None:
         _desafio(pantalla, director.desafio)
-    # Carteles: nivel, sector nuevo, fichas, oleada, anomalia, jefe vencido y rango.
-    # Cada uno pasa por _cartel(), que lo vuelve transparente si tapa algo
+    # Carteles (ver carteles.py). Cada uno pasa por _cartel(), que lo vuelve transparente si tapa algo
     t = partida.tiempo
-    if t - partida.tiempo_cartel_nivel < 1500:
-        _cartel(pantalla, partida, "nivel", _cartel_nivel, partida.nivel)
-    if 0 <= t - director.tiempo_cartel_sector < 2500:
-        _cartel(pantalla, partida, "sector", _cartel_sector, director, t - director.tiempo_cartel_sector)
+    pancarta = None
+    aviso = partida.avisos.actual
+    if aviso is not None and t < aviso.hasta:
+        # El aviso de arriba (uno por vez, ver avisos.py); las fichas se corren si lo tocan
+        pancarta = carteles.caja_pancarta(aviso, t - aviso.desde, aviso.hasta - t)
+        _cartel(pantalla, partida, "aviso", carteles.pancarta, aviso, t - aviso.desde, aviso.hasta - t)
     if director.nuevo_tipo is not None and t - director.tiempo_cartel_nuevo < DURACION_FICHA:
-        _cartel(pantalla, partida, "enemigo nuevo", _ficha_nuevo_enemigo, director.nuevo_tipo,
-                t - director.tiempo_cartel_nuevo)
+        _cartel(pantalla, partida, "enemigo nuevo", carteles.ficha_nuevo_enemigo, director.nuevo_tipo,
+                t - director.tiempo_cartel_nuevo, pancarta)
     if director.desafio is not None and t - director.tiempo_cartel_desafio < DURACION_FICHA:
-        _cartel(pantalla, partida, "desafio", _ficha_desafio, director.desafio, t - director.tiempo_cartel_desafio)
+        _cartel(pantalla, partida, "desafio", carteles.ficha_desafio, director.desafio,
+                t - director.tiempo_cartel_desafio, pancarta)
     for logro, desde in partida.fichas_logro:
         if 0 <= t - desde < DURACION_FICHA:
-            _cartel(pantalla, partida, "logro", _ficha_logro, logro, t - desde)
-    if director.en_oleada and director.restante_oleada() > OLEADA_DURACION - 2000 and dibujo.parpadeo(150):
-        _cartel(pantalla, partida, "oleada", dibujo.texto_3d, "¡OLEADA!", GRANDE, ROJO, (110, 0, 30), 200, 4)
-    if director.anomalia is not None:
-        _cartel(pantalla, partida, "anomalia", _cartel_anomalia, director.anomalia, t - director.anomalia.desde)
+            _cartel(pantalla, partida, "logro", carteles.logro, logro, t - desde)
+    # Los momentos (despues del jefe no hay peligro): si tapan algo, se apagan menos
     if t - partida.tiempo_cartel_jefe < CARTEL_JEFE:
-        _cartel(pantalla, partida, "jefe vencido", dibujo.texto_3d, "¡JEFE VENCIDO!", GRANDE,
-                dibujo.color_arcoiris(), MAGENTA, 300, 4)
+        _cartel(pantalla, partida, "jefe vencido", carteles.jefe_vencido, partida.ultimo_jefe, partida.bonus_jefe,
+                t - partida.tiempo_cartel_jefe, alfa_tapando=CARTEL_ALFA_MOMENTO)
     if director.rango is not None and 0 <= t - director.tiempo_cartel_rango < CARTEL_RANGO:
-        _cartel(pantalla, partida, "rango", _cartel_rango, director.rango, t - director.tiempo_cartel_rango)
+        _cartel(pantalla, partida, "rango", carteles.rango, director.rango, t - director.tiempo_cartel_rango,
+                alfa_tapando=CARTEL_ALFA_MOMENTO)
+    if 0 <= t - director.tiempo_cartel_sector < CARTEL_SECTOR:
+        _cartel(pantalla, partida, "sector", carteles.sector_nuevo, director.sector, director.numero_sector,
+                t - director.tiempo_cartel_sector, alfa_tapando=CARTEL_ALFA_MOMENTO)
 
 
 # ---------- Carteles que no tapan el juego ----------
@@ -94,9 +105,9 @@ _capas = {}             # tamaño de la pantalla -> [superficie transparente, zo
 _tapando_hasta = {}     # nombre del cartel -> hasta cuando (reloj real) sigue transparente
 
 
-def _cartel(pantalla, partida, nombre, dibujar_cartel, *datos):
+def _cartel(pantalla, partida, nombre, dibujar_cartel, *datos, alfa_tapando=CARTEL_ALFA_TAPANDO):
     # Dibuja el cartel en una capa transparente, mira que rectangulo ocupo y, si ahi
-    # abajo hay algo que importa, lo pega casi transparente.
+    # abajo hay algo que importa, lo pega casi transparente ('alfa_tapando').
     # dibujar_cartel(capa, *datos) es cualquier funcion que dibuja (la capa mide lo
     # mismo que la pantalla, asi los carteles centrados quedan en el mismo lugar)
     tamano = pantalla.get_size()
@@ -114,7 +125,7 @@ def _cartel(pantalla, partida, nombre, dibujar_cartel, *datos):
     if zona.collidelist(cosas_que_importan(partida)) != -1:
         _tapando_hasta[nombre] = ahora + CARTEL_ESPERA_TAPANDO
     if ahora < _tapando_hasta.get(nombre, 0):
-        capa.set_alpha(CARTEL_ALFA_TAPANDO)
+        capa.set_alpha(alfa_tapando)
     else:
         capa.set_alpha(255)     # opaco (ojo: set_alpha(None) le sacaria la transparencia de cada pixel)
     pantalla.blit(capa, ocupado.topleft, ocupado)
@@ -150,38 +161,25 @@ def cosas_que_importan(partida):
     return rectangulos
 
 
-def _cartel_nivel(pantalla, nivel):
-    dibujo.texto_3d(pantalla, "NIVEL " + str(nivel), GRANDE, AMARILLO, MAGENTA, 250, 4)
-
-
-def _cartel_sector(pantalla, director, transcurrido):
-    sector = director.sector
-    texto(pantalla, "SECTOR " + str(director.numero_sector), CHICA, GRIS, lienzo.centro_x(), 300)
-    dibujo.texto_3d(pantalla, sector["nombre"], MEDIA, sector["color"], (30, 30, 50), 330, 3)
-    if transcurrido > 600:
-        texto(pantalla, sector["lema"], CHICA, BLANCO, lienzo.centro_x(), 370)
-
-
 def _marcador(pantalla, partida):
     ahora = partida.tiempo
 
-    # Puntaje (izquierda): se pone amarillo un instante al recoger una moneda
+    # Puntaje (izquierda): cuenta de a poco hasta el real (puntaje_visible) y se pone
+    # amarillo un instante al recoger una moneda
     texto(pantalla, "PUNTOS", CHICA, ROJO, 20, 22, alinear="izquierda")
     color = AMARILLO if ahora - partida.tiempo_moneda < 200 else BLANCO
-    texto(pantalla, dibujo.numero_arcade(partida.puntaje), CHICA, color, 20, 46, alinear="izquierda")
+    texto(pantalla, dibujo.numero_arcade(partida.puntaje_visible), CHICA, color, 20, 46, alinear="izquierda")
 
-    # Combo (debajo del puntaje) con una barra del tiempo que le queda
-    if partida.combo >= 2:
-        multiplicador = partida.multiplicador_combo()
-        if multiplicador > 1:
-            texto(pantalla, "COMBO x" + str(multiplicador), CHICA, dibujo.color_arcoiris(), 20, 72, alinear="izquierda")
-        else:
-            texto(pantalla, "COMBO " + str(partida.combo), CHICA, GRIS, 20, 72, alinear="izquierda")
-        restante = max(0, 1 - (ahora - partida.ultima_moneda) / partida.tiempo_combo())
-        pantalla.fill(AMARILLO, (20, 86, int(128 * restante), 4))
+    # Creditos (al lado del puntaje): la plata de la gasolinera. Destellan al ganarlos
+    texto(pantalla, "CREDITOS", MINI, GRIS, 136, 22, alinear="izquierda")
+    icono_credito(pantalla, 144, 46)
+    color = BLANCO if ahora - partida.tiempo_creditos < 200 else AMARILLO
+    texto(pantalla, str(partida.creditos), CHICA, color, 160, 46, alinear="izquierda")
 
-    centro = lienzo.centro_x()
-    derecha = lienzo.ancho - 20
+    _combo(pantalla, partida)
+
+    centro = CENTRO_X
+    derecha = ANCHO - 20
 
     # Record (centro): se actualiza en vivo si lo estas superando
     texto(pantalla, "RECORD", CHICA, ROJO, centro, 22)
@@ -189,9 +187,15 @@ def _marcador(pantalla, partida):
         texto(pantalla, dibujo.numero_arcade(partida.puntaje), CHICA, AMARILLO, centro, 46)
     else:
         texto(pantalla, dibujo.numero_arcade(partida.puntaje_maximo), CHICA, BLANCO, centro, 46)
+    # Modo desarrollador: se avisa siempre, abajo de todo al centro, debajo de la barra del
+    # jefe (esta partida no guarda record ni logros)
+    if partida.modo_desarrollador:
+        aviso = "MODO DEV" + ("  INVENCIBLE" if partida.invencible else "")
+        texto(pantalla, aviso, MINI, MAGENTA, centro, 592)
 
     # Dash, nivel y la barra de energia (abajo a la derecha, de arriba hacia abajo)
-    texto(pantalla, "NIVEL " + str(partida.nivel), CHICA, AMARILLO, derecha, 563, alinear="derecha")
+    color = BLANCO if ahora - partida.tiempo_nivel < 200 else AMARILLO      # destella al subir
+    texto(pantalla, "NIVEL " + str(partida.nivel), CHICA, color, derecha, 563, alinear="derecha")
     _barra_energia(pantalla, partida)
     # Dashes extra (mejora DOBLE DASH): cuadraditos a la izquierda, llenos si se pueden usar
     nave_jugador = partida.nave
@@ -206,9 +210,8 @@ def _marcador(pantalla, partida):
         texto(pantalla, "DASH", CHICA, CIAN, derecha, 536, alinear="derecha")
     else:
         texto(pantalla, "DASH", CHICA, GRIS, derecha, 536, alinear="derecha")
-        # max(0, ...) por si RECARGA cambia a mitad de una recarga
-        cargado = max(0, 1 - (partida.nave.dash_listo - ahora) / partida.recarga_dash())
-        pantalla.fill(CIAN, (derecha - 64, 547, int(64 * cargado), 3))
+        cargado = 1 - (partida.nave.dash_listo - ahora) / partida.recarga_dash()
+        dibujo.barra(pantalla, pygame.Rect(derecha - 64, 547, 64, 4), cargado, CIAN, borde=None)
 
     # Vidas (derecha): parpadean despues de recibir un golpe
     texto(pantalla, "VIDAS", CHICA, ROJO, derecha, 22, alinear="derecha")
@@ -220,205 +223,225 @@ def _marcador(pantalla, partida):
         pantalla.blit(icono, (icono_x, 34))
 
 
+COLOR_MULTIPLICADOR = {1: AMARILLO, 2: CIAN, 3: VERDE, 4: AMARILLO}    # x5, el maximo, va en arcoiris
+
+
+def _combo(pantalla, partida):
+    # Debajo del puntaje: el combo y una barra con el tiempo que falta para que se corte.
+    # Cada multiplicador tiene su color (x5 en arcoiris) y destella blanco al subir
+    if partida.combo < 2:
+        return
+    multiplicador = partida.multiplicador_combo()
+    if partida.tiempo - partida.tiempo_multiplicador < 150:
+        color = BLANCO
+    elif multiplicador >= COMBO_MAXIMO:
+        color = dibujo.color_arcoiris()
+    else:
+        color = COLOR_MULTIPLICADOR[multiplicador]
+    if multiplicador > 1:
+        texto(pantalla, "COMBO x" + str(multiplicador), CHICA, color, 20, 72, alinear="izquierda")
+    else:
+        texto(pantalla, "COMBO " + str(partida.combo), CHICA, GRIS, 20, 72, alinear="izquierda")
+    restante = 1 - (partida.tiempo - partida.ultima_moneda) / partida.tiempo_combo()
+    dibujo.barra(pantalla, pygame.Rect(20, 84, 128, 6), restante, color, borde=None)
+
+
+def icono_credito(pantalla, centro_x, centro_y):
+    # Una moneda quieta (el primer cuadro de moneda_giro.png, o un circulo si falta):
+    # el simbolo de los creditos en el HUD y en la gasolinera
+    cuadros = recursos.hoja("moneda_giro.png", 20)
+    if cuadros:
+        pantalla.blit(cuadros[0], cuadros[0].get_rect(center=(centro_x, centro_y)))
+    else:
+        pygame.draw.circle(pantalla, AMARILLO, (centro_x, centro_y), 8)
+
+
 def _barra_energia(pantalla, partida):
     # Debajo de "NIVEL": cuanto falta para subir, en bloques de 4 px (estilo retro).
     # Destella en blanco al ganar energia y parpadea casi llena. Con el jefe queda vacia
-    derecha = lienzo.ancho - 20
+    derecha = ANCHO - 20
     marco = pygame.Rect(derecha - 128, 576, 128, 12)
-    pygame.draw.rect(pantalla, GRIS, marco, 2)
     if not partida.puede_ganar_energia():
+        dibujo.barra(pantalla, marco, 0, GRIS)
         return
-    lleno = min(1, partida.energia / partida.energia_necesaria())
+    lleno = partida.energia / partida.energia_necesaria()
     if partida.tiempo - partida.tiempo_energia < 120:
         color = BLANCO
     elif lleno > 0.8 and dibujo.parpadeo(150):
         color = NARANJA
     else:
         color = AMARILLO
-    for i in range(int(30 * lleno)):
-        pantalla.fill(color, (marco.left + 4 + i * 4, marco.top + 3, 3, 6))
+    dibujo.barra(pantalla, marco, lleno, color)
+
+
+ALTO_ACTIVO = 34        # px entre un power-up activo y el de arriba
+_iconos_apagados = {}   # tipo -> icono en gris (ver _carga_escudo)
 
 
 def _activos(pantalla, partida):
-    # Abajo a la izquierda: power-ups activos; los temporales con los segundos que les quedan
-    fila_y = 575
+    # Abajo a la izquierda, de abajo hacia arriba: un renglon por power-up activo con su
+    # capsula, el nombre y una barra con el tiempo que le queda. Los que duran hasta perder
+    # una vida no tienen barra (el escudo de ESCUDO ROCE tampoco: dura hasta el golpe)
+    fila_y = 572
+    if partida.perfectos_para_regenerar() and not partida.activo("escudo"):
+        _carga_escudo(pantalla, partida, fila_y)
+        fila_y -= ALTO_ACTIVO
     for powerup in TIPOS_POWERUP.values():
         if not partida.activo(powerup.tipo):
             continue
-        if powerup.dura_hasta_perder_vida():
-            mensaje = powerup.nombre
+        restante = partida.restante(powerup.tipo)
+        temporal = not powerup.dura_hasta_perder_vida() and restante != math.inf
+        # Cuando le queda poco, la capsula parpadea
+        if not temporal or restante > 1500 or dibujo.parpadeo(150):
+            powerup.dibujar_capsula(pantalla, 35, fila_y)
+        if temporal:
+            texto(pantalla, powerup.nombre, CHICA, powerup.color, 58, fila_y - 5, alinear="izquierda")
+            total = partida.duracion_powerup(powerup.duracion)
+            dibujo.barra(pantalla, pygame.Rect(58, fila_y + 7, 80, 4), restante / total, powerup.color, borde=None)
         else:
-            segundos = int(partida.restante(powerup.tipo) // 1000) + 1
-            mensaje = powerup.nombre + " " + str(segundos)
-        texto(pantalla, mensaje, CHICA, powerup.color, 20, fila_y, alinear="izquierda")
-        fila_y -= 26
+            texto(pantalla, powerup.nombre, CHICA, powerup.color, 58, fila_y, alinear="izquierda")
+        fila_y -= ALTO_ACTIVO
 
 
-# ---------- Fichas ----------
-
-DURACION_FICHA = 3500       # ms que se ve una ficha (enemigo nuevo, desafio)
-
-
-def _ficha(pantalla, transcurrido, lado, color, titulo, color_titulo, nombre, pista, imagen=None):
-    # Una tarjeta chica debajo del marcador (asi no tapa el juego): entra deslizandose
-    # desde su lado, muestra un titulo, un nombre y un consejo, y se va por donde vino.
-    # Mide 288 de ancho, o mas si el nombre no entra
-    margen = 64 if imagen is not None else 16
-    ancho = max(288, margen + recursos.fuente(CHICA).size(nombre)[0] + 20)
-    alto = 64
-    entrada = max(0, min(1, transcurrido / 250, (DURACION_FICHA - transcurrido) / 250))
-    escondida = (1 - entrada) * (ancho + 30)
-    y = 104
-    if lado == "izquierda":
-        x = int(20 - escondida) // 4 * 4
-    elif lado == "derecha":
-        x = int(lienzo.ancho - 20 - ancho + escondida) // 4 * 4
-    else:
-        # Al centro: baja desde arriba
-        x = (lienzo.centro_x() - ancho // 2) // 4 * 4
-        y = int(104 - (1 - entrada) * (alto + 110)) // 4 * 4
-    dibujo.marco(pantalla, pygame.Rect(x, y, ancho, alto), color)
-    texto_x = x + margen
-    if imagen is not None:
-        if imagen.get_width() > 40:
-            imagen = pygame.transform.scale(imagen, (40, 40))
-        pantalla.blit(imagen, imagen.get_rect(center=(x + 34, y + alto // 2)))
-    if transcurrido > 1000 or dibujo.parpadeo(150):
-        texto(pantalla, titulo, MINI, color_titulo, texto_x, y + 16, alinear="izquierda")
-    texto(pantalla, nombre, CHICA, color, texto_x, y + 32, alinear="izquierda")
-    texto(pantalla, pista, MINI, BLANCO, texto_x, y + 50, alinear="izquierda")
-
-
-def _ficha_nuevo_enemigo(pantalla, tipo, transcurrido):
-    _ficha(pantalla, transcurrido, "izquierda", tipo.color, "NUEVO ENEMIGO", GRIS, tipo.nombre, tipo.pista,
-           tipo.cuadros()[0])
-
-
-def _ficha_desafio(pantalla, desafio, transcurrido):
-    # La misma ficha cuenta el desafio al proponerse y despues como termino
-    if desafio.estado == "cumplido":
-        titulo, color_titulo, pista = "¡DESAFIO CUMPLIDO!", VERDE, "PREMIO: PUNTOS Y UN POWER-UP"
-    elif desafio.estado == "fallado":
-        titulo, color_titulo, pista = "DESAFIO FALLADO", ROJO, "SUERTE EN EL PROXIMO SECTOR"
-    else:
-        titulo, color_titulo, pista = "DESAFIO (OPCIONAL)", GRIS, desafio.pista
-    _ficha(pantalla, transcurrido, "derecha", desafio.color, titulo, color_titulo, desafio.nombre, pista)
-
-
-TROFEO = [
-    "X.XXX.X",
-    "XXXXXXX",
-    "X.XXX.X",
-    "..XXX..",
-    "...X...",
-    "..XXX..",
-    ".XXXXX.",
-]
-
-
-def _ficha_logro(pantalla, logro, transcurrido):
-    # Un logro desbloqueado: la ficha baja al centro, con un trofeo
-    imagen = pygame.Surface((28, 28), pygame.SRCALPHA)
-    dibujo.pixel_art(imagen, TROFEO, 14, 14, AMARILLO, 4)
-    _ficha(pantalla, transcurrido, "centro", AMARILLO, "¡LOGRO!", AMARILLO, logro.nombre, logro.descripcion,
-           imagen)
+def _carga_escudo(pantalla, partida, fila_y):
+    # ESCUDO ROCE sin escudo: la capsula apagada y cuantos perfectos faltan para el proximo
+    # escudo, en cuadraditos (llenos = hechos)
+    if "escudo" not in _iconos_apagados:
+        _iconos_apagados["escudo"] = recursos.tenir(TIPOS_POWERUP["escudo"].imagen_capsula(), GRIS)
+    icono = _iconos_apagados["escudo"]
+    pantalla.blit(icono, icono.get_rect(center=(35, fila_y)))
+    texto(pantalla, "ESCUDO", CHICA, GRIS, 58, fila_y - 5, alinear="izquierda")
+    for i in range(partida.perfectos_para_regenerar()):
+        cuadrito = pygame.Rect(58 + i * 10, fila_y + 5, 6, 8)
+        if i < partida.perfectos_para_escudo:
+            pantalla.fill(CIAN, cuadrito)
+        else:
+            pygame.draw.rect(pantalla, GRIS, cuadrito, 2)
 
 
 def _desafio(pantalla, desafio):
-    # Debajo de las vidas: el desafio del sector y como va
-    derecha = lienzo.ancho - 20
+    # Debajo de las vidas, en un renglon: el desafio del sector y como va
+    derecha = ANCHO - 20
     if desafio.estado == "cumplido":
         estado, color = "CUMPLIDO", VERDE
     elif desafio.estado == "fallado":
         estado, color = "FALLADO", ROJO
     else:
         estado, color = desafio.texto_progreso(), BLANCO
-    texto(pantalla, desafio.nombre, MINI, desafio.color if desafio.en_curso() else GRIS, derecha, 72,
-          alinear="derecha")
+    nombre_x = derecha
     if estado:
-        texto(pantalla, estado, MINI, color, derecha, 86, alinear="derecha")
+        texto(pantalla, estado, CHICA, color, derecha, 76, alinear="derecha")
+        nombre_x -= recursos.fuente(CHICA).size(estado)[0] + 16
+    texto(pantalla, desafio.nombre, CHICA, desafio.color if desafio.en_curso() else GRIS, nombre_x, 76,
+          alinear="derecha")
 
 
-# ---------- Carteles ----------
-
-def _cartel_anomalia(pantalla, anomalia, transcurrido):
-    # Al llegar: el nombre (parpadea el primer segundo) y el consejo, arriba del centro
-    if transcurrido > 2800 or (transcurrido < 1000 and not dibujo.parpadeo(150)):
-        return
-    oscuro = tuple(componente // 3 for componente in anomalia.color)
-    dibujo.texto_3d(pantalla, anomalia.nombre, MEDIA, anomalia.color, oscuro, 190, 3)
-    texto(pantalla, anomalia.pista, CHICA, BLANCO, lienzo.centro_x(), 228)
-
-
-COLOR_RANGO = {"S": None, "A": AMARILLO, "B": CIAN, "C": GRIS}   # None = arcoiris
-
-
-def _cartel_rango(pantalla, rango, transcurrido):
-    # Las filas van saliendo de a una y al final cae la letra, como un sello
-    centro = lienzo.centro_x()
-    marco = pygame.Rect(centro - 180, 160, 360, 290)
-    dibujo.marco(pantalla, marco, rango["color"])
-    texto(pantalla, "SECTOR " + str(rango["sector"]) + " COMPLETO", CHICA, rango["color"], centro, 196)
-    for i, (nombre, valor, estrellas, maximo) in enumerate(rango["filas"]):
-        if transcurrido < 300 + i * 400:
-            break
-        fila_y = 244 + i * 34
-        texto(pantalla, nombre, CHICA, BLANCO, marco.left + 28, fila_y, alinear="izquierda")
-        texto(pantalla, valor, CHICA, VERDE if estrellas else ROJO, marco.left + 262, fila_y, alinear="derecha")
-        for j in range(maximo):
-            _estrella(pantalla, marco.left + 290 + j * 22, fila_y, AMARILLO if j < estrellas else (60, 60, 80))
-    texto(pantalla, "RANGO", CHICA, GRIS, centro - 40, 406, alinear="derecha")
-    if transcurrido < RANGO_SELLO:
-        if dibujo.parpadeo(150):
-            texto(pantalla, "?", GRANDE, GRIS, centro + 30, 404)
-        return
-    letra = rango["letra"]
-    color = COLOR_RANGO[letra] or dibujo.color_arcoiris()
-    # Al caer, la letra es enorme y se achica de golpe (en dos etapas: estilo retro)
-    tamano = TITULO * 2 if transcurrido < RANGO_SELLO + 80 else TITULO
-    texto(pantalla, letra, tamano, color, centro + 30, 400)
-    if rango["puntos"] and transcurrido > RANGO_SELLO + 300:
-        texto(pantalla, "+" + str(rango["puntos"]), CHICA, AMARILLO, centro + 110, 406)
-
-
-ESTRELLA = [
-    "...X...",
-    "..XXX..",
-    "XXXXXXX",
-    ".XXXXX.",
-    "..XXX..",
-    ".XX.XX.",
-    "XX...XX",
-]
-
-
-def _estrella(pantalla, centro_x, centro_y, color, tamano_pixel=2):
-    # Pixel art de 7x7 (como las calaveras de la dificultad)
-    izquierda, arriba = centro_x - 7, centro_y - 7
-    for fila, linea in enumerate(ESTRELLA):
-        for columna, celda in enumerate(linea):
-            if celda == "X":
-                pantalla.fill(color, (izquierda + columna * tamano_pixel, arriba + fila * tamano_pixel,
-                                      tamano_pixel, tamano_pixel))
+BARRA_CENTRAL = pygame.Rect(CENTRO_X - 160, 564, 320, 16)      # jefe, oleada o anomalia (abajo al centro)
 
 
 def _barra_tiempo(pantalla, nombre, restante, color):
-    # Abajo al centro: cuanto le queda a la oleada o a la anomalia (restante de 0 a 1)
-    centro = lienzo.centro_x()
-    texto(pantalla, nombre, CHICA, color, centro - 82, 575, alinear="derecha")
-    pygame.draw.rect(pantalla, GRIS, (centro - 70, 567, 200, 16), 2)
-    pantalla.fill(color, (centro - 66, 571, int(192 * restante) // 4 * 4, 8))
+    # Abajo al centro: el nombre (de la oleada o de la anomalia) y cuanto le queda (de 0 a 1)
+    texto(pantalla, nombre, CHICA, color, BARRA_CENTRAL.left, BARRA_CENTRAL.top - 14, alinear="izquierda")
+    dibujo.barra(pantalla, BARRA_CENTRAL, restante, color)
 
 
-def _barra_jefe(pantalla, jefe):
-    # Abajo al centro: un bloque por cada golpe que le queda
-    centro = lienzo.centro_x()
-    texto(pantalla, "JEFE", CHICA, ROJO, centro - 82, 575, alinear="derecha")
+MS_POR_SEGMENTO = 45        # al terminar la presentacion, la barra se llena de a un segmento
+
+
+def _barra_jefe(pantalla, jefe, tiempo):
+    # Abajo al centro: el nombre del jefe en su color y un segmento por cada golpe que le
+    # queda. Cuando termina de entrar y se van las franjas de cine, se llena de a un
+    # segmento (como en los arcades). El segmento que acaba de perder destella blanco
+    if jefe.fin_entrada is None:
+        return
+    texto(pantalla, jefe.nombre, CHICA, jefe.color, BARRA_CENTRAL.left, BARRA_CENTRAL.top - 14, alinear="izquierda")
     vida, vida_max = jefe.vida_barra()
-    ancho_bloque = 200 // vida_max
-    for i in range(vida_max):
-        bloque = pygame.Rect(centro - 70 + i * ancho_bloque, 567, ancho_bloque - 4, 16)
-        if i < vida:
-            pantalla.fill(MAGENTA, bloque)
-        else:
-            pygame.draw.rect(pantalla, GRIS, bloque, 2)
+    llenos = min(vida, max(0, int((tiempo - jefe.fin_entrada - MS_FRANJAS) // MS_POR_SEGMENTO)))
+    recien = vida if tiempo - jefe.ultimo_golpe < 400 else None
+    dibujo.barra_segmentos(pantalla, BARRA_CENTRAL, llenos, vida_max, jefe.color, recien)
+
+
+# ---------- La llegada del jefe ----------
+
+ALTO_CINE = 64              # alto de las franjas negras de arriba y abajo
+MS_FRANJAS = 350            # lo que tardan en entrar (y en irse)
+MS_ALERTA = 1400            # cuanto dura "¡ALERTA!" antes de presentar al jefe
+_sirena = {}                # la luz roja de los costados (se arma una vez)
+
+
+def _presentacion_jefe(pantalla, jefe, tiempo, numero_sector):
+    # La cinematica de llegada. Tapa el HUD con franjas de cine (con cinta de peligro),
+    # prende luces de sirena a los costados, avisa "¡ALERTA!" y despues pasa una franja
+    # con el nombre y el apodo. Cuando el jefe termina de entrar, todo se retira
+    transcurrido = tiempo - jefe.creado_en
+    if jefe.fin_entrada is None:
+        abierto = min(1, transcurrido / MS_FRANJAS)
+    else:
+        abierto = 1 - (tiempo - jefe.fin_entrada) / MS_FRANJAS
+        if abierto <= 0:
+            return
+    abierto = 1 - (1 - abierto) ** 2            # entra rapido y frena al final
+    _luces_de_sirena(pantalla, transcurrido, abierto)
+    _franjas_de_cine(pantalla, round(ALTO_CINE * abierto), transcurrido)
+    centro_y = min(jefe.y_presentacion, 470)
+    if transcurrido < MS_ALERTA:
+        _alerta(pantalla, transcurrido, centro_y)
+    else:
+        _tarjeta_del_jefe(pantalla, jefe, transcurrido - MS_ALERTA, centro_y, abierto, numero_sector)
+
+
+def _franjas_de_cine(pantalla, alto, transcurrido):
+    # Negras arriba y abajo, con una cinta de peligro roja y negra en el borde de adentro
+    if alto <= 0:
+        return
+    ancho, alto_pantalla = pantalla.get_size()
+    pantalla.fill(FONDO_CINE, (0, 0, ancho, alto))
+    pantalla.fill(FONDO_CINE, (0, alto_pantalla - alto, ancho, alto))
+    corrimiento = int(transcurrido * 0.06)
+    cinta(pantalla, pygame.Rect(0, alto - 12, ancho, 12), corrimiento)
+    cinta(pantalla, pygame.Rect(0, alto_pantalla - alto, ancho, 12), -corrimiento)
+
+
+def _luces_de_sirena(pantalla, transcurrido, abierto):
+    # Un resplandor rojo en los dos costados que late (fijo con DESTELLOS REDUCIDOS)
+    ancho, alto = pantalla.get_size()
+    if alto not in _sirena:
+        luz = pygame.Surface((48, alto), pygame.SRCALPHA)
+        for i, alfa in enumerate((110, 70, 40, 18)):
+            luz.fill((255, 30, 50, alfa), (i * 12, 0, 12, alto))
+        _sirena[alto] = (luz, pygame.transform.flip(luz, True, False))
+    izquierda, derecha = _sirena[alto]
+    if accesibilidad.destellos_reducidos():
+        latido = 0.5
+    else:
+        latido = (math.sin(transcurrido / 160) + 1) / 2
+    izquierda.set_alpha(round(255 * latido * abierto))
+    derecha.set_alpha(round(255 * latido * abierto))
+    pantalla.blit(izquierda, (0, 0))
+    pantalla.blit(derecha, (ancho - 48, 0))
+
+
+def _alerta(pantalla, transcurrido, centro_y):
+    # "¡ALERTA!" entre dos rayas que se abren desde el centro
+    largo = round(min(1, transcurrido / 400) * 220) // 4 * 4
+    for y in (centro_y - 44, centro_y + 52):
+        pantalla.fill(ROJO, (CENTRO_X - largo, y, 2 * largo, 2))
+    if transcurrido > 900 or dibujo.parpadeo(220):
+        dibujo.texto_3d(pantalla, "¡ALERTA!", GRANDE, ROJO, ROJO_OSCURO, centro_y - 10, 4, CONTORNO)
+    if transcurrido > 300:
+        texto(pantalla, "SE ACERCA UN JEFE", CHICA, BLANCO, CENTRO_X, centro_y + 30)
+
+
+def _tarjeta_del_jefe(pantalla, jefe, transcurrido, centro_y, abierto, numero_sector):
+    # Una franja de lado a lado con el nombre (entra desde la izquierda) y el apodo (desde
+    # la derecha), en el color del jefe
+    caja = franja(pantalla, centro_y, round(104 * abierto), jefe.color)
+    if caja is None or abierto < 1:
+        return
+    entra_nombre = 1 - (1 - min(1, transcurrido / 320)) ** 3
+    entra_apodo = 1 - (1 - min(1, max(0, transcurrido - 140) / 320)) ** 3
+    x_nombre = round(CENTRO_X - (1 - entra_nombre) * 700) // 4 * 4
+    x_apodo = round(CENTRO_X + (1 - entra_apodo) * 700) // 4 * 4
+    texto(pantalla, "JEFE DEL SECTOR " + str(numero_sector), MINI, jefe.color, CENTRO_X, caja.top + 14)
+    dibujo.texto_3d(pantalla, jefe.nombre, GRANDE, jefe.color, (30, 10, 40), centro_y - 4, 4, CONTORNO, x_nombre)
+    texto(pantalla, jefe.apodo, CHICA, BLANCO, x_apodo, caja.bottom - 18)

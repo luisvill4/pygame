@@ -1,5 +1,5 @@
 """
-La Fortaleza: un acorazado gigante (256x128) que pelea como una MARCHA MILITAR.
+La Fortaleza: un acorazado gigante (384x192) que pelea como una MARCHA MILITAR.
 
 Todo va al ritmo de su pulso (las cuatro lamparitas amarillas del casco marcan el
 compas). Nunca ataca con dos cosas a la vez: cada compas es
@@ -23,9 +23,12 @@ Sin cañones se le cae la coraza y empieza el baile final:
 Los cañones son Partes (ver partes.py): la clase base ya resuelve el golpe con el dash,
 el daño al tocarlos y la flechita. Aca solo se decide cuando se les puede pegar.
 
+Tamaño: todo se mide en "pixeles del dibujo" (el respaldo es de 128x64) y se agranda
+ESCALA veces con px(). Para cambiar el tamaño de la Fortaleza alcanza con cambiar ESCALA.
+
 Sprites (opcionales):
-    fortaleza.png       1536x128: 6 cuadros de 256x128 de a pares (coraza, furia, cansado)
-    fortaleza_canon.png 64x32:    2 cuadros de 32x32 (sano, dañado), con el caño hacia abajo
+    fortaleza.png       2304x192: 6 cuadros de 384x192 de a pares (coraza, furia, cansado)
+    fortaleza_canon.png 96x48:    2 cuadros de 48x48 (sano, dañado), con el caño hacia abajo
 Si faltan, se dibujan de respaldo.
 """
 import math
@@ -33,16 +36,26 @@ import random
 
 import pygame
 
-from juego import recursos, dibujo, lienzo
-from juego.config import (ALTO, ROJO, AMARILLO, CIAN, MAGENTA, BLANCO, HIELO, ORO, FUEGO, ENERGIA, EMBESTIDA,
+from juego import recursos, dibujo
+from juego.config import (ANCHO, ALTO, ROJO, AMARILLO, CIAN, MAGENTA, BLANCO, HIELO, ORO, FUEGO, ENERGIA, EMBESTIDA,
                           FORTALEZA_VIDA_CANON, FORTALEZA_PUNTOS_CANON, FORTALEZA_PULSOS, FORTALEZA_RECALENTADO,
-                          FORTALEZA_MISIL_GUIADO, FORTALEZA_LASER_VELOCIDAD, FORTALEZA_ATURDIDA)
+                          FORTALEZA_MISIL_GUIADO, FORTALEZA_LASER_VELOCIDAD, FORTALEZA_ATURDIDA, FORTALEZA_FIJAR,
+                          FORTALEZA_MARGEN_GOLPE)
 from juego.jefes.base import Jefe, registrar_jefe
 from juego.jefes.partes import Parte
 from juego.proyectiles import Obus, Misil, Mina, Escombro, Onda, romper_balas
 
-ANCHO, ALTO_FORTALEZA = 256, 128
-LADO_CANON = 32
+ESCALA = 3              # cuantos pixeles de pantalla mide cada pixel del dibujo
+
+
+def px(pixeles_del_dibujo):
+    # De "pixeles del dibujo" (128x64) a pixeles de pantalla
+    return pixeles_del_dibujo * ESCALA
+
+
+ANCHO_FORTALEZA, ALTO_FORTALEZA = px(128), px(64)     # 384x192
+LADO_CANON = px(16)                         # 48x48
+ABAJO_CASCO = px(50)                        # donde termina el casco (debajo cuelgan los cañones)
 
 # Colores del metal (oscuro -> claro) y paletas de sus pedazos, el humo y el recalentado
 BORDE = (16, 16, 36)
@@ -52,10 +65,12 @@ CORAZA = (80, 20, 70)
 METAL = [(24, 24, 48), ACERO, ACERO_CLARO, (200, 210, 255)]
 HUMO = [(30, 30, 40), (60, 60, 75), (100, 100, 120)]
 BRASA = (255, 120, 0)
+PANZA = (30, 32, 62)
 
 # Los 4 cañones, de izquierda a derecha: (x dentro de la Fortaleza, ataque, color de la luz)
-CANONES = [(16, "misiles", AMARILLO), (76, "rafaga", ROJO), (148, "laser", CIAN), (208, "minas", MAGENTA)]
-Y_CANONES = 96          # cuelgan de la parte de abajo del casco
+CANONES = [(px(8), "misiles", AMARILLO), (px(38), "rafaga", ROJO), (px(74), "laser", CIAN),
+           (px(104), "minas", MAGENTA)]
+Y_CANONES = px(48)      # cuelgan de la parte de abajo del casco
 PULSOS_ATAQUE = {"rafaga": 3, "misiles": 2, "laser": 3, "minas": 2}
 
 
@@ -64,15 +79,20 @@ PULSOS_ATAQUE = {"rafaga": 3, "misiles": 2, "laser": 3, "minas": 2}
 # ================================== #
 
 def fortaleza_respaldo(con_coraza, color_nucleo, luces):
-    # Se dibuja a la mitad (128x64) y se agranda x2: pixeles gruesos, retro
-    imagen = pygame.Surface((ANCHO // 2, ALTO_FORTALEZA // 2), pygame.SRCALPHA)
+    # Se dibuja en 128x64 y se agranda ESCALA veces: pixeles gruesos, retro
+    imagen = pygame.Surface((ANCHO_FORTALEZA // ESCALA, ALTO_FORTALEZA // ESCALA), pygame.SRCALPHA)
     casco = [(10, 2), (118, 2), (127, 14), (127, 34), (116, 50), (12, 50), (0, 34), (0, 14)]
     pygame.draw.polygon(imagen, ACERO, casco)
     pygame.draw.polygon(imagen, BORDE, casco, 1)
-    # Placas: una linea a lo largo y dos costuras
+    # Placas: una linea a lo largo, dos costuras, la panza mas oscura y una fila de remaches
     imagen.fill(ACERO_CLARO, (4, 26, 120, 1))
+    imagen.fill(PANZA, (14, 44, 100, 5))
+    imagen.fill(ACERO_CLARO, (14, 43, 100, 1))
     for costura_x in (32, 96):
         imagen.fill(BORDE, (costura_x, 4, 1, 44))
+    for remache_x in list(range(8, 44, 6)) + list(range(86, 122, 6)):
+        imagen.fill(ACERO_CLARO, (remache_x, 31, 1, 1))
+        imagen.fill(BORDE, (remache_x, 32, 1, 1))
     # Ventanitas arriba (se prenden alternadas segun el cuadro) y motores rojos a los costados
     for i, ventana_x in enumerate(range(16, 112, 8)):
         prendida = (i % 2 == 0) == luces
@@ -95,12 +115,12 @@ def fortaleza_respaldo(con_coraza, color_nucleo, luces):
         imagen.fill(BLANCO, (59, 22, 3, 3))
         for diente_x, diente_y in ((52, 18), (74, 20), (50, 34), (76, 36), (63, 13)):
             imagen.fill(ACERO, (diente_x, diente_y, 3, 3))
-    return pygame.transform.scale(imagen, (ANCHO, ALTO_FORTALEZA))
+    return pygame.transform.scale(imagen, (ANCHO_FORTALEZA, ALTO_FORTALEZA))
 
 
 def canon_respaldo(danado):
-    # Torreta con el caño hacia abajo (16x16 agrandado x2)
-    imagen = pygame.Surface((LADO_CANON // 2, LADO_CANON // 2), pygame.SRCALPHA)
+    # Torreta con el caño hacia abajo (16x16 agrandado ESCALA veces)
+    imagen = pygame.Surface((LADO_CANON // ESCALA, LADO_CANON // ESCALA), pygame.SRCALPHA)
     cuerpo = ACERO if not danado else (34, 34, 60)
     imagen.fill(BORDE, (1, 0, 14, 10))
     imagen.fill(cuerpo, (2, 0, 12, 9))
@@ -138,6 +158,8 @@ def cuadros_canon():
 # ================================== #
 
 class Canon(Parte):
+    margen_golpe = FORTALEZA_MARGEN_GOLPE       # mas facil de acertar con el dash
+
     def __init__(self, dx, ataque, color):
         super().__init__(dx, Y_CANONES, LADO_CANON, LADO_CANON, FORTALEZA_VIDA_CANON)
         self.ataque = ataque
@@ -150,7 +172,7 @@ class Canon(Parte):
 
     def boca(self, jefe):
         # Por donde sale lo que dispara
-        return jefe.x + self.dx + LADO_CANON / 2, jefe.y + self.dy + LADO_CANON - 2
+        return jefe.x + self.dx + LADO_CANON / 2, jefe.y + self.dy + LADO_CANON - px(1)
 
     def caja_laser(self, jefe):
         boca_x, boca_y = self.boca(jefe)
@@ -159,11 +181,12 @@ class Canon(Parte):
     def dibujar(self, pantalla, x, y, jefe, partida):
         if not self.viva():
             # Restos: un muñon chamuscado con el borde al rojo
-            pantalla.fill(BORDE, (x + 2, y, 28, 14))
-            pantalla.fill(ACERO, (x + 4, y, 24, 10))
-            pantalla.fill((110, 0, 30), (x + 6, y + 10, 20, 4))
-            pantalla.fill(BRASA if dibujo.parpadeo(300) else ROJO, (x + 10, y + 12, 4, 2))
-            pantalla.fill(BRASA if dibujo.parpadeo(300) else ROJO, (x + 18, y + 12, 4, 2))
+            brasa = BRASA if dibujo.parpadeo(300) else ROJO
+            pantalla.fill(BORDE, (x + px(1), y, px(14), px(7)))
+            pantalla.fill(ACERO, (x + px(2), y, px(12), px(5)))
+            pantalla.fill((110, 0, 30), (x + px(3), y + px(5), px(10), px(2)))
+            pantalla.fill(brasa, (x + px(5), y + px(6), px(2), px(1)))
+            pantalla.fill(brasa, (x + px(9), y + px(6), px(2), px(1)))
             return
         indice = 0 if self.vida == self.vida_max else 1
         cuadros = cuadros_canon()
@@ -179,7 +202,7 @@ class Canon(Parte):
         # La lucecita de su color (al cargar parpadea en blanco)
         cargando = jefe.fase == "cargar" and jefe.canon_actual() is self
         luz = BLANCO if cargando and dibujo.parpadeo(80) else self.color
-        pantalla.fill(luz, (x + 14, y + 4, 4, 4))
+        pantalla.fill(luz, (x + px(7), y + px(2), px(2), px(2)))
 
 
 # ================================== #
@@ -192,7 +215,7 @@ class Fortaleza(Jefe):
     nombre = "LA FORTALEZA"
     apodo = "ACORAZADO IMPERIAL"
     color = ROJO
-    ancho = ANCHO
+    ancho = ANCHO_FORTALEZA
     alto = ALTO_FORTALEZA
     y_final = 56                # un poco mas abajo que el Ojo, para no tapar el HUD
     ms_pulso = FORTALEZA_PULSOS[0]
@@ -214,7 +237,7 @@ class Fortaleza(Jefe):
 
     @classmethod
     def cargar_animaciones(cls):
-        cuadros = recursos.hoja("fortaleza.png", ANCHO)
+        cuadros = recursos.hoja("fortaleza.png", ANCHO_FORTALEZA)
         if cuadros is None:
             cuadros = [fortaleza_respaldo(True, None, True), fortaleza_respaldo(True, None, False),
                        fortaleza_respaldo(False, ROJO, True), fortaleza_respaldo(False, (255, 150, 140), False),
@@ -226,19 +249,20 @@ class Fortaleza(Jefe):
     # ---------- Consultas ----------
 
     def centro_nucleo(self):
-        return self.x + 128, self.y + 56
+        return self.x + px(64), self.y + px(28)
 
     def caja_cuerpo(self):
-        return pygame.Rect(int(self.x) + 8, int(self.y) + 8, 240, 88)
+        return pygame.Rect(int(self.x) + px(4), int(self.y) + px(4), px(120), px(44))
 
     def caja_nucleo(self):
-        return pygame.Rect(int(self.x) + 104, int(self.y) + 32, 48, 48)
+        return pygame.Rect(int(self.x) + px(52), int(self.y) + px(16), px(24), px(24))
 
     def cajas_danio(self):
         # El casco en dos cajas que siguen su forma (abajo es mas angosto: asi no te
         # pega con una esquina que no se ve), los cañones y el rayo laser prendido
         x, y = int(self.x), int(self.y)
-        cajas = [pygame.Rect(x + 4, y + 6, 248, 62), pygame.Rect(x + 26, y + 68, 204, 32)]
+        cajas = [pygame.Rect(x + px(2), y + px(3), px(124), px(31)),
+                 pygame.Rect(x + px(13), y + px(34), px(102), px(16))]
         cajas += [canon.caja(self) for canon in self.partes_vivas()]
         if self.laser_prendido:
             cajas.append(self.canon_actual().caja_laser(self))
@@ -264,7 +288,7 @@ class Fortaleza(Jefe):
 
     def x_sobre(self, x_centro):
         # La x de la Fortaleza para que su centro quede en x_centro (sin salirse)
-        return max(10, min(x_centro - ANCHO / 2, lienzo.ancho - ANCHO - 10))
+        return max(10, min(x_centro - ANCHO_FORTALEZA / 2, ANCHO - ANCHO_FORTALEZA - 10))
 
     # ---------- La marcha (con coraza) ----------
 
@@ -288,7 +312,7 @@ class Fortaleza(Jefe):
         nave_x = partida.nave.centro()[0]
         if primero.ataque == "laser":
             # Para barrer hacia vos, se pone del otro lado de la pantalla
-            lejos = lienzo.ancho * 0.8 if nave_x < lienzo.ancho / 2 else lienzo.ancho * 0.2
+            lejos = ANCHO * 0.8 if nave_x < ANCHO / 2 else ANCHO * 0.2
             self.destino_x = self.x_sobre(lejos)
         else:
             self.destino_x = self.x_sobre(nave_x + random.randint(-80, 80))
@@ -302,8 +326,8 @@ class Fortaleza(Jefe):
             self.barrido = 1 if nave_x > boca_x else -1
         elif canon.ataque == "minas":
             # Una mina donde estas y otra al azar (asi el aviso las muestra antes)
-            canon.objetivos = [(max(60, min(nave_x, lienzo.ancho - 60)), max(230, min(nave_y, 480))),
-                               (random.randint(60, lienzo.ancho - 60), random.randint(230, 480))]
+            canon.objetivos = [(max(60, min(nave_x, ANCHO - 60)), max(230, min(nave_y, 480))),
+                               (random.randint(60, ANCHO - 60), random.randint(230, 480))]
         self.cambiar_fase_pulsos("cargar", pulsos, partida.tiempo)
 
     def actualizar_fase(self, partida):
@@ -337,7 +361,7 @@ class Fortaleza(Jefe):
                     self.disparar(partida, canon, self.pulso)
                 if self.laser_prendido:
                     self.x = max(10, min(self.x + self.barrido * FORTALEZA_LASER_VELOCIDAD,
-                                         lienzo.ancho - ANCHO - 10))
+                                         ANCHO - ANCHO_FORTALEZA - 10))
                     boca_x = canon.boca(self)[0]
                     partida.efectos.particula(boca_x + random.randint(-8, 8), random.randint(200, ALTO),
                                               random.uniform(-2, 2), 0, ENERGIA, 10, 2)
@@ -348,7 +372,7 @@ class Fortaleza(Jefe):
             for canon in self.compas:
                 if canon.caliente and random.random() < 0.3:
                     boca_x, boca_y = canon.boca(self)
-                    partida.efectos.particula(boca_x + random.randint(-12, 12), boca_y - random.randint(4, 28),
+                    partida.efectos.particula(boca_x + random.randint(-px(6), px(6)), boca_y - random.randint(4, px(14)),
                                               0, -1, FUEGO, 16, 2)
             sin_calientes = not any(c.caliente and c.viva() for c in self.compas)
             if self.fin_de_fase(ahora) or sin_calientes:
@@ -364,8 +388,8 @@ class Fortaleza(Jefe):
     def chispas_de_carga(self, partida, canon):
         if random.random() < 0.5:
             boca_x, boca_y = canon.boca(self)
-            chispa_x = boca_x + random.randint(-24, 24)
-            chispa_y = boca_y + random.randint(-10, 30)
+            chispa_x = boca_x + random.randint(-px(12), px(12))
+            chispa_y = boca_y + random.randint(-px(5), px(15))
             partida.efectos.particula(chispa_x, chispa_y, (boca_x - chispa_x) * 0.1, (boca_y - chispa_y) * 0.1,
                                       [(40, 40, 60), canon.color, BLANCO], 12, 2)
 
@@ -375,14 +399,14 @@ class Fortaleza(Jefe):
                 continue
             if random.random() < (0.08 if not canon.viva() else 0.05):
                 boca_x, boca_y = canon.boca(self)
-                partida.efectos.particula(boca_x + random.randint(-8, 8), boca_y - 20, 0, -1, HUMO, 30, 4)
+                partida.efectos.particula(boca_x + random.randint(-px(4), px(4)), boca_y - px(10), 0, -1, HUMO, 30, 4)
 
     def recalentar(self, partida):
         for canon in self.compas:
             if canon.viva():
                 canon.caliente = True
                 boca_x, boca_y = canon.boca(self)
-                partida.efectos.explosion(boca_x, boca_y - 14, FUEGO, 10, 3, 3)
+                partida.efectos.explosion(boca_x, boca_y - px(7), FUEGO, 10, 3, 3)
         self.cambiar_fase_pulsos("recalentado", FORTALEZA_RECALENTADO, partida.tiempo)
 
     def disparar(self, partida, canon, pulso):
@@ -438,7 +462,8 @@ class Fortaleza(Jefe):
         if fase == "descubrirse":
             nucleo_x, nucleo_y = self.centro_nucleo()
             if random.random() < 0.4:
-                partida.efectos.explosion(nucleo_x + random.randint(-30, 30), nucleo_y + random.randint(-24, 24),
+                partida.efectos.explosion(nucleo_x + random.randint(-px(15), px(15)),
+                                          nucleo_y + random.randint(-px(12), px(12)),
                                           FUEGO, 8, 3, 3)
             if self.fin_de_fase(ahora):
                 self.caer_coraza(partida)
@@ -456,7 +481,8 @@ class Fortaleza(Jefe):
             # Se pone encima tuyo (el aviso marca la columna donde va a caer)
             self.x += (self.x_sobre(partida.nave.centro()[0]) - self.x) * 0.12
             if self.fin_de_fase(ahora):
-                self.cambiar_fase_pulsos("fijar", 1, ahora)
+                self.cambiar_fase_pulsos("fijar", FORTALEZA_FIJAR, ahora)
+                partida.entrada.vibrar("aviso_jefe")       # ya no te sigue: ¡a salir de abajo!
 
         elif fase == "fijar":
             # Deja de seguirte y junta fuerzas: el tiempo justo para salir de abajo
@@ -474,7 +500,8 @@ class Fortaleza(Jefe):
         elif fase == "aturdida":
             if random.random() < 0.25:
                 nucleo_x, nucleo_y = self.centro_nucleo()
-                partida.efectos.particula(nucleo_x + random.randint(-20, 20), nucleo_y + random.randint(-20, 20),
+                partida.efectos.particula(nucleo_x + random.randint(-px(10), px(10)),
+                                          nucleo_y + random.randint(-px(10), px(10)),
                                           random.uniform(-1, 1), random.uniform(-2, 0), ORO, 12, 2)
             if self.fin_de_fase(ahora):
                 self.cambiar_fase_pulsos("subir", 3, ahora)
@@ -485,8 +512,8 @@ class Fortaleza(Jefe):
                 self.empezar_cortinas(partida)
 
     def y_suelo(self):
-        # Hasta donde cae: el casco (88 px de alto) queda apoyado abajo de todo
-        return ALTO - 100
+        # Hasta donde cae: el casco queda apoyado abajo de todo (los cañones ya no estan)
+        return ALTO - ABAJO_CASCO
 
     def caer_coraza(self, partida):
         self.con_coraza = False
@@ -495,15 +522,15 @@ class Fortaleza(Jefe):
         partida.efectos.explosion(nucleo_x, nucleo_y, FUEGO, 50, 9, 5)
         partida.efectos.anillo(nucleo_x, nucleo_y, EMBESTIDA, 32, 7, 4)
         partida.efectos.sacudir(25, MAGENTA)
-        partida.efectos.texto_flotante("¡SIN CORAZA!", nucleo_x, nucleo_y + 90, MAGENTA)
-        partida.entrada.vibrar(0.8, 1, 400)
+        partida.efectos.texto_flotante("¡SIN CORAZA!", nucleo_x, nucleo_y + px(45), MAGENTA)
+        partida.entrada.vibrar("coraza")
         partida.congelar_frames = 6
         partida.sonidos.reproducir("golpe")
         self.empezar_cortinas(partida)
 
     def empezar_cortinas(self, partida):
         # Dos cortinas con el hueco en tercios distintos de la pantalla (hay que moverse)
-        tercios = [lienzo.ancho * (i + 0.5) / 3 for i in range(3)]
+        tercios = [ANCHO * (i + 0.5) / 3 for i in range(3)]
         primero = random.choice(tercios)
         segundo = random.choice([t for t in tercios if t != primero])
         self.huecos = [primero + random.randint(-40, 40), segundo + random.randint(-40, 40)]
@@ -511,22 +538,22 @@ class Fortaleza(Jefe):
 
     def soltar_cortina(self, partida, hueco):
         rapidez = 3.6 * partida.reglas["velocidad"]
-        for x in range(24, lienzo.ancho, 72):
+        for x in range(24, ANCHO, 72):
             if abs(x - hueco) > 90:
-                partida.balas.append(Escombro(x, self.y + 96, 0, rapidez))
+                partida.balas.append(Escombro(x, self.y + px(48), 0, rapidez))
         partida.efectos.sacudir(4)
         partida.sonidos.reproducir("golpe")
 
     def estrellarse(self, partida):
         # Golpe contra el piso: temblor, pedazos y dos ondas de choque a los costados
-        centro_x = self.x + ANCHO / 2
+        centro_x = self.x + ANCHO_FORTALEZA / 2
         piso = ALTO - 14
         rapidez = 4.5 * partida.reglas["velocidad"]
         partida.balas.append(Onda(self.x + 10, piso, -rapidez, 0))
-        partida.balas.append(Onda(self.x + ANCHO - 10, piso, rapidez, 0))
+        partida.balas.append(Onda(self.x + ANCHO_FORTALEZA - 10, piso, rapidez, 0))
         partida.efectos.pedazos(centro_x, piso - 10, METAL, 16, 6)
         partida.efectos.sacudir(22, BLANCO)
-        partida.entrada.vibrar(1, 1, 300)
+        partida.entrada.vibrar("impacto_grande")
         partida.congelar_frames = 5
         partida.sonidos.reproducir("golpe")
         self.cambiar_fase_pulsos("aturdida", FORTALEZA_ATURDIDA, partida.tiempo)
@@ -554,7 +581,8 @@ class Fortaleza(Jefe):
             self.dibujar_aviso_cortina(pantalla, self.huecos[self.pulso // 2])
         elif self.fase in ("apuntar", "fijar") and dibujo.parpadeo(100 if self.fase == "apuntar" else 50):
             # La columna donde va a caer
-            columna = pygame.Rect(int(self.x) + 4, int(self.y) + 100, ANCHO - 8, ALTO - int(self.y) - 100)
+            columna = pygame.Rect(int(self.x) + px(2), int(self.y) + ABAJO_CASCO, ANCHO_FORTALEZA - px(4),
+                                  ALTO - int(self.y) - ABAJO_CASCO)
             for borde_y in range(columna.top, columna.bottom, 16):
                 pantalla.fill(ROJO, (columna.left, borde_y, 4, 8))
                 pantalla.fill(ROJO, (columna.right - 4, borde_y, 4, 8))
@@ -563,8 +591,8 @@ class Fortaleza(Jefe):
             nucleo_x, nucleo_y = self.centro_nucleo()
             for i in range(3):
                 angulo = partida.tiempo / 200 + i * 2.1
-                estrella_x = int(nucleo_x + math.cos(angulo) * 50) // 2 * 2
-                estrella_y = int(nucleo_y - 60 + math.sin(angulo) * 12) // 2 * 2
+                estrella_x = int(nucleo_x + math.cos(angulo) * px(25)) // 2 * 2
+                estrella_y = int(nucleo_y - px(30) + math.sin(angulo) * 12) // 2 * 2
                 pantalla.fill(AMARILLO, (estrella_x - 2, estrella_y - 6, 4, 12))
                 pantalla.fill(AMARILLO, (estrella_x - 6, estrella_y - 2, 12, 4))
 
@@ -575,11 +603,12 @@ class Fortaleza(Jefe):
         prendida = self.pulso % 4
         for i in range(4):
             color = AMARILLO if i == prendida else (70, 50, 0)
-            pantalla.fill(color, (int(self.x) + 106 + i * 12, int(self.y) + 88, 8, 6))
+            pantalla.fill(color, (int(self.x) + px(53 + i * 6), int(self.y) + px(44), px(4), px(3)))
 
     def dibujar_laser(self, pantalla):
         # Un rayo grueso que titila: borde cian y centro blanco
         rayo = self.canon_actual().caja_laser(self)
+        dibujo.resplandor_rect(pantalla, rayo, CIAN, 16)
         ancho = 16 if dibujo.parpadeo(60) else 12
         pantalla.fill(CIAN, (rayo.centerx - ancho // 2, rayo.top - 4, ancho, rayo.height + 4))
         pantalla.fill(BLANCO, (rayo.centerx - 3, rayo.top - 4, 6, rayo.height + 4))
@@ -620,7 +649,7 @@ class Fortaleza(Jefe):
 
     def dibujar_aviso_cortina(self, pantalla, hueco):
         # Rayitas rojas donde van a caer los escombros (y el hueco libre)
-        for x in range(24, lienzo.ancho, 72):
+        for x in range(24, ANCHO, 72):
             if abs(x - hueco) > 90:
-                pantalla.fill(ROJO, (x - 8, int(self.y) + 104, 16, 4))
-                pantalla.fill(ROJO, (x - 2, int(self.y) + 112, 4, 12))
+                pantalla.fill(ROJO, (x - 8, int(self.y) + ABAJO_CASCO + 4, 16, 4))
+                pantalla.fill(ROJO, (x - 2, int(self.y) + ABAJO_CASCO + 12, 4, 12))

@@ -8,15 +8,18 @@ import math
 
 import pygame
 
-from juego import recursos, lienzo
-from juego.dibujo import parpadeo
-from juego.config import (ALTO, CIAN, ENERGIA, MS_CUADRO_ESCUDO, NAVE_ACELERACION,
+from juego import recursos
+from juego.dibujo import parpadeo, pegar
+from juego.config import (ANCHO, ALTO, CIAN, ENERGIA, MS_CUADRO_ESCUDO, NAVE_ACELERACION,
                           NAVE_FRICCION, NAVE_FRENADO, NAVE_VELOCIDAD_GIRO, DASH_FUERZA, DASH_DURACION,
                           BUFFER_DASH, RADIO_NAVE)
 
 TAMANO = 50
+PASOS_GIRO = 72             # angulos distintos que se guardan (cada 5 grados)
+ESCALONES_INCLINACION = 4   # inclinaciones distintas que se guardan
 
 _imagenes = {}      # se cargan la primera vez que se usan
+_giradas = {}       # (nombre, paso de angulo, escalon de inclinacion) -> imagen girada (ver girada)
 _color = [None]     # color de la nave elegida (None = el del sprite). Ver NAVES en config.py
 
 
@@ -24,6 +27,7 @@ def cambiar_color(color):
     # Otra nave (se desbloquean con logros): las imagenes se vuelven a armar con ese color
     _color[0] = color
     _imagenes.clear()
+    _giradas.clear()
 
 
 def imagen(nombre="nave"):
@@ -38,6 +42,48 @@ def imagen(nombre="nave"):
         _imagenes.update(nave=nave, icono=icono, icono_vacio=icono_vacio,
                          fantasma=recursos.tenir(nave, CIAN))
     return _imagenes[nombre]
+
+
+def girada(nombre, angulo, inclinacion=0):
+    # La imagen girada sin romper el pixel art (un metodo tipo "RotSprite"): se agranda
+    # 8 veces con Scale2x (redondea los bordes sin inventar colores), se gira, y se
+    # achica tomando el pixel del centro de cada bloque de 8x8. Con rotate() directo, los
+    # pixeles salian torcidos y de distinto tamaño. Cada angulo (de a 5 grados) e
+    # inclinacion se calcula una sola vez y se guarda
+    paso = round(angulo / (360 / PASOS_GIRO)) % PASOS_GIRO
+    escalon = round(inclinacion * ESCALONES_INCLINACION)
+    clave = (nombre, paso, escalon)
+    if clave not in _giradas:
+        base = imagen(nombre)
+        if escalon:
+            # Al ladearse se ve mas angosta (hasta un 35%)
+            ancho = round(TAMANO * (1 - escalon / ESCALONES_INCLINACION * 0.35))
+            base = pygame.transform.scale(base, (ancho, TAMANO))
+        grande = pygame.transform.scale2x(pygame.transform.scale2x(pygame.transform.scale2x(base)))
+        grande = pygame.transform.rotate(grande, paso * 360 / PASOS_GIRO)
+        ancho, alto = grande.get_size()
+        con_margen = pygame.Surface((ancho + 8, alto + 8), pygame.SRCALPHA)
+        con_margen.blit(grande, (0, 0))
+        centros = con_margen.subsurface((4, 4, ancho // 8 * 8, alto // 8 * 8))
+        _giradas[clave] = pygame.transform.scale(centros, (ancho // 8, alto // 8))
+    return _giradas[clave]
+
+
+def preparar_giros(cantidad):
+    # Calcula de antemano 'cantidad' giros que todavia no estan guardados (primero los de
+    # la nave derecha, despues los ladeados y los fantasmas del dash). Se llama de a poco
+    # desde los menus, asi en la partida ninguno se calcula por primera vez (~4 ms cada uno)
+    for escalon in range(ESCALONES_INCLINACION + 1):
+        for nombre in ("nave", "fantasma"):
+            if nombre == "fantasma" and escalon:
+                continue
+            for paso in range(PASOS_GIRO):
+                if (nombre, paso, escalon) in _giradas:
+                    continue
+                girada(nombre, paso * 360 / PASOS_GIRO, escalon / ESCALONES_INCLINACION)
+                cantidad -= 1
+                if cantidad <= 0:
+                    return
 
 
 class Nave:
@@ -135,11 +181,11 @@ class Nave:
                 self.fantasmas.remove(fantasma)
 
         # Limites de la pantalla (al chocar con un borde se pierde esa velocidad)
-        if self.x < 0 or self.x > lienzo.ancho - TAMANO:
+        if self.x < 0 or self.x > ANCHO - TAMANO:
             self.vx = 0
         if self.y < 0 or self.y > ALTO - TAMANO:
             self.vy = 0
-        self.x = max(0, min(self.x, lienzo.ancho - TAMANO))
+        self.x = max(0, min(self.x, ANCHO - TAMANO))
         self.y = max(0, min(self.y, ALTO - TAMANO))
 
     def _acelerar(self, dx, dy, vel_max):
@@ -211,9 +257,9 @@ class Nave:
     def dibujar_fantasmas(self, pantalla):
         # Copias cian de la nave que deja el dash; se apagan poco a poco
         for fantasma in self.fantasmas:
-            copia = pygame.transform.rotate(imagen("fantasma"), fantasma[2])
+            copia = girada("fantasma", fantasma[2]).copy()     # (copia: la girada esta guardada)
             copia.set_alpha(fantasma[3] * 18)
-            pantalla.blit(copia, copia.get_rect(center=(fantasma[0] + 25, fantasma[1] + 25)))
+            pegar(pantalla, copia, fantasma[0] + 25, fantasma[1] + 25, centrado=True)
 
     def dibujar(self, pantalla, tiempo, restante_escudo):
         cx, cy = self.centro()
@@ -222,18 +268,16 @@ class Nave:
             cuadros = recursos.hoja("escudo.png", 76)
             if cuadros:
                 burbuja = recursos.cuadro_animado(cuadros, MS_CUADRO_ESCUDO)
-                pantalla.blit(burbuja, burbuja.get_rect(center=(int(cx), int(cy))))
+                pegar(pantalla, burbuja, cx, cy, centrado=True)
             else:
                 pygame.draw.circle(pantalla, CIAN, (int(cx), int(cy)), 36, 3)
         # Si es invulnerable, parpadea
         if self.invulnerable(tiempo) and not parpadeo(60):
             return
-        # Al ladearse se ve mas angosta (hasta un 35%)
-        ancho = round(TAMANO * (1 - self.inclinacion * 0.35))
-        dibujo_nave = pygame.transform.scale(imagen("nave"), (ancho, TAMANO))
-        dibujo_nave = pygame.transform.rotate(dibujo_nave, self.angulo)
+        # Girada (y mas angosta si esta ladeada) sin romper el pixel art: ver girada()
+        dibujo_nave = girada("nave", self.angulo, self.inclinacion)
         # Casi quieta, flota subiendo y bajando de a 2 pixeles
         flotar = 0
         if math.hypot(self.vx, self.vy) < 1:
             flotar = round(math.sin(pygame.time.get_ticks() / 250)) * 2
-        pantalla.blit(dibujo_nave, dibujo_nave.get_rect(center=(cx, cy + flotar)))
+        pegar(pantalla, dibujo_nave, cx, cy + flotar, centrado=True)

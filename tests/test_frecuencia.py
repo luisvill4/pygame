@@ -7,13 +7,13 @@ import json
 import pygame
 import pytest
 
-from juego.config import MS_POR_FRAME, FRECUENCIAS, NAVE_VELOCIDAD, NAVE_ACELERACION
+from juego.config import ANCHO, ALTO, MS_POR_FRAME, FRECUENCIAS, NAVE_VELOCIDAD, NAVE_ACELERACION
 from juego.efectos import Efectos
 from juego.guardado import Opciones as OpcionesGuardadas
 from juego.escenas.juego import Juego
 from juego.escenas.opciones import Opciones
 from juego.interpolacion import Interpolador
-from tests.ayudas import avanzar, tecla, empezar_partida
+from tests.ayudas import avanzar, tecla, empezar_partida, ir_al_ajuste
 
 
 def empezar(app):
@@ -90,7 +90,7 @@ def test_interpolacion():
 def test_el_temblor_dura_pasos_de_logica_no_cuadros():
     efectos = Efectos()
     efectos.sacudir(10)
-    pantalla = pygame.Surface((800, 600))
+    pantalla = pygame.Surface((ANCHO, ALTO))
     for _ in range(50):         # muchos cuadros dibujados (ej: a 144 FPS)...
         efectos.dibujar_temblor_y_destello(pantalla)
     assert efectos.temblor == 10                # ...no lo gastan
@@ -101,8 +101,7 @@ def test_el_temblor_dura_pasos_de_logica_no_cuadros():
 
 def test_opcion_fps_en_el_menu(app, tmp_path):
     app.cambiar_escena(Opciones(app, volver_a=app.escena))
-    tecla(pygame.K_DOWN)
-    tecla(pygame.K_DOWN)        # fila FPS
+    ir_al_ajuste(app, "FPS")
     tecla(pygame.K_RIGHT)
     avanzar(app)
     assert app.opciones.fps == 90

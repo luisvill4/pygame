@@ -10,8 +10,8 @@ O de contraatacar: un dash contra el en plena embestida lo INTERCEPTA (queda atu
 import math
 import random
 
-from juego import recursos, dibujo, lienzo
-from juego.config import MAGENTA, ROJO, EMBESTIDA, RANGO_EMBESTIDOR, ATURDIDO_INTERCEPTAR
+from juego import recursos, dibujo
+from juego.config import ANCHO, CENTRO_X, MAGENTA, ROJO, EMBESTIDA, RANGO_EMBESTIDOR, ATURDIDO_INTERCEPTAR
 from juego.enemigos.base import Enemigo, registrar_enemigo
 
 _blanco = []        # primer cuadro en blanco (respaldo si falta el sprite de carga)
@@ -88,9 +88,9 @@ class Embestidor(Enemigo):
         # Despacio y de vez en cuando cambia de rumbo
         if random.random() < 0.01:
             self.rumbo = random.uniform(0, 2 * math.pi)
-        if self.x <= 0 or self.x >= lienzo.ancho - 40 or self.y <= 0 or self.y >= 560:
+        if self.x <= 0 or self.x >= ANCHO - 40 or self.y <= 0 or self.y >= 560:
             # Contra un borde: vuelve hacia el centro de la pantalla
-            self.rumbo = math.atan2(300 - (self.y + 20), lienzo.centro_x() - (self.x + 20))
+            self.rumbo = math.atan2(300 - (self.y + 20), CENTRO_X - (self.x + 20))
         self.vx += (math.cos(self.rumbo) * 0.5 - self.vx) * 0.05
         self.vy += (math.sin(self.rumbo) * 0.5 - self.vy) * 0.05
 
@@ -110,10 +110,10 @@ class Embestidor(Enemigo):
                 pantalla.fill(ROJO, (int(punto_x) // 2 * 2, int(punto_y) // 2 * 2, 4, 4))
         carga = recursos.sprite("embestidor_carga.png")
         if carga is not None:
-            pantalla.blit(carga, (self.x, self.y))
+            dibujo.pegar(pantalla, carga, self.x, self.y)
         elif dibujo.parpadeo(80):
             if not _blanco:
                 _blanco.append(recursos.blanquear(self.cuadros()[0]))
-            pantalla.blit(_blanco[0], (self.x, self.y))
+            dibujo.pegar(pantalla, _blanco[0], self.x, self.y)
         else:
             self.dibujar_animado(pantalla)

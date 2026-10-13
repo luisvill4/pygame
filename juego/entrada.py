@@ -9,13 +9,17 @@ agregar otro control, tocando solo este archivo.
   las usa (consumir()).
 - Movimiento: direccion() lee las flechas mantenidas o, si no hay, el mando
   (cruceta en 8 direcciones, stick izquierdo en cualquier angulo).
+- Vibracion: vibrar("nombre") toca un patron de config.VIBRACIONES (ver haptica.py).
+- Ultimo control usado: usando_mando() dice si lo ultimo que se toco fue el mando o el
+  teclado. Las ayudas de pantalla muestran los botones de ese control (como en las consolas).
 """
 import math
 
 import pygame
 
-from juego.config import (BOTON_A, BOTON_B, BOTON_X, BOTON_VISTA, BOTON_MENU,
+from juego.config import (BOTON_A, BOTON_B, BOTON_X, BOTON_LB, BOTON_RB, BOTON_VISTA, BOTON_MENU,
                           ZONA_MUERTA, ZONA_MUERTA_NAVE)
+from juego.haptica import Haptica
 
 # Acciones
 ACEPTAR = "aceptar"
@@ -29,6 +33,9 @@ IZQUIERDA = "izquierda"
 DERECHA = "derecha"
 SILENCIO = "silencio"           # M: apaga o prende todo el sonido (en cualquier pantalla)
 PANTALLA_COMPLETA = "pantalla_completa"     # F11
+DESARROLLADOR = "desarrollador"             # F1: el panel del modo desarrollador (en la partida)
+PESTANA_ANTERIOR = "pestana_anterior"       # LB o Q: la pestaña de la izquierda (en los menus con pestañas)
+PESTANA_SIGUIENTE = "pestana_siguiente"     # RB o E: la de la derecha
 
 # Que acciones dispara cada tecla
 TECLAS = {
@@ -44,6 +51,9 @@ TECLAS = {
     pygame.K_RIGHT: [DERECHA],
     pygame.K_m: [SILENCIO],
     pygame.K_F11: [PANTALLA_COMPLETA],
+    pygame.K_F1: [DESARROLLADOR],
+    pygame.K_q: [PESTANA_ANTERIOR],
+    pygame.K_e: [PESTANA_SIGUIENTE],
 }
 
 # Que accion dispara cada boton del mando (B solo vuelve: en el juego no pausa)
@@ -53,6 +63,8 @@ BOTONES = {
     BOTON_X: DASH,
     BOTON_MENU: PAUSA,
     BOTON_VISTA: OPCIONES,
+    BOTON_LB: PESTANA_ANTERIOR,
+    BOTON_RB: PESTANA_SIGUIENTE,
 }
 
 
@@ -74,6 +86,8 @@ class Entrada:
         self.cerrar = False                 # se cerro la ventana
         self.foco_perdido = False           # la ventana perdio el foco (Alt+Tab...)
         self.mando_desconectado = False     # se desconecto un mando que se estaba usando
+        self.con_mando = False              # lo ultimo que se toco fue el mando (para las ayudas)
+        self.haptica = Haptica(self.mandos)  # la vibracion (usa el mismo diccionario de mandos)
         # Funcion que dice que teclas estan mantenidas (se puede reemplazar en los tests)
         self.teclas_mantenidas = pygame.key.get_pressed
 
@@ -86,6 +100,7 @@ class Entrada:
                 self.cerrar = True
             elif evento.type == pygame.KEYDOWN:
                 self.acciones.extend(TECLAS.get(evento.key, []))
+                self.con_mando = False
             elif evento.type == pygame.WINDOWFOCUSLOST:
                 self.foco_perdido = True
             else:
@@ -97,15 +112,20 @@ class Entrada:
             if self.usar_mandos:
                 mando = pygame.joystick.Joystick(evento.device_index)
                 self.mandos[mando.get_instance_id()] = mando
+                self.con_mando = True
         elif evento.type == pygame.JOYDEVICEREMOVED:
             if evento.instance_id in self.mandos:
                 self.mando_desconectado = True
                 del self.mandos[evento.instance_id]
+                self.con_mando = bool(self.mandos)
         elif evento.type == pygame.JOYBUTTONDOWN:
+            self.con_mando = True
             if evento.button in BOTONES:
                 self.acciones.append(BOTONES[evento.button])
         elif evento.type == pygame.JOYHATMOTION:
             cruceta_x, cruceta_y = evento.value
+            if evento.value != (0, 0):
+                self.con_mando = True
             if cruceta_x == -1:
                 self.acciones.append(IZQUIERDA)
             elif cruceta_x == 1:
@@ -117,6 +137,8 @@ class Entrada:
         elif evento.type == pygame.JOYAXISMOTION and evento.axis in (0, 1):
             # El stick cuenta como un toque solo cuando recien se inclina
             direccion = direccion_stick(evento.value)
+            if direccion != 0:
+                self.con_mando = True
             if direccion != self.stick_antes[evento.axis]:
                 if evento.axis == 0 and direccion == -1:
                     self.acciones.append(IZQUIERDA)
@@ -164,13 +186,16 @@ class Entrada:
     def hay_mando(self):
         return len(self.mandos) > 0
 
+    def usando_mando(self):
+        # ¿Lo ultimo que se toco fue el mando? (y sigue conectado)
+        return self.con_mando and self.hay_mando()
+
     def ayuda(self, con_teclado, con_mando):
-        # Texto de ayuda segun lo que se este usando
-        if self.hay_mando():
+        # Texto de ayuda segun el ultimo control que se toco
+        if self.usando_mando():
             return con_mando
         return con_teclado
 
-    def vibrar(self, suave, fuerte, ms):
-        # Vibracion de todos los mandos: dos motores de 0 a 1 (suave = grave, fuerte = agudo)
-        for mando in self.mandos.values():
-            mando.rumble(suave, fuerte, ms)
+    def vibrar(self, nombre, fuerza=1):
+        # Vibra con un patron de config.VIBRACIONES (fuerza: multiplica todo)
+        self.haptica.reproducir(nombre, fuerza)

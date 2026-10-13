@@ -24,8 +24,8 @@ import random
 
 import pygame
 
-from juego import dibujo, lienzo
-from juego.config import (ALTO, BLANCO, AMARILLO, ROJO, ORO, FUEGO, ANOMALIA_DURACION,
+from juego import dibujo
+from juego.config import (ANCHO, ALTO, BLANCO, AMARILLO, ROJO, ORO, FUEGO, ANOMALIA_DURACION,
                           ASTEROIDES_ESPERA, ASTEROIDES_AVISO, ASTEROIDES_VELOCIDAD,
                           TORMENTA_AVISO, TORMENTA_LLAMARADA, TORMENTA_CALMA, TORMENTA_ANCHO,
                           NIEBLA_RADIO, ORO_MULTIPLICADOR, ORO_COMBO)
@@ -108,8 +108,8 @@ class LluviaDeAsteroides(Anomalia):
             nave_x, _ = partida.nave.centro()
             x = nave_x + random.randint(-60, 60)
         else:
-            x = random.randint(20, lienzo.ancho - 20)
-        return max(20, min(x, lienzo.ancho - 20))
+            x = random.randint(20, ANCHO - 20)
+        return max(20, min(x, ANCHO - 20))
 
     def terminar(self, partida):
         self.avisos.clear()
@@ -166,10 +166,10 @@ class TormentaSolar(Anomalia):
         nave_x, nave_y = partida.nave.centro()
         corrimiento = random.randint(-40, 40)
         if random.random() < 0.5:
-            x = max(0, min(nave_x + corrimiento - TORMENTA_ANCHO // 2, lienzo.ancho - TORMENTA_ANCHO))
+            x = max(0, min(nave_x + corrimiento - TORMENTA_ANCHO // 2, ANCHO - TORMENTA_ANCHO))
             return pygame.Rect(int(x), 0, TORMENTA_ANCHO, ALTO)
         y = max(0, min(nave_y + corrimiento - TORMENTA_ANCHO // 2, ALTO - TORMENTA_ANCHO))
-        return pygame.Rect(0, int(y), lienzo.ancho, TORMENTA_ANCHO)
+        return pygame.Rect(0, int(y), ANCHO, TORMENTA_ANCHO)
 
     def quemar(self, partida):
         nave = partida.nave
@@ -207,6 +207,10 @@ class TormentaSolar(Anomalia):
                     pantalla.fill(color, capa)
 
 
+BANDAS_NIEBLA = (200, 160, 115, 70, 30)    # transparencia del borde de la niebla, de afuera hacia adentro
+ANCHO_BANDA_NIEBLA = 10                     # px de cada banda
+
+
 @registrar_anomalia
 class Niebla(Anomalia):
     # Solo se ve cerca de la nave. De los enemigos lejanos se ven solo los ojos,
@@ -224,16 +228,19 @@ class Niebla(Anomalia):
     def dibujar(self, pantalla, partida):
         radio = self.radio(partida)
         nave_x, nave_y = partida.nave.centro()
-        # Se dibuja a un cuarto del tamaño y se agranda x4: bordes pixelados, como en las consolas
-        chica = pygame.Surface((lienzo.ancho // 4 + 1, ALTO // 4), pygame.SRCALPHA)
+        # Se dibuja a la mitad del tamaño y se agranda x2: bordes en escalones de 2 px (la
+        # cuadricula del juego). El borde del agujero se desvanece en BANDAS_NIEBLA bandas
+        chica = pygame.Surface((ANCHO // 2 + 1, ALTO // 2), pygame.SRCALPHA)
         # Bruma del color del sector (un poco mas clara que el espacio: se nota que es niebla)
         sector = partida.director.sector
-        r, g, b = (fondo + color // 6 for fondo, color in zip(sector["fondo"], sector["color"]))
+        r, g, b = (fondo + color // 7 for fondo, color in zip(sector["fondo"], sector["color"]))
         chica.fill((r, g, b, 235))
-        centro = (int(nave_x) // 4, int(nave_y) // 4)
-        pygame.draw.circle(chica, (r, g, b, 150), centro, int(radio + 32) // 4)
-        pygame.draw.circle(chica, (r, g, b, 0), centro, int(radio) // 4)
-        pantalla.blit(pygame.transform.scale(chica, (chica.get_width() * 4, ALTO)), (0, 0))
+        centro = (int(nave_x) // 2, int(nave_y) // 2)
+        for i, alfa in enumerate(BANDAS_NIEBLA):
+            borde = (len(BANDAS_NIEBLA) - i) * ANCHO_BANDA_NIEBLA
+            pygame.draw.circle(chica, (r, g, b, alfa), centro, int(radio + borde) // 2)
+        pygame.draw.circle(chica, (r, g, b, 0), centro, int(radio) // 2)
+        pantalla.blit(pygame.transform.scale(chica, (chica.get_width() * 2, ALTO)), (0, 0))
         self.dibujar_lo_que_brilla(pantalla, partida, radio)
 
     def dibujar_lo_que_brilla(self, pantalla, partida, radio):
@@ -279,7 +286,7 @@ class FiebreDelOro(Anomalia):
     def actualizar(self, partida):
         # Polvo dorado que cae por toda la pantalla
         if random.random() < 0.5:
-            partida.efectos.particula(random.randint(0, lienzo.ancho), random.randint(0, ALTO),
+            partida.efectos.particula(random.randint(0, ANCHO), random.randint(0, ALTO),
                                       0, 0.6, ORO, 40, 2)
 
     def multiplicador_monedas(self):
