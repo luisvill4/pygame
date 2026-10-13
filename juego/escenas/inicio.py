@@ -62,6 +62,8 @@ def altura_nave():
 
 
 class Inicio(Escena):
+    musica = "menu"
+
     def __init__(self, app):
         super().__init__(app)
         self.opcion = 0                     # elegida en MENU

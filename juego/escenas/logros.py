@@ -37,6 +37,8 @@ TILDE = [
 
 
 class Logros(Escena):
+    musica = "menu"
+
     def __init__(self, app, volver_a):
         super().__init__(app)
         self.volver_a = volver_a

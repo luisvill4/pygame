@@ -92,8 +92,7 @@ class App:
         partida = Partida(self.efectos, self.sonidos, self.entrada, self.records, self.opciones, dificultad,
                           self.progreso)
         self.sonidos.reproducir("seleccion")
-        self.sonidos.empezar_musica()
-        self.cambiar_escena(Listo(self, partida))
+        self.cambiar_escena(Listo(self, partida))      # Listo pide la musica del juego
 
     # ---------- El bucle ----------
 
@@ -109,6 +108,8 @@ class App:
 
     def _paso_de_logica(self):
         self._atajos()
+        if self.escena.musica is not None:
+            self.sonidos.tocar_musica(self.escena.musica)      # si ya suena, no hace nada
         self.escena.actualizar(self.entrada)
         self.entrada.haptica.actualizar()       # los patrones de vibracion siguen con su paso
         self.entrada.consumir()

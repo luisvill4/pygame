@@ -43,6 +43,7 @@ ATRASO_MAXIMO = 250             # ms: si la ventana se trabo mas que esto, no se
 RESOLUCIONES = [("1066x600", 1066, 600), ("1280x720", 1280, 720), ("1600x900", 1600, 900),
                 ("1920x1080", 1920, 1080), ("COMPLETA", 0, 0)]
 VOLUMEN_MAX = 10                # pasos de la barra de volumen (tambien es el volumen de fabrica)
+FUNDIDO_MUSICA = 700            # ms que tarda un tema en apagarse (y el nuevo en subir) al cambiar
 
 # Archivos que escribe el juego (se crean solos si no existen)
 NOMBRE_RECORDS = "records.json"

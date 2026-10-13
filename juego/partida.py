@@ -351,7 +351,7 @@ class Partida:
 
         if self.vidas <= 0:
             # Gran explosion de la nave; el Game Over aparece despues
-            self.sonidos.parar_musica()
+            self.sonidos.parar_musica(fundido=0)       # se corta en seco
             self.efectos.explosion(nave_x, nave_y, FUEGO, 90, 10, 6)
             self.efectos.explosion(nave_x, nave_y, ORO, 30, 5, 4)
             self.efectos.sacudir(35, BLANCO)

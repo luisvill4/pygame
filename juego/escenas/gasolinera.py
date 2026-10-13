@@ -64,6 +64,8 @@ VENDEDOR = [".XXXXX.",
 
 
 class Gasolinera(Escena):
+    musica = "gasolinera"
+
     def __init__(self, app, escena_juego):
         super().__init__(app)
         self.escena_juego = escena_juego

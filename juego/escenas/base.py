@@ -19,6 +19,10 @@ from juego.config import REACCION_PARALAJE
 
 
 class Escena:
+    # El tema que suena en esta escena ("menu", "juego", "jefe", "gasolinera", ver sonido.py).
+    # None = no la cambia: sigue la que venia (Pausa, Opciones) o el silencio (Game Over)
+    musica = None
+
     def __init__(self, app):
         self.app = app
         self.inicio = app.ahora()       # momento (reloj real) en que empezo la escena

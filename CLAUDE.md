@@ -5,7 +5,7 @@ Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge moneda
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~358 tests, unos 60 s, sin ventana
+python -m pytest        # ~364 tests, unos 80 s, sin ventana
 ```
 - Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
 - **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json`, `progreso.json` y `__pycache__`.
@@ -42,7 +42,8 @@ juego/
   avisos.py             # Aviso + ColaDeAvisos: los carteles de arriba salen de a uno (solo logica)
   carteles.py           # el dibujo de los carteles: pancarta, fichas, logro, momentos (franjas) y rango
 tests/                  # conftest.py (fixtures app/partida), ayudas.py, test_*.py
-sprites/ efectos/ fuentes/   # recursos (ver "Sprites"); efectos/ son los sonidos
+herramientas/componer_musica.py  # compositor chiptune: temas (menu, jefe, gasolinera) y efectos -> efectos/ (ver "Sonido y música")
+sprites/ efectos/ fuentes/   # recursos (ver "Sprites"); efectos/ son los sonidos y la musica
 records.json            # top 5 POR DIFICULTAD: {"FACIL": [{"nombre", "puntos"}...], "NORMAL": [...], ...}
                         # (un archivo viejo con una sola lista pasa a ser la tabla de NORMAL)
 config.json             # {"resolucion", "fps", "volumen" (0-10), "musica", "efectos", "aviso_jefe", "vibracion",
@@ -200,7 +201,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - **Listo**: una franja de lado a lado que se abre (`carteles.franja`), con el sector y la dificultad (`interfaz.renglon`) y READY? / GO!.
 - **Explosion**: cámara lenta los primeros `CAMARA_LENTA` ms (los efectos se actualizan un paso sí y uno no), una viñeta roja en escalones que se cierra y "NAVE DESTRUIDA".
 - **Iniciales**: panel con el puntaje, el puesto que vas a ocupar y tres casillas grandes.
-- `App.nueva_partida(dificultad=None)`: sin dificultad, usa `opciones.dificultad`. Reinicia los efectos, vuelve el fondo a los colores del primer sector, crea una `Partida`, suena "seleccion", arranca la música y pasa a `Listo`.
+- `App.nueva_partida(dificultad=None)`: sin dificultad, usa `opciones.dificultad`. Reinicia los efectos, vuelve el fondo a los colores del primer sector, crea una `Partida`, suena "seleccion" y pasa a `Listo` (que pide la música del juego: ver "Sonido y música").
 - **Dificultad** (`escenas/dificultad.py`): las cuatro arriba (`FILA_DIFICULTADES`, con `dibujo.pestanas`), la `TARJETA` de la elegida en un panel y flechas grandes a los costados. IZQ/DER cambian con animación. El nombre entra deslizándose (`PASOS_ANIMACION`) y destella, las calaveras (`CALAVERA`, pixel art de 7x7) aparecen de a una, saltan chispas con la `paleta` de la dificultad y PESADILLA hace temblar la pantalla. ENTER guarda `opciones.dificultad` y empieza; ESC vuelve al inicio.
 - **Modo desarrollador** (`escenas/desarrollador.py`, pedido del usuario para probar jefes, enemigos y power-ups): F1 (acción `DESARROLLADOR`) en Juego, solo si `config.MODO_DESARROLLADOR`. Como la Pausa: guarda `escena_juego` y la captura, pausa sonido y vibración, y la partida no corre.
   - `FILAS` = JEFE, ENEMIGO, POWER-UP (IZQ/DER elige de `ELEGIBLES`, que sale de los registros: un tipo nuevo aparece solo; sin esbirros), ANOMALIA (`director.empezar_anomalia(tipo)`; con un jefe no se puede; los nombres largos usan el tipo), INVENCIBLE, LIMPIAR, GASOLINERA (+`CREDITOS_DE_PRUEBA` y abre la tienda) y VOLVER (`FILA_Y` 188 y `ALTO_FILA` 33 para que entren las 8). ENTER vuelve al juego y después llama a `hacer(fila)` (así el sonido no queda en pausa); F1/ESC vuelven sin hacer nada. `_elegido` (del módulo) recuerda la última elección.
@@ -401,9 +402,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - **Guardado:** `TablaRecords`, con una tabla por dificultad: `filas(dif)`, `maximo(dif)`, `entra(puntos, dif)` y `agregar(nombre, puntos, dif)` → posición. `Opciones` guarda además `dificultad` (la última elegida).
   - Si el archivo no existe, se crea; si está dañado, se usan los valores de fábrica.
   - Si no se puede escribir, el juego sigue (`_escribir_json` ignora `OSError`).
-- **Sonido:** `Sonidos.reproducir(nombre)`, `empezar_musica()`/`parar_musica()`, `pausar_todo()`/`reanudar_todo()` y `aplicar_volumen(opciones)`.
-  - Si no hay audio o falta un archivo, ese sonido no suena.
-  - Desactivar la música o los efectos los deja en volumen 0, así la música retoma donde iba. Para agregar un sonido: sumarlo a `ARCHIVOS`.
+- **Sonido y música:** ver la sección "Sonido y música" (más abajo).
 - **Ventana:** el lienzo es `app.pantalla` y `Ventana.mostrar()` lo escala sin suavizar, centrado y con barras negras.
   - `resoluciones` (propiedad) son las de `RESOLUCIONES` (todas 16:9) que caben en el monitor; "COMPLETA" siempre está. `aplicar(nombre)` abre la ventana por nombre.
   - **Trampa:** al salir de FULLSCREEN, el primer `set_mode` deja el tamaño anterior; `aplicar()` lo repite.
@@ -412,6 +411,102 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - **Ambiente del bioma** (`sector["ambiente"]`, `Mota`s con tope `MAXIMO_MOTAS`): asteroides + estrellas fugaces, brasas que suben + relámpagos (`relampago`), luciérnagas + esporas, panal de fondo (`panal()`, baldosa que se desplaza) + polen, polvo que gira hacia el centro + ondas de gravedad. Al cambiar de sector, las motas viejas se van apagando de a poco.
 
 - **Logros** (`logros.py`): `Logro(id, nombre ≤16, descripcion ≤36, condicion)`; `revisar_logros(partida, progreso)` devuelve los nuevos y los desbloquea (`Progreso.desbloquear` guarda). `NAVES` en config: (nombre, color o None, id del logro o None); `Progreso.naves_disponibles()` y `color_nave()`. Las estadísticas (`estadisticas.py`) las suma la Partida: monedas, creditos (ganados), enemigos, dashes, perfectos, mejor_cadena, powerups, desafios, sectores_limpios, rangos, mejoras.
+
+## Sonido y música
+Todo el audio pasa por `juego/sonido.py` (el servicio `app.sonidos`). Los temas de menú, jefe y gasolinera son chiptune **hecho con código** por `herramientas/componer_musica.py`; `musica.mp3` (la del juego) y los 6 efectos `.wav` vinieron hechos. Tests: `tests/test_musica.py` (se verificó que detecta tres errores inyectados: sin música del jefe, sin la de la gasolinera y la música que no se corta al morir).
+
+### Cómo suena en el juego (`sonido.py`)
+- **Dos diccionarios** (nombre → archivo en `efectos/`): `MUSICAS` ("juego" `musica.mp3`, "menu", "jefe", "gasolinera" `.ogg`) y `EFECTOS` ("game_over", "moneda", "golpe", "powerup" = `moneda_brillante.wav`, "seleccion", "nuevo_record"). `cargar(archivos)` los abre con `pygame.mixer.Sound` y saltea los que fallan (sin placa de audio o archivo que falta: ese sonido no suena y nada se rompe). Se guardan en `_cache` del módulo (archivo → Sound): abrir los 4 temas tarda ~0.3 s y los tests crean una App por test (sin caché eran ~100 s más). El caché comparte los objetos `Sound` entre Apps: su volumen es uno solo.
+- **Efectos:** `sonidos.reproducir(nombre)` → `Sound.play()` en cualquier canal libre. La Partida lo llama con `self.sonidos`, las escenas con `self.app.sonidos`.
+- **Música por escena (patrón State):** cada escena tiene el atributo de clase `musica` (`Escena.musica = None` en `escenas/base.py`). `App._paso_de_logica` hace, antes de cada `escena.actualizar`, `if self.escena.musica is not None: self.sonidos.tocar_musica(self.escena.musica)`. `None` significa "no la cambio": sigue la que venía (o el silencio).
+
+  | Escena | `musica` |
+  |---|---|
+  | Inicio, Dificultad, Logros | `"menu"` |
+  | Listo | `"juego"` (`App.nueva_partida` ya no arranca la música: lo hace Listo) |
+  | Juego | **propiedad**: `None` si `partida.termino`; `"jefe"` si `partida.jefe is not None` (desde que llega, con la ALERTA, hasta que termina de explotar); si no, `"juego"` |
+  | Gasolinera | `"gasolinera"` (al salir vuelve al mismo Juego, que pide la suya) |
+  | Pausa, Opciones, Taller, Desarrollador, Explosion, Iniciales, Fin | `None` |
+
+- `tocar_musica(nombre)`: si `nombre == self.actual` no hace nada (por eso se puede llamar en cada paso). Si no, `parar_musica()` (el tema viejo baja en `FUNDIDO_MUSICA` ms, `config.py`, 700) y el nuevo arranca **desde el principio** con `Channel.play(sonido, loops=-1, fade_ms=FUNDIDO_MUSICA)`: un fundido cruzado. Un nombre que no está en `MUSICAS` (o cuyo archivo falló) deja `actual = nombre` en silencio.
+- **Los dos "tocadiscos":** `pygame.mixer.set_reserved(2)` reserva los canales 0 y 1 solo para la música (`self.tocadiscos`); `Sound.play()` de los efectos no puede robárselos. El tema nuevo va al que no está sonando (el otro puede estar apagando el viejo). Quedan 6 canales para efectos (pygame trae 8; si se agregan muchos efectos simultáneos, subirlos con `pygame.mixer.set_num_channels`).
+- `parar_musica(fundido=FUNDIDO_MUSICA)`: apaga el tocadiscos actual (`fadeout`; con `fundido=0`, `stop` en seco) y deja `actual = None`. Al perder la última vida (`Partida.danar_jugador`) se usa `fundido=0`: la música se corta en seco y suena `game_over`; Explosion, Iniciales y Fin tienen `None`, así que sigue el silencio hasta que Listo (ENTER) o Inicio (ESC) pidan la suya. `Pausa._volver_al_menu()` llama a `parar_musica()` y el Inicio nuevo pide "menu".
+- **Pausa:** `pausar_todo()`/`reanudar_todo()` = `pygame.mixer.pause()/unpause()`, que congela TODOS los canales (música incluida) y retoma donde iban. Lo usan Juego (al abrir Pausa y Desarrollador) y Pausa.
+- **Volumen:** `aplicar_volumen(opciones)`: `Sound.set_volume(volumen / VOLUMEN_MAX)` a cada tema si `opciones.musica` y a cada efecto si `opciones.efectos`; apagado = volumen 0 (siguen sonando en silencio, así la música retoma donde iba). El fundido usa el volumen del canal, que es aparte: no se pisan. Lo llaman la App al arrancar, Opciones y el atajo M.
+- `sonidos.actual` es el nombre del tema que se pidió, **aunque no haya audio**: los tests lo usan (con el driver dummy pygame sí abre el mezclador, pero no hace falta).
+- **Trampas:**
+  - No usar `pygame.mixer.music`: es una sola pista (no hay fundido cruzado) y `mixer.pause()` no la pausa.
+  - `musica.mp3` es MP3: el formato agrega un silencio al principio, así que su vuelta tiene un hueco chiquito. Los temas nuevos son OGG y dan la vuelta perfecto.
+  - Volver a un tema (Gasolinera → Juego) lo empieza de cero. Si alguna vez se quiere retomar donde iba, hay que guardar el canal en vez de pararlo.
+
+### Para agregar un efecto o un tema al juego
+1. Poner el archivo en `efectos/` (o componerlo, ver abajo).
+2. Efecto: sumarlo a `EFECTOS` y llamar a `sonidos.reproducir("nombre")` donde pase la cosa (en la lógica, nunca en `dibujar`). Tema: sumarlo a `MUSICAS` y ponerlo en el `musica` de la escena (o en la propiedad de Juego, si depende de la partida).
+3. Si cambia qué suena en una escena, sumar un caso a `tests/test_musica.py` (se mira `app.sonidos.actual`) y actualizar la tabla de arriba.
+
+### El compositor (`herramientas/componer_musica.py`)
+```
+python herramientas/componer_musica.py                  # compone todo lo de COMPOSICIONES
+python herramientas/componer_musica.py musica_jefe      # solo esos nombres
+```
+- Solo biblioteca de Python (`wave`, `array`, `math`, `random`); tarda ~10 s por tema. Escribe en `efectos/<nombre>.wav` y, si hay `ffmpeg` y es música, lo pasa a OGG Vorbis (`-q:a 5`, ~500 KB por 40 s) y borra el WAV. Sin ffmpeg deja el WAV y avisa (hay que poner `.wav` en `MUSICAS`). Es determinista: el ruido de la batería sale de `random.Random(nombre)`, así que volver a componer da el mismo archivo.
+- **Registro:** `COMPOSICIONES` = nombre del archivo (sin extensión) → función que arma y devuelve un `Tema`. Para un tema o efecto nuevo: escribir la función y sumarla ahí.
+- **Mono, 44100 Hz, 16 bits.** `mezclar()` suma las voces (cada una con su volumen), normaliza al pico y redondea con `tanh` (sin recortes duros) a un pico de 0.6 → **volumen medio ~-13 a -14 dB, igual que `musica.mp3`**. Como se normaliza, los volúmenes de las voces solo importan **entre ellas**. Para medir: `ffmpeg -i efectos/x.ogg -af volumedetect -f null -` (mirar `mean_volume`).
+
+#### `Tema(nombre, bpm, acordes, swing=0.0, vuelta=True)`
+- `acordes`: **un acorde por compás**; la cantidad de compases del tema es `len(acordes)`. Compás de 4/4 = **16 pasos de semicorchea** (`PASOS_POR_COMPAS`); `paso` = 60 / bpm / 4 segundos.
+- Acordes: fundamental (`C D E F G A B`, con `#` o `b`) + tipo de `TIPOS_ACORDE`: `""` mayor [0, 4, 7], `"m"` menor [0, 3, 7], `"7"` [0, 4, 7, 10], `"m7"` [0, 3, 7, 10], `"maj7"` [0, 4, 7, 11]. Ej.: `"Am"`, `"Bb"`, `"F#m7"`, `"Bbmaj7"`. Para otro tipo (sus4, dim...), sumarlo a `TIPOS_ACORDE`.
+- `swing`: atrasa la segunda corchea de cada tiempo (los pasos con `paso % 4 == 2`) `swing × 2` pasos. 0 = recto, 0.3 = jazz suave.
+- `vuelta=True` (música): **todo da la vuelta**. Las pistas miden exactamente los compases y cada muestra se escribe en `índice % largo`: la cola de las notas y los ecos que se pasan del final se suman al principio. Así el loop no hace clic. `vuelta=False` (efecto): se agregan `COLA_EFECTO` (2 s) de lugar, el eco no lee hacia atrás del principio, `recortar_silencio()` corta el final callado (deja 10 ms) y se guarda como WAV.
+- Cada método agrega **una voz** (una pista con su volumen). Se pueden llamar las veces que haga falta (dos melodías, dos baterías...).
+
+#### Las voces
+| Método | Qué escribe | Notación |
+|---|---|---|
+| `melodia(grilla, instrumento, volumen, eco=0)` | una línea de notas | grilla de **todo el tema** |
+| `bateria(grilla, volumen)` | bombo, caja, platillos | grilla de **todo el tema** |
+| `bajo(patron, instrumento, volumen)` | el bajo, siguiendo los acordes | patrón de **un compás** (se repite en cada uno) |
+| `arpegio(orden, instrumento, volumen, eco=0)` | una nota del acorde por semicorchea | lista de índices (se repite) |
+| `acompanar(patron, instrumento, volumen)` | el acorde entero (todas sus notas juntas) | patrón de **un compás** |
+
+- **Grilla** (como un tracker): símbolos separados por espacios, un símbolo = una semicorchea. `|` separa compases y se ignora (solo ayuda a leer; escribir 2 compases por renglón). `pasos_de()` **comprueba que haya exactamente `compases × 16` pasos** y si no tira `AssertionError` con cuántos hay: así se encuentra el compás al que le falta o sobra uno.
+  - Melodía: una nota (`A4`, `C#5`, `Bb4`, `Db5`: letra, alteración opcional y octava; `A4` = 440 Hz, `C4` = Do central) empieza ahí; `.` la sigue sosteniendo; `-` es silencio. `"A4 . . . C5 . E5 ."` = A4 una negra, C5 y E5 corcheas. Cada nota suena el 90 % de su largo (`legato`), así se separan.
+  - Batería: `K` bombo, `S` caja, `h` platillo cerrado, `H` platillo abierto; `-` o `.` nada. Un golpe por paso (para bombo y platillo juntos, otra voz de `bateria`).
+  - Truco para repetir: `" | ".join(["K - h - S - h - K - h K S - h h"] * 15 + ["...remate..."])`. Para una voz que solo entra en una parte, rellenar el resto con `"- " * 16` por compás (como el riff del jefe).
+- **Patrón de `bajo`**: 16 símbolos: `R` fundamental, `3` tercera del acorde (mayor o menor según el tipo), `5` quinta, `6` sexta mayor, `7` séptima (la del acorde, o menor si es tríada), `8` octava; `.` sostiene, `-` silencio. La fundamental cae entre Mi2 y Re#3 (MIDI 40-51), el registro de un bajo de consola.
+- **`arpegio(orden)`**: cada número es una nota del acorde contando desde abajo (0 fundamental, 1 tercera, 2 quinta, en una tríada 3 = la fundamental una octava arriba, 4 la tercera arriba...). Empieza en la octava 4 (MIDI 60 + fundamental). `[0, 1, 2, 3, 4, 3, 2, 1]` sube y baja; `[0, 2, 1, 2]` es más nervioso. Legato 0.7 (notas cortitas).
+- **Patrón de `acompanar`**: `X` toca el acorde (sus notas acomodadas entre Fa3 y Mi4, MIDI 53-64), `.` lo sostiene, `-` nada. `"- - - - X . - - - - X . - - - X"` = golpes a contratiempo, tipo bossa. Divide el volumen por 3 (son 3-4 notas juntas).
+- **`eco`**: dos repeticiones a 3 semicorcheas (corchea con puntillo), de fuerza `eco` y `eco²`. 0.2-0.3 da profundidad a melodías y arpegios.
+
+#### Instrumentos (`Instrumento(onda, ciclo, ataque, caida, sostenido, liberacion, vibrato, suavizado)`)
+- `onda`: `"pulso"` (cuadrada; `ciclo` = qué parte está arriba: 0.125 nasal y fino, 0.25 el clásico de NES, 0.5 redondo y hueco) o `"triangulo"` (en 16 escalones como la NES: suave, para bajos).
+- Envolvente: sube en `ataque` s, cae hacia `sostenido` (0-1) con constante `caida` s, y al soltar se apaga en `liberacion` s. Corto y sin sostenido = percusivo (campana, pizzicato); sostenido alto = órgano.
+- `vibrato`: cuánto se mueve la afinación (0.003-0.005), a 5.5 Hz, desde los 0.12 s de la nota. `suavizado`: filtro de un polo (1 = sin filtro y brillante; 0.15-0.4 le saca lo áspero al pulso).
+- Los que hay: `PULSO_FINO` (12.5 %, corto: arpegios y riffs), `PULSO_MEDIO` (25 %, con vibrato: melodía principal), `PULSO_REDONDO` (50 %, largo; libre para usar), `CAMPANA` (25 %, cae rápido y deja cola: melodía de la gasolinera), `TECLADO` (50 % apagado y corto: acordes), `BAJO` (triángulo).
+- Batería (funciones, en `BATERIA`): `bombo` (seno que cae de 200 a 45 Hz), `caja` (ruido filtrado + un "toc" de 185 Hz), `platillo` (ruido agudo de 18 ms) y `platillo_abierto` (80 ms). Una percusión nueva: escribir la función `(pista, inicio, volumen, azar)` (escribiendo en `pista[(inicio + i) % len(pista)]` y usando `azar` para el ruido) y sumarla a `BATERIA` con una letra.
+
+#### Los temas que hay
+| Archivo | Tonalidad, BPM | Compases y acordes | Voces (volumen) |
+|---|---|---|---|
+| `musica_menu` (34 s) | La menor, 112 | 16: A `Am F C G` ×2, B `F G Em Am F G E E` (el Mi mayor tensa para volver a La) | melodía `PULSO_MEDIO` 0.30 eco 0.3, arpegio `PULSO_FINO` 0.11 eco 0.25, bajo 0.45, batería 0.35 |
+| `musica_jefe` (38 s) | Re menor, 150 | 24: A `Dm Dm Bb C Dm Dm Bb A`, B `Gm Dm Bb A Gm Dm E A`, C `Bb C Dm Dm Bb C A A` (riff de semicorcheas) | melodía 0.30 eco 0.2 (calla en C salvo dos frases), riff `PULSO_FINO` 0.26, arpegio 0.07, bajo en octavas 0.5, batería 0.4 que se pone más densa por sección y remata en el último compás |
+| `musica_gasolinera` (40 s) | Fa mayor, 96, swing 0.3 | 16: `Fmaj7 Dm7 Gm7 C7` ×2, `Bbmaj7 Bbm7 Am7 D7 Gm7 C7 Fmaj7 C7` | melodía `CAMPANA` 0.34 eco 0.3, acordes `TECLADO` 0.2, bajo caminando `R 3 5 6` 0.5, batería suave 0.25 |
+
+- El último compás de cada tema prepara la vuelta (en el menú, Mi mayor → La; en el jefe, el arpegio de La sube a Re). Al cambiar el final, que siga resolviendo en el primer acorde.
+- **Para una canción nueva:** elegir tonalidad y tempo según la escena (menús 100-115, acción 140-160, descanso 90-100 con swing), escribir los acordes (progresiones que funcionan: `vi-IV-I-V` como el menú, `i-VI-VII-V` como el jefe, `I-vi-ii-V` como la gasolinera), la melodía con notas del acorde de cada compás en los tiempos fuertes, y después bajo, arpegio/acompañamiento y batería. Variar cada 8 compases (sección B más aguda o más densa) para que la vuelta no canse. 16-24 compases dan 30-40 s.
+
+#### Ejemplo de efecto (vuelta=False)
+```python
+def efecto_jefe_vencido():
+    # Un arpegio que sube y un golpe: dura ~1.2 s y sale como WAV
+    tema = Tema("jefe_vencido", 180, ["C"], vuelta=False)
+    tema.melodia("C5 E5 G5 C6 . . . - - - - - - - - -", PULSO_MEDIO, 0.5, eco=0.3)
+    tema.bateria("K - - - - - - - - - - - - - - -", 0.4)
+    return tema
+
+COMPOSICIONES = {..., "jefe_vencido": efecto_jefe_vencido}
+```
+Después: `python herramientas/componer_musica.py jefe_vencido` → `efectos/jefe_vencido.wav`, sumarlo a `EFECTOS` y llamar a `reproducir("jefe_vencido")` donde corresponda (por ejemplo en `Partida.jefe_vencido()`). Para sonidos que no son notas (un láser que baja, una explosión), escribir una función como `bombo` (un seno o ruido con la frecuencia y el volumen cambiando en el tiempo) y usarla en una voz de batería de un efecto. Se probó que un efecto así sale de ~1.2 s, sin el silencio del final.
 
 ## Tests (`tests/`)
 - `conftest.py`:
@@ -434,7 +529,7 @@ Por fases, mostrando capturas antes/después:
 - **Hecho — Fase 3 (rediseño visible, después de que el usuario pidió "algo que parezca un triple A"):** el kit `interfaz.py`, LB/RB y Q/E en todos los menús con pestañas, ayudas con los botones del control que se usa, transiciones de rombos, cinemática de ALERTA para cada jefe, y rehechas a todo el ancho: Inicio, Opciones, Pausa, Taller, Gasolinera, Dificultad, Logros, Iniciales, Game Over, READY/GO y la muerte de la nave.
 - **Hecho — Fase 4 (impacto y mundo):** neón opcional (halos), ondas de choque, estelas y fogonazos de las balas, destello de la moneda, giro RotSprite de la nave, estrellas que titilan, salto al hiperespacio, niebla con borde en bandas y la opción ESCALADO SUAVE.
 - **Hecho — Fase 5 (carteles del juego):** cola de avisos, pancarta de arriba, fichas que esquivan el aviso, logro abajo, momentos en franjas y el panel del rango (ver "Carteles del juego").
-- **Lo que queda para el triple A** (lista que se le dio al usuario, en su orden): sonido (6 efectos para todo: `seleccion` suena en 24 lugares; sin música de menú, jefe ni gasolinera), impacto en el golpe final al jefe y al perder una vida (aviso de última vida), lo que quedó fuera de la grilla (íconos de vidas, MINI), presentación con logo/modo demostración/tutorial, accesibilidad (remapear controles, daltonismo, HUD más grande, modo asistido) y variantes de planetas por código.
+- **Lo que queda para el triple A** (lista que se le dio al usuario, en su orden): sonido (6 efectos para todo: `seleccion` suena en 24 lugares; la música de menú, jefe y gasolinera ya está), impacto en el golpe final al jefe y al perder una vida (aviso de última vida), lo que quedó fuera de la grilla (íconos de vidas, MINI), presentación con logo/modo demostración/tutorial, accesibilidad (remapear controles, daltonismo, HUD más grande, modo asistido) y variantes de planetas por código.
 
 ## Ideas pendientes (propuestas, aún sin hacer)
 - Propuestas no elegidas: Torreta + Mina, Ladrón + Escudero, Fantasma + Barrera + Élites, Los Gemelos, fase 2 del Ojo.

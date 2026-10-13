@@ -7,6 +7,8 @@ from juego.escenas.juego import Juego
 
 
 class Listo(Escena):
+    musica = "juego"
+
     def __init__(self, app, partida):
         super().__init__(app)
         self.partida = partida

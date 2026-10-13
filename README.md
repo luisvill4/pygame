@@ -146,6 +146,8 @@ Las peleas son un **baile**: cada jefe avisa antes de atacar, ataca al ritmo de 
 
 - **VIDEO:** RESOLUCION, FPS, CRT (las líneas de pantalla antigua: NO, SUAVE o NORMAL), ESCALADO (NITIDO, o SUAVE para que en pantallas grandes todos los píxeles se vean del mismo tamaño; es un poco más lento) y NEON (el brillo de las balas, la moneda, las cápsulas y las explosiones: NO, SUAVE o NORMAL).
 - **SONIDO:** VOLUMEN, MUSICA y EFECTOS (la tecla **M** apaga y prende todo el sonido).
+
+**Música:** cada pantalla tiene su tema y al cambiar se cruzan con un fundido: uno tranquilo en los menús, el de siempre al jugar, uno rápido contra los jefes y uno con swing en la gasolinera. Los temas de menú, jefe y gasolinera están hechos con código: `python herramientas/componer_musica.py` los vuelve a generar (las melodías están escritas como una grilla de notas, fáciles de cambiar; con ffmpeg instalado salen en OGG). El mismo compositor sirve para hacer efectos de sonido; CLAUDE.md (sección "Sonido y música") explica la notación, los instrumentos y cómo agregar un tema o un efecto al juego.
 - **ACCESIBILIDAD:** TEMBLOR (cuánto se sacude la pantalla con los golpes: NO, SUAVE o NORMAL; el marcador nunca tiembla), DESTELLOS (REDUCIDOS: sin destellos de pantalla completa y nada parpadea más de 3 veces por segundo, para personas con fotosensibilidad), AVISO JEFE y VIBRACION.
 
 El juego es panorámico (16:9): se dibuja en 1066x600 y se agranda a la ventana sin perder los píxeles. En **Opciones → VIDEO → RESOLUCION** se elige el tamaño de la ventana o la pantalla completa (también con **F11**).
@@ -191,6 +193,7 @@ juego/
   dibujo.py  efectos.py  fondo.py  hud.py
   accesibilidad.py      # temblor, destellos y CRT: todos los efectos le preguntan a este modulo
 tests/                  # pytest
+herramientas/componer_musica.py   # compone la musica chiptune (menu, jefe, gasolinera)
 ```
 
 ### Las ideas de diseño (y por qué)

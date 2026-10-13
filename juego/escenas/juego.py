@@ -24,6 +24,13 @@ class Juego(Escena):
         self.saltar_dibujo = False
         self.dash_pendiente = False     # dash apretado durante el hit-stop (sale al terminar)
 
+    @property
+    def musica(self):
+        # La del jefe mientras haya pelea; al morir la nave, silencio (la corto la Partida)
+        if self.partida.termino:
+            return None
+        return "jefe" if self.partida.jefe is not None else "juego"
+
     def actualizar(self, entrada):
         partida = self.partida
         if partida.termino:
