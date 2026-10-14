@@ -5,7 +5,7 @@ Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge moneda
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~460 tests, unos 45-90 s, sin ventana
+python -m pytest        # ~450 tests, unos 45-100 s, sin ventana
 ```
 - Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
 - **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json`, `progreso.json` y `__pycache__`.
@@ -45,9 +45,13 @@ juego/
 herramientas/
   componer.py           # compone musica y efectos con el estudio (python herramientas/componer.py [nombres] [--escuchar])
   estudio/              # el estudio: base, sintesis, bateria, procesos, instrumentos, obra, obras/ (ver "El estudio")
-  componer_musica.py    # el compositor VIEJO (chiptune): ya no hace sonidos del juego; sus temas van a herramientas/chiptune/
 tests/                  # conftest.py (fixtures app/partida), ayudas.py, test_*.py
-sprites/ efectos/ fuentes/   # recursos (ver "Sprites"); efectos/ son los sonidos y la musica
+sprites/ efectos/ fuentes/   # recursos (ver "Sprites"); efectos/ son los sonidos y la musica:
+efectos/                # todo OGG, por familia (la del modulo del estudio donde se compone):
+  fichas.json           #   cuanto suena cada archivo (lo escribe el estudio; lo lee el mezclador)
+  musica/ ambiente/     #   los temas y los loops de cada sector
+  interfaz/ juego/ enemigos/ director/ jefes/   # los efectos (efectos_interfaz.py -> interfaz/...)
+    moneda_1/           #   un efecto ARMONICO va en su carpeta con un archivo por color (moneda_1_fa.ogg...)
 records.json            # top 5 POR DIFICULTAD: {"FACIL": [{"nombre", "puntos"}...], "NORMAL": [...], ...}
                         # (un archivo viejo con una sola lista pasa a ser la tabla de NORMAL)
 config.json             # {"resolucion", "fps", "volumen", "volumen_musica", "volumen_efectos" (0-10), "silencio",
@@ -439,7 +443,8 @@ Todo el audio pasa por `juego/sonido.py` (el servicio `app.sonidos`).
   - todos los temas: `musica_juego` (con sus 4 variantes por sector, `musica_juego_2..5`), `musica_tension`, `musica_iniciales`, `musica_fin`, `musica_menu`, `musica_gasolinera` y los de los jefes.
 - **Los temas chiptune se rehicieron en el estudio** (2026-10-14, pedido del usuario: "que todos los efectos sean armónicos, lo mismo con la música, que parezca profesional"; eligió rehacerlos en vez de solo nivelarlos). Eran mono, ~2 dB más fuertes y de otra estética. Conservan su melodía, sus acordes y su carácter: `musica_menu` y `musica_gasolinera` en `obras/musica.py`, los 5 de jefe en `obras/musica_jefes.py`.
 - **Cada jefe tiene su tema**, todos en Re menor (los efectos de los jefes están en Re menor): `musica_jefe` (el Ojo), `_fortaleza` (marcha), `_serpiente` (swing y adornos frigios), `_colmena` (las alas zumban en el grave) y `_singularidad` (medio tiempo). En `Juego.musica`, `"jefe_" + jefe.tipo` si está en `MUSICAS`, si no `"jefe"`.
-- **El compositor viejo** (`herramientas/componer_musica.py`) ya no hace sonidos del juego: sus temas chiptune se guardan en `herramientas/chiptune/` (para escucharlos o compararlos; en `efectos/` pisarían los nuevos).
+- **El compositor viejo de chiptune se borró** (2026-10-14, con su test): ya no hacía ningún sonido del juego. Queda en el historial de git (commit `73a57fb`, `herramientas/componer_musica.py`).
+- **La carpeta `efectos/`** (2026-10-14, pedido del usuario: "organizar los efectos de sonido y revisar que no haya archivos huérfanos"): todo en **OGG** (los efectos estaban en WAV: 52 → 33 MB) y ordenado por familia, la del módulo del estudio donde se compone (`CARPETA_DEL_MODULO` y `ruta_relativa()` en `obras/__init__.py`). Un armónico va en su propia carpeta con sus 11 colores. **El juego busca cada archivo por su nombre** en cualquier subcarpeta (`sonido.ruta_del_sonido`, que recorre `efectos/` una vez): el catálogo no sabe de carpetas y los nombres no se pueden repetir. `test_cada_sonido_esta_en_la_carpeta_de_su_familia` lo comprueba (OGG, sin nombres repetidos, cada uno en su carpeta). La auditoría no encontró huérfanos: cada archivo está en el catálogo, cada sonido del catálogo se pide en el código, cada obra va al juego y cada ficha tiene su archivo.
 - **Los 6 efectos viejos y `musica.mp3` se borraron:** el usuario los eliminó y cada uso pasó a su sonido nuevo.
 - Mezclador hecho (fase A del mapa); P1, P2 y P3 compuestos y conectados: `LISTA_DE_SONIDOS.md` está completa.
 
@@ -452,7 +457,7 @@ Todo el audio pasa por `juego/sonido.py` (el servicio `app.sonidos`).
 - Los avisos de peligro terminan en tensión; `vulnerable` y los premios resuelven.
 - Los registros: la interfaz arriba (octavas 6-7), el peligro en el medio y los impactos con ruido grave.
 - El recorrido armónico de los momentos: jefe en Re menor → `jefe_vencido` en Re MAYOR → rango en Do (V de Fa) → gasolinera en Fa.
-- Las herramientas del compositor para efectos (`secuencia`, `barrido`, `ruido`, curvas, trémolo/vibrato, dinámicas) ya están (ver "El compositor").
+- Las herramientas para efectos (`secuencia`, `barrido`, `ruido`, curvas, trémolo/vibrato, dinámicas) están en el estudio (ver "El estudio").
 
 **Todo el sonido se hizo de cero** (decisión del usuario: "todos los efectos ya existentes hay que rehacerlos, desde cero con nueva temática").
 - Cada archivo de `efectos/` sale de una obra del estudio, salvo los tres temas que se quedan.
@@ -532,7 +537,6 @@ Al terminar un sonido: cambiar su estado, anotar el avance en el Registro y actu
     - el jefe con alerta y sus fases; la oleada, los menús, la pausa y la gasolinera.
     - Usa el fixture `pedidos`, que anota cada `reproducir`/`reproducir_luego`; los programados aparecen dos veces, al programarse y al sonar.
     - Se verificó que detecta 10 errores inyectados en el cableado.
-  - `tests/test_compositor.py`: las herramientas de efectos.
 - **Trampas:**
   - No usar `pygame.mixer.music`: es una sola pista (no hay fundido cruzado) y `mixer.pause()` no la pausa.
   - `canal.set_volume(izq, der)` va **después** de `play()`: play lo vuelve a 1.
@@ -600,8 +604,8 @@ python herramientas/componer.py --lista
 python herramientas/componer.py --fichas                # rehace efectos/fichas.json sin componer (~2 s)
 ```
 - **Fichas** (`efectos/fichas.json`): cada archivo que se compone anota cuánto suena (`envolvente` de un efecto: el pico de cada 50 ms; `nivel` de un tema: el percentil 95 de esos picos) y un tema también `acordes`, `colores` (uno por compás) y `compas_ms`. Las usa el mezclador del juego (limitador y armonía). `--fichas` las rehace leyendo los archivos (conserva los acordes y calcula los colores).
-- **Efectos armónicos** (`ARMONICOS` en `obras/__init__.py`): se componen una vez por color con `armonia.en_color` y se guardan en **OGG** (`moneda_1_fa.ogg`: son ~900, y en OGG pesan 6 veces menos; cargar uno tarda ~1.5 ms). Al componerlos se borra el WAV viejo sin color. Los demás efectos siguen en WAV.
-Por cada uno imprime la duración, el volumen (LUFS: el integrado en un tema, el bloque de 400 ms más fuerte en un efecto), el pico, el **brillo** (centroide; arriba de ~2500 Hz en música o ~4000 Hz en efectos empieza a sonar chillón) y el **estéreo** (correlación: 1 = mono). Temas en OGG Vorbis (`compression_level` 0.4, ~1 MB por 49 s), efectos en WAV de 16 bits. Todo es determinista: la semilla sale del nombre de la obra.
+- **Efectos armónicos** (`ARMONICOS` en `obras/__init__.py`): se componen una vez por color con `armonia.en_color` y se guardan en su propia carpeta, uno por color (`juego/moneda_1/moneda_1_fa.ogg`: son ~1070; cargar uno tarda ~1.5 ms).
+Por cada uno imprime la duración, el volumen (LUFS: el integrado en un tema, el bloque de 400 ms más fuerte en un efecto), el pico, el **brillo** (centroide; arriba de ~2500 Hz en música o ~4000 Hz en efectos empieza a sonar chillón) y el **estéreo** (correlación: 1 = mono). Todo en OGG Vorbis (`compression_level` 0.4, ~1 MB por 49 s de tema; un WAV pesa 6 veces más y no se oye la diferencia), en la carpeta de su familia (`guardar()`). Todo es determinista: la semilla sale del nombre de la obra.
 
 **Módulos:**
 - `base.py`: `FS`, `njit` (el de numba, o uno que no hace nada sin numba), `midi`/`hertz`/`a_hertz`, `leer_acorde` (`TIPOS_ACORDE` con sus4, add9, m9, 6/9, dim...; barra "C/E"), `db`, `curva(puntos, cuantas, exponencial)` (automatización vectorizada) y `muestras(segundos)`.
@@ -707,91 +711,6 @@ Por cada uno imprime la duración, el volumen (LUFS: el integrado en un tema, el
 - La FFT es circular: en un efecto, el ecualizador rellena 1 s de silencio a cada lado (si no, su "adelanto" aparecía al final y el recorte no cortaba nada).
 - `canal.set_volume` del juego y el volumen de los archivos son aparte: el volumen relativo entre efectos sale de la dinámica de cada uno, y la `MEZCLA` de `config.py` ajusta por categoría.
 - Un tema tarda ~80 s en componerse (casi todo es sintetizar las notas de los pads de 6 voces).
-
-### El compositor viejo (`herramientas/componer_musica.py`, chiptune: ya no hace sonidos del juego)
-Tiene los temas chiptune de antes (`musica_menu`, `musica_jefe`, `musica_gasolinera` y los cuatro de jefe), que el 2026-10-14 se rehicieron en el estudio. Los guarda en `herramientas/chiptune/` (nunca en `efectos/`), para escucharlos o compararlos. Sin ffmpeg guarda el OGG con soundfile (`_guardar_ogg`, de a bloques). Sus herramientas siguen con tests (`test_compositor.py`). Lo que sigue es su documentación.
-
-```
-python herramientas/componer_musica.py                  # compone todo lo de COMPOSICIONES
-python herramientas/componer_musica.py musica_jefe      # solo esos nombres
-python herramientas/componer_musica.py --escuchar x     # lo compone y lo hace sonar (componer de oido)
-```
-- Solo biblioteca de Python (`wave`, `array`, `math`, `random`); tarda ~10 s por tema. Escribe en `efectos/<nombre>.wav` y, si hay `ffmpeg` y es música, lo pasa a OGG Vorbis (`-q:a 5`, ~500 KB por 40 s) y borra el WAV. Sin ffmpeg deja el WAV y avisa (hay que poner `.wav` en `MUSICAS`). Es determinista: el ruido de la batería sale de `random.Random(nombre)`, así que volver a componer da el mismo archivo.
-- **Registro:** `COMPOSICIONES` = nombre del archivo (sin extensión) → función que arma y devuelve un `Tema`. Para un tema o efecto nuevo: escribir la función y sumarla ahí.
-- **Mono, 44100 Hz, 16 bits.** `mezclar()` suma las voces (cada una con su volumen), normaliza al pico y redondea con `tanh` (sin recortes duros) al pico de su **dinámica** (`DINAMICAS`: pp 0.1, p 0.18, mf 0.3, f 0.45, ff 0.6; la música va en ff = 0.6) → **volumen medio ~-13 a -14 dB, igual que `musica.mp3`**. Como se normaliza, los volúmenes de las voces solo importan **entre ellas**. Al guardar imprime cuánto dura y su pico y RMS en dB (`medir()`; el RMS es el volumen "que se siente": sirve para emparejar efectos).
-
-#### `Tema(nombre, bpm, acordes, swing=0.0, vuelta=True, dinamica="ff")`
-- `acordes`: **un acorde por compás**; la cantidad de compases del tema es `len(acordes)`. Compás de 4/4 = **16 pasos de semicorchea** (`PASOS_POR_COMPAS`); `paso` = 60 / bpm / 4 segundos.
-- Acordes: fundamental (`C D E F G A B`, con `#` o `b`) + tipo de `TIPOS_ACORDE`: `""` mayor [0, 4, 7], `"m"` menor [0, 3, 7], `"7"` [0, 4, 7, 10], `"m7"` [0, 3, 7, 10], `"maj7"` [0, 4, 7, 11]. Ej.: `"Am"`, `"Bb"`, `"F#m7"`, `"Bbmaj7"`. Para otro tipo (sus4, dim...), sumarlo a `TIPOS_ACORDE`.
-- `swing`: atrasa la segunda corchea de cada tiempo (los pasos con `paso % 4 == 2`) `swing × 2` pasos. 0 = recto, 0.3 = jazz suave.
-- `vuelta=True` (música): **todo da la vuelta**. Las pistas miden exactamente los compases y cada muestra se escribe en `índice % largo`: la cola de las notas y los ecos que se pasan del final se suman al principio. Así el loop no hace clic. `vuelta=False` (efecto): se agregan `COLA_EFECTO` (2 s) de lugar, el eco no lee hacia atrás del principio, `recortar_silencio()` corta el final callado (deja 10 ms) y se guarda como WAV.
-- Cada método agrega **una voz** (una pista con su volumen). Se pueden llamar las veces que haga falta (dos melodías, dos baterías...).
-
-#### Las voces
-| Método | Qué escribe | Notación |
-|---|---|---|
-| `melodia(grilla, instrumento, volumen, eco=0)` | una línea de notas | grilla de **todo el tema** |
-| `bateria(grilla, volumen)` | bombo, caja, platillos | grilla de **todo el tema** |
-| `bajo(patron, instrumento, volumen)` | el bajo, siguiendo los acordes | patrón de **un compás** (se repite en cada uno) |
-| `arpegio(orden, instrumento, volumen, eco=0)` | una nota del acorde por semicorchea | lista de índices (se repite) |
-| `acompanar(patron, instrumento, volumen)` | el acorde entero (todas sus notas juntas) | patrón de **un compás** |
-
-- **Grilla** (como un tracker): símbolos separados por espacios, un símbolo = una semicorchea. `|` separa compases y se ignora (solo ayuda a leer; escribir 2 compases por renglón). `pasos_de()` **comprueba que haya exactamente `compases × 16` pasos** y si no tira `AssertionError` con cuántos hay: así se encuentra el compás al que le falta o sobra uno.
-  - Melodía: una nota (`A4`, `C#5`, `Bb4`, `Db5`: letra, alteración opcional y octava; `A4` = 440 Hz, `C4` = Do central) empieza ahí; `.` la sigue sosteniendo; `-` es silencio. `"A4 . . . C5 . E5 ."` = A4 una negra, C5 y E5 corcheas. Cada nota suena el 90 % de su largo (`legato`), así se separan.
-  - Batería: `K` bombo, `S` caja, `h` platillo cerrado, `H` platillo abierto; `-` o `.` nada. Un golpe por paso (para bombo y platillo juntos, otra voz de `bateria`).
-  - Truco para repetir: `" | ".join(["K - h - S - h - K - h K S - h h"] * 15 + ["...remate..."])`. Para una voz que solo entra en una parte, rellenar el resto con `"- " * 16` por compás (como el riff del jefe).
-- **Patrón de `bajo`**: 16 símbolos: `R` fundamental, `3` tercera del acorde (mayor o menor según el tipo), `5` quinta, `6` sexta mayor, `7` séptima (la del acorde, o menor si es tríada), `8` octava; `.` sostiene, `-` silencio. La fundamental cae entre Mi2 y Re#3 (MIDI 40-51), el registro de un bajo de consola.
-- **`arpegio(orden)`**: cada número es una nota del acorde contando desde abajo (0 fundamental, 1 tercera, 2 quinta, en una tríada 3 = la fundamental una octava arriba, 4 la tercera arriba...). Empieza en la octava 4 (MIDI 60 + fundamental). `[0, 1, 2, 3, 4, 3, 2, 1]` sube y baja; `[0, 2, 1, 2]` es más nervioso. Legato 0.7 (notas cortitas).
-- **Patrón de `acompanar`**: `X` toca el acorde (sus notas acomodadas entre Fa3 y Mi4, MIDI 53-64), `.` lo sostiene, `-` nada. `"- - - - X . - - - - X . - - - X"` = golpes a contratiempo, tipo bossa. Divide el volumen por 3 (son 3-4 notas juntas).
-- **`eco`**: dos repeticiones a 3 semicorcheas (corchea con puntillo), de fuerza `eco` y `eco²`. 0.2-0.3 da profundidad a melodías y arpegios.
-
-#### Instrumentos (`Instrumento(onda, ciclo, ataque, caida, sostenido, liberacion, vibrato, suavizado)`)
-- `onda`: `"pulso"` (cuadrada; `ciclo` = qué parte está arriba: 0.125 nasal y fino, 0.25 el clásico de NES, 0.5 redondo y hueco) o `"triangulo"` (en 16 escalones como la NES: suave, para bajos).
-- Envolvente: sube en `ataque` s, cae hacia `sostenido` (0-1) con constante `caida` s, y al soltar se apaga en `liberacion` s. Corto y sin sostenido = percusivo (campana, pizzicato); sostenido alto = órgano.
-- `vibrato`: cuánto se mueve la afinación (0.003-0.005), a 5.5 Hz, desde los 0.12 s de la nota. `suavizado`: filtro de un polo (1 = sin filtro y brillante; 0.15-0.4 le saca lo áspero al pulso).
-- Los que hay: `PULSO_FINO` (12.5 %, corto: arpegios y riffs), `PULSO_MEDIO` (25 %, con vibrato: melodía principal), `PULSO_REDONDO` (50 %, largo; libre para usar), `CAMPANA` (25 %, cae rápido y deja cola: melodía de la gasolinera), `TECLADO` (50 % apagado y corto: acordes), `BAJO` (triángulo).
-- Batería (funciones, en `BATERIA`): `bombo` (seno que cae de 200 a 45 Hz), `caja` (ruido filtrado + un "toc" de 185 Hz), `platillo` (ruido agudo de 18 ms) y `platillo_abierto` (80 ms). Una percusión nueva: escribir la función `(pista, inicio, volumen, azar)` (escribiendo en `pista[(inicio + i) % len(pista)]` y usando `azar` para el ruido) y sumarla a `BATERIA` con una letra.
-
-#### Los temas que hay
-| Archivo | Tonalidad, BPM | Compases y acordes | Voces (volumen) |
-|---|---|---|---|
-| `musica_menu` (34 s) | La menor, 112 | 16: A `Am F C G` ×2, B `F G Em Am F G E E` (el Mi mayor tensa para volver a La) | melodía `PULSO_MEDIO` 0.30 eco 0.3, arpegio `PULSO_FINO` 0.11 eco 0.25, bajo 0.45, batería 0.35 |
-| `musica_jefe` (38 s) | Re menor, 150 | 24: A `Dm Dm Bb C Dm Dm Bb A`, B `Gm Dm Bb A Gm Dm E A`, C `Bb C Dm Dm Bb C A A` (riff de semicorcheas) | melodía 0.30 eco 0.2 (calla en C salvo dos frases), riff `PULSO_FINO` 0.26, arpegio 0.07, bajo en octavas 0.5, batería 0.4 que se pone más densa por sección y remata en el último compás |
-| `musica_gasolinera` (40 s) | Fa mayor, 96, swing 0.3 | 16: `Fmaj7 Dm7 Gm7 C7` ×2, `Bbmaj7 Bbm7 Am7 D7 Gm7 C7 Fmaj7 C7` | melodía `CAMPANA` 0.34 eco 0.3, acordes `TECLADO` 0.2, bajo caminando `R 3 5 6` 0.5, batería suave 0.25 |
-
-- El último compás de cada tema prepara la vuelta (en el menú, Mi mayor → La; en el jefe, el arpegio de La sube a Re). Al cambiar el final, que siga resolviendo en el primer acorde.
-- **Para una canción nueva:** elegir tonalidad y tempo según la escena (menús 100-115, acción 140-160, descanso 90-100 con swing), escribir los acordes (progresiones que funcionan: `vi-IV-I-V` como el menú, `i-VI-VII-V` como el jefe, `I-vi-ii-V` como la gasolinera), la melodía con notas del acorde de cada compás en los tiempos fuertes, y después bajo, arpegio/acompañamiento y batería. Variar cada 8 compases (sección B más aguda o más densa) para que la vuelta no canse. 16-24 compases dan 30-40 s.
-
-#### Herramientas de efectos (en segundos, no en la grilla)
-Para efectos, `nuevo_efecto(nombre, segundos, dinamica="mf")` da un `Tema` con lugar para esos segundos (más la cola, que se recorta al guardar). Sus voces se ubican en segundos (`inicio`):
-
-| Método | Qué hace |
-|---|---|
-| `secuencia("G5:40 C6:90 -:20 C5+E5+G5:300", instrumento, volumen, inicio, eco, retraso_eco=0.12, legato=0.9, tremolo, vibrato)` | notas seguidas con su duración en **ms**; `-` silencio, `+` notas juntas (un acorde) |
-| `barrido([(0, "A3"), (0.6, "Eb4")], instrumento, volumen, inicio, eco, retraso_eco, tremolo, vibrato)` | una nota que cambia de altura siguiendo la **curva** (puntos de segundo y nota o Hz) |
-| `ruido(segundos, volumen, inicio, filtro=[(0, 8000)], pasa_altos=None, forma=None, tremolo=None, chasquidos=0)` | ruido (sin altura: no desafina). `filtro` es la curva de cuánto agudo deja pasar (dos filtros de un polo seguidos); `pasa_altos` saca graves (vapor, platillos); `forma` es la curva del volumen (por defecto empieza de golpe y se apaga parejo); `chasquidos` = "crac" por segundo en vez de un soplido (brasas, cascabel) |
-
-- **Curvas** (`curva(puntos, t, exponencial)`): listas de `(segundo, valor)` unidas con rectas, como la automatización de un programa de música. Alturas y filtros usan la exponencial: el oído la oye pareja.
-- `tremolo=(desde_hz, hasta_hz, profundidad 0-1)` hace temblar el volumen y `vibrato=(desde_hz, hasta_hz, semitonos)` la afinación. Un `Oscilador` que se acelera si `hasta > desde`: alarmas, zumbidos, cargas que se apuran. Funcionan también en `Instrumento.tocar` (que ahora acepta la frecuencia como función del segundo).
-- Tests: `tests/test_compositor.py` (curvas, barrido, tiempos de la secuencia, filtro y su curva, chasquidos, trémolo, dinámica, recorte y `medir`). Se comprobó que los temas de siempre salen **idénticos** después de agregar esto (misma huella md5).
-
-#### Ejemplo de efecto
-```python
-def efecto_embestidor_apunta():
-    # 600 ms: sube cromaticamente de La3 a Mib4 (tritono: no resuelve) y el temblor se acelera
-    efecto = nuevo_efecto("embestidor_apunta", 0.6, "mf")
-    efecto.barrido([(0, "A3"), (0.6, "Eb4")], PULSO_FINO, 1.0, tremolo=(6, 16, 0.6))
-    return efecto
-
-def efecto_dash():
-    # Sin altura: el filtro del ruido sube en 60 ms y baja hasta los 180 (DASH_DURACION)
-    efecto = nuevo_efecto("nave_dash", 0.18, "mf")
-    efecto.ruido(0.18, 1.0, filtro=[(0, 800), (0.06, 6000), (0.18, 1000)], forma=[(0, 0), (0.01, 1), (0.18, 0)])
-    return efecto
-
-COMPOSICIONES = {..., "embestidor_apunta": efecto_embestidor_apunta, "nave_dash": efecto_dash}
-```
-Después: `python herramientas/componer_musica.py --escuchar nave_dash` → `herramientas/chiptune/nave_dash.wav` (y lo hace sonar). Sumarlo al `CATALOGO` y llamar a `reproducir("nave_dash")` donde corresponda. Variantes: la misma función con otros valores, registrada con otro nombre (`nave_dash_1`, `nave_dash_2`...).
 
 ## Tests (`tests/`)
 - `conftest.py`:

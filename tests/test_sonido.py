@@ -3,9 +3,9 @@ import pygame
 import pytest
 
 from juego import sonido
-from juego.sonido import (Sonidos, Efecto, CATALOGO, MUSICAS, AMBIENTES, MUSICA, EFECTOS, DETALLE, PELIGRO,
+from juego.sonido import (Sonidos, Efecto, CATALOGO, MUSICAS, AMBIENTES, ruta_del_sonido, MUSICA, EFECTOS, DETALLE, PELIGRO,
                           MOMENTO, PRIMER_CANAL_EFECTOS, paneo)
-from juego.config import (ruta, ANCHO, CANALES_AUDIO, MEZCLA, PANEO_MINIMO, ATENUAR_MUSICA, ATENUAR_VUELTA,
+from juego.config import (ANCHO, CANALES_AUDIO, MEZCLA, PANEO_MINIMO, ATENUAR_MUSICA, ATENUAR_VUELTA,
                           TECHO_MEZCLA, PISO_DETALLES, RECUPERACION_MEZCLA)
 from juego.escenas.opciones import Opciones as PantallaOpciones
 from tests.ayudas import avanzar, tecla, ir_al_ajuste
@@ -28,8 +28,7 @@ def mezclador(reloj, catalogo, **otros):
 def test_todos_los_archivos_existen():
     archivos = [a for efecto in CATALOGO.values() for a in efecto.archivos]
     for archivo in archivos + list(MUSICAS.values()) + list(AMBIENTES.values()):
-        with open(ruta("efectos/" + archivo), "rb"):
-            pass
+        assert ruta_del_sonido(archivo) is not None, archivo
 
 
 def test_el_paneo_sigue_a_la_x_sin_apagar_un_lado():
@@ -43,7 +42,7 @@ def test_el_paneo_sigue_a_la_x_sin_apagar_un_lado():
 
 
 def test_el_enfriamiento_no_deja_repetir_enseguida(app, reloj):
-    sonidos = mezclador(reloj, {"tic": Efecto("ui_error.wav", enfriamiento=100, voces=5)})
+    sonidos = mezclador(reloj, {"tic": Efecto("ui_error.ogg", enfriamiento=100, voces=5)})
     assert sonidos.reproducir("tic") is not None
     reloj[0] += 60
     assert sonidos.reproducir("tic") is None
@@ -52,7 +51,7 @@ def test_el_enfriamiento_no_deja_repetir_enseguida(app, reloj):
 
 
 def test_las_voces_cortan_al_mas_viejo(app, reloj):
-    sonidos = mezclador(reloj, {"largo": Efecto("game_over.wav", voces=2)})
+    sonidos = mezclador(reloj, {"largo": Efecto("game_over.ogg", voces=2)})
     primero = sonidos.reproducir("largo")
     reloj[0] += 10
     sonidos.reproducir("largo")
@@ -63,9 +62,9 @@ def test_las_voces_cortan_al_mas_viejo(app, reloj):
 
 
 def test_lo_importante_le_gana_el_canal_a_lo_menos_importante(app, reloj):
-    catalogo = {"detalle": Efecto("game_over.wav", prioridad=DETALLE, voces=99),
-                "peligro": Efecto("game_over.wav", prioridad=PELIGRO, voces=99),
-                "momento": Efecto("game_over.wav", prioridad=MOMENTO, voces=99)}
+    catalogo = {"detalle": Efecto("game_over.ogg", prioridad=DETALLE, voces=99),
+                "peligro": Efecto("game_over.ogg", prioridad=PELIGRO, voces=99),
+                "momento": Efecto("game_over.ogg", prioridad=MOMENTO, voces=99)}
     sonidos = mezclador(reloj, catalogo)
     for _ in range(CANALES_EFECTOS):
         assert sonidos.reproducir("peligro") is not None
@@ -78,14 +77,14 @@ def test_lo_importante_le_gana_el_canal_a_lo_menos_importante(app, reloj):
 
 
 def test_las_variantes_no_se_repiten(app, reloj):
-    sonidos = mezclador(reloj, {"v": Efecto(["ui_error.wav", "escudo_roto.wav", "nave_golpe.wav"], voces=9)})
+    sonidos = mezclador(reloj, {"v": Efecto(["ui_error.ogg", "escudo_roto.ogg", "nave_golpe.ogg"], voces=9)})
     elegidas = [sonidos._elegir_variante("v", sonidos.catalogo["v"]) for _ in range(30)]
     assert all(a is not b for a, b in zip(elegidas, elegidas[1:]))
     assert len({id(e) for e in elegidas}) == 3
 
 
 def test_un_momento_baja_la_musica_y_despues_vuelve(app, reloj):
-    sonidos = mezclador(reloj, {"fanfarria": Efecto("record.wav", prioridad=MOMENTO)})
+    sonidos = mezclador(reloj, {"fanfarria": Efecto("record.ogg", prioridad=MOMENTO)})
     assert sonidos.factor_musica() == 1.0
     sonidos.reproducir("fanfarria")
     dura = sonidos.variantes["fanfarria"][0].get_length() * 1000
@@ -97,7 +96,7 @@ def test_un_momento_baja_la_musica_y_despues_vuelve(app, reloj):
 
 
 def test_el_ducking_baja_solo_el_tema_que_suena(app, reloj):
-    sonidos = mezclador(reloj, {"fanfarria": Efecto("record.wav", prioridad=MOMENTO)})
+    sonidos = mezclador(reloj, {"fanfarria": Efecto("record.ogg", prioridad=MOMENTO)})
     sonidos.tocar_musica("menu")
     tema, otro = sonidos.musica.temas["menu"], sonidos.musica.temas["jefe"]
     sonidos.reproducir("fanfarria")
@@ -108,7 +107,7 @@ def test_el_ducking_baja_solo_el_tema_que_suena(app, reloj):
 
 
 def test_los_loops_no_se_duplican_y_se_paran(app, reloj):
-    catalogo = {"laser": Efecto("nave_golpe.wav"), "sirena": Efecto("escudo_roto.wav"), "otro": Efecto("ui_error.wav")}
+    catalogo = {"laser": Efecto("nave_golpe.ogg"), "sirena": Efecto("escudo_roto.ogg"), "otro": Efecto("ui_error.ogg")}
     sonidos = mezclador(reloj, catalogo)
     sonidos.tocar_loop("laser")
     sonidos.tocar_loop("laser")
@@ -147,7 +146,7 @@ def test_el_volumen_de_cada_categoria(app):
 def test_el_audio_mono_no_panea(app, reloj, monkeypatch):
     pedidos = []
     monkeypatch.setattr(sonido, "paneo", lambda x, mono=False: pedidos.append((x, mono)) or (1.0, 1.0))
-    sonidos = mezclador(reloj, {"tic": Efecto("ui_error.wav"), "menu": Efecto("ui_error.wav", paneo=False)})
+    sonidos = mezclador(reloj, {"tic": Efecto("ui_error.ogg"), "menu": Efecto("ui_error.ogg", paneo=False)})
     sonidos.aplicar_volumen(app.opciones)
     sonidos.reproducir("tic", 100)
     app.opciones.audio_mono = True
@@ -158,7 +157,7 @@ def test_el_audio_mono_no_panea(app, reloj, monkeypatch):
 
 
 def test_en_pausa_un_efecto_igual_toma_canal(app, reloj):
-    sonidos = mezclador(reloj, {"pausa": Efecto("ui_error.wav")})
+    sonidos = mezclador(reloj, {"pausa": Efecto("ui_error.ogg")})
     sonidos.pausar_todo()
     canal = sonidos.reproducir("pausa")
     sonidos.reanudar_todo()
@@ -206,8 +205,8 @@ def suma(sonidos, ahora):
 
 
 def test_muchos_efectos_juntos_no_pasan_del_techo(app, reloj):
-    catalogo = {"golpe": Efecto("game_over.wav", prioridad=PELIGRO, voces=99),
-                "detalle": Efecto("game_over.wav", prioridad=DETALLE, voces=99)}
+    catalogo = {"golpe": Efecto("game_over.ogg", prioridad=PELIGRO, voces=99),
+                "detalle": Efecto("game_over.ogg", prioridad=DETALLE, voces=99)}
     sonidos = mezclador(reloj, catalogo)
     assert sonidos.reproducir("golpe") is not None
     assert sonidos.bus == {"detalles": 1.0, "importantes": 1.0}         # uno solo entra entero
@@ -222,7 +221,7 @@ def test_muchos_efectos_juntos_no_pasan_del_techo(app, reloj):
 
 
 def test_cuando_se_despeja_el_volumen_vuelve_de_a_poco(app, reloj):
-    sonidos = mezclador(reloj, {"golpe": Efecto("game_over.wav", prioridad=PELIGRO, voces=99)})
+    sonidos = mezclador(reloj, {"golpe": Efecto("game_over.ogg", prioridad=PELIGRO, voces=99)})
     for _ in range(6):
         sonidos.reproducir("golpe")
     assert sonidos.bus["importantes"] < 1.0

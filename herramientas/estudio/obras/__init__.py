@@ -35,11 +35,33 @@ ARMONICOS = set(
        "enjambre_picada"] + _familia("rebote", 4))
 
 
-def obra(nombre):
+# La carpeta de efectos/ donde va cada obra: la de su familia, que es el modulo donde se
+# compone (efectos_juego.py -> efectos/juego/). Asi quien busca un sonido sabe donde esta el
+# archivo y donde se compone
+CARPETA_DEL_MODULO = {
+    "musica": "musica", "musica_jefes": "musica", "ambiente": "ambiente",
+    "efectos_interfaz": "interfaz", "efectos_juego": "juego", "efectos_enemigos": "enemigos",
+    "efectos_director": "director", "efectos_jefes": "jefes",
+}
+CARPETAS = {}   # nombre del archivo -> carpeta de su familia
+
+
+def obra(nombre, modulo=None):
+    # 'modulo': el de quien la compone (por defecto, el de la funcion; registrar_familia pasa el
+    # de su fabrica, porque la funcion que registra es una lambda escrita en efectos_interfaz)
     def registrar(funcion):
         OBRAS[nombre] = funcion
+        CARPETAS[nombre] = CARPETA_DEL_MODULO[(modulo or funcion.__module__).rsplit(".", 1)[-1]]
         return funcion
     return registrar
+
+
+def ruta_relativa(nombre, color=None):
+    # Donde se guarda, adentro de efectos/: "juego/fenix.ogg" o, un armonico, en una carpeta con
+    # sus colores: "juego/moneda_1/moneda_1_fa.ogg"
+    if color is None:
+        return "%s/%s.ogg" % (CARPETAS[nombre], nombre)
+    return "%s/%s/%s_%s.ogg" % (CARPETAS[nombre], nombre, nombre, color)
 
 
 def cargar_todas():

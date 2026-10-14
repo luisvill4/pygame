@@ -5,7 +5,7 @@ import pygame
 import pytest
 
 from juego.config import ruta, MS_POR_FRAME
-from juego.sonido import CATALOGO, MUSICAS, AMBIENTES, BLOQUE_FICHA, cargar_fichas
+from juego.sonido import CATALOGO, MUSICAS, AMBIENTES, BLOQUE_FICHA, cargar_fichas, ruta_del_sonido
 from tests.ayudas import avanzar, tecla, jugar
 
 
@@ -21,9 +21,31 @@ def pedidos(app):
 
 # ---------- Todo sale del estudio ----------
 
+def todos_los_archivos():
+    # [(carpeta relativa a efectos/, archivo)] de efectos/ y sus subcarpetas (sin fichas.json)
+    return [(os.path.relpath(raiz, ruta("efectos")).replace(os.sep, "/"), archivo)
+            for raiz, _, archivos in os.walk(ruta("efectos")) for archivo in archivos if archivo != "fichas.json"]
+
+
 def archivos_de_audio():
-    # Los sonidos de efectos/ (sin fichas.json)
-    return {archivo for archivo in os.listdir(ruta("efectos")) if archivo.endswith((".wav", ".ogg"))}
+    # Los nombres de los sonidos de efectos/ (en cualquier subcarpeta)
+    return {archivo for _, archivo in todos_los_archivos()}
+
+
+def test_cada_sonido_esta_en_la_carpeta_de_su_familia():
+    # efectos/ ordenada como el estudio: la carpeta de la familia (el modulo donde se compone) y,
+    # un armonico, su propia carpeta con sus colores. Todo en OGG y sin nombres repetidos: el
+    # juego busca cada archivo por su nombre
+    from herramientas.estudio.obras import cargar_todas, ARMONICOS, ruta_relativa
+    cargar_todas()
+    archivos = todos_los_archivos()
+    assert len(archivos) == len(archivos_de_audio())                    # sin nombres repetidos
+    for carpeta, archivo in archivos:
+        assert archivo.endswith(".ogg"), archivo
+        nombre = archivo[:-4]
+        obra, _, color = nombre.rpartition("_")
+        esperada = ruta_relativa(obra, color) if obra in ARMONICOS else ruta_relativa(nombre)
+        assert "%s/%s" % (carpeta, archivo) == esperada, archivo
 
 
 def test_todo_el_sonido_sale_del_estudio():
@@ -54,7 +76,7 @@ def test_cada_archivo_tiene_su_ficha(app):          # (app: abre el mixer)
         assert clave in fichas.get(archivo, {}), archivo
         if clave == "envolvente":
             # una envolvente por cada 50 ms del archivo
-            segundos = pygame.mixer.Sound(ruta("efectos/" + archivo)).get_length()
+            segundos = pygame.mixer.Sound(ruta_del_sonido(archivo)).get_length()
             assert abs(len(fichas[archivo][clave]) - segundos * 1000 / BLOQUE_FICHA) <= 1.5, archivo
 
 

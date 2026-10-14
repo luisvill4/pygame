@@ -138,7 +138,7 @@ def test_los_efectos_que_no_son_armonicos_suenan_siempre_igual(app):
     ir_al_compas(app, "juego", colores_de("juego").index("mi"))
     canal = app.sonidos.reproducir("nave_golpe")
     lugar = app.sonidos.canales_efectos.index(canal)
-    assert app.sonidos.en_canal[lugar].sonido is cargar("nave_golpe.wav")
+    assert app.sonidos.en_canal[lugar].sonido is cargar("nave_golpe.ogg")
     assert not sonido.CATALOGO["nave_golpe"].armonico
 
 

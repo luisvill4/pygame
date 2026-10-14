@@ -196,7 +196,6 @@ juego/
   accesibilidad.py      # temblor, destellos y CRT: todos los efectos le preguntan a este modulo
 tests/                  # pytest
 herramientas/componer.py          # el estudio: compone toda la musica y los efectos (y efectos/fichas.json)
-herramientas/componer_musica.py   # el compositor viejo (chiptune): ya no se usa; guarda en herramientas/chiptune/
 ```
 
 ### Las ideas de diseño (y por qué)

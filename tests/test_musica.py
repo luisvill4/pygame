@@ -1,16 +1,15 @@
 """Musica: cada escena pide su tema y la App lo cambia con un fundido."""
 import pygame
 
-from juego.sonido import MUSICAS, SILENCIO
-from juego.config import ruta, MS_POR_FRAME
+from juego.sonido import MUSICAS, SILENCIO, ruta_del_sonido
+from juego.config import MS_POR_FRAME
 from juego.hud import MS_ALERTA
 from tests.ayudas import avanzar, empezar_partida, tecla
 
 
 def test_los_temas_existen():
     for archivo in MUSICAS.values():
-        with open(ruta("efectos/" + archivo), "rb"):
-            pass
+        assert ruta_del_sonido(archivo) is not None, archivo
 
 
 def test_el_menu_tiene_su_musica(app):

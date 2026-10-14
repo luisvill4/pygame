@@ -126,7 +126,7 @@ Además de notas con pulso y triángulo y 4 golpes de batería, el compositor ti
 
 Con eso se hace toda la lista sin samples. También: `secuencia("G5:40 C6:90 C5+E5+G5:300")` (las partituras de esta lista se copian tal cual), `dinamica` (pp…ff: el pico del archivo), `medir()` y `--escuchar`.
 
-**ffmpeg:** en esta computadora no hay. Los efectos se guardan en WAV, así que no hace falta. Solo los temas de música (y pasar `musica.mp3` a OGG) lo necesitan: instalarlo antes de esas filas (`winget install ffmpeg`).
+**ffmpeg:** no hace falta. El estudio guarda todo en OGG con `soundfile`, en la carpeta de su familia (`efectos/juego/`, `efectos/interfaz/`...).
 
 ### 0.9 Cómo leer la partitura
 - Las notas van con el nombre del compositor (`C5` = Do5, `F#3` = Fa#3; `A4` = 440 Hz). Las flechas `→` son notas seguidas y `+` son notas juntas.

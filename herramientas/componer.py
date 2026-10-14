@@ -13,7 +13,10 @@ Cada archivo que compone anota su "ficha" en efectos/fichas.json: cuanto suena (
 de un efecto, el nivel de un tema). El mezclador del juego la usa para que la suma de todo lo
 que suena no se pase del maximo (ver juego/sonido.py).
 
-Los temas (dan la vuelta) se guardan en OGG y los efectos en WAV, en efectos/. Por cada
+Todo se guarda en OGG Vorbis, en la carpeta de su familia: efectos/musica/, ambiente/, interfaz/,
+juego/, enemigos/, director/ y jefes/ (la del modulo donde se compone: obras/__init__.py). Un
+efecto armonico va en su propia carpeta con un archivo por color (juego/moneda_1/moneda_1_fa.ogg).
+El juego busca cada archivo por su nombre en cualquier subcarpeta (juego/sonido.py). Por cada
 uno muestra cuanto dura y como quedo: volumen percibido (LUFS), pico, brillo (el
 "centroide": arriba de ~2500 Hz empieza a sonar chillon) y que tan abierto es el estereo.
 Necesita numpy, numba (para que sea rapido) y soundfile (para el OGG): ver requirements.txt.
@@ -28,30 +31,37 @@ import numpy as np  # noqa: E402
 
 from herramientas.estudio import procesos  # noqa: E402
 from herramientas.estudio.base import FS  # noqa: E402
-from herramientas.estudio.obras import cargar_todas, ARMONICOS  # noqa: E402
+from herramientas.estudio.obras import cargar_todas, ARMONICOS, ruta_relativa  # noqa: E402
 from herramientas.estudio import armonia  # noqa: E402
 
 CARPETA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "efectos")
 
 
-def guardar(nombre, audio, es_tema, carpeta=CARPETA, ogg=None):
-    # Los temas en OGG Vorbis (pesan 10 veces menos); los efectos en WAV (cortos, sin perdida),
-    # salvo los colores de los armonicos (ogg=True: son muchos, y en OGG pesan 6 veces menos)
+def guardar(nombre, audio, color=None, carpeta=CARPETA):
+    # En OGG Vorbis (un WAV pesa 6 veces mas y no se oye la diferencia), en la carpeta de su
+    # familia. Devuelve la ruta del archivo
     import soundfile
+    archivo = os.path.join(carpeta, ruta_relativa(nombre, color))
+    os.makedirs(os.path.dirname(archivo), exist_ok=True)
     datos = np.ascontiguousarray(audio.T)
-    if es_tema or ogg:
-        archivo = os.path.join(carpeta, nombre + ".ogg")
-        # De a bloques: el codificador de Vorbis se queda sin pila (y se cae sin avisar en
-        # Windows) si recibe un tema entero de una vez
-        # compression_level: 0 = la mejor calidad, 1 = el archivo mas chico (0.4: alta calidad)
-        with soundfile.SoundFile(archivo, "w", FS, 2, format="OGG", subtype="VORBIS",
-                                 compression_level=0.4) as salida:
-            for desde in range(0, len(datos), 32768):
-                salida.write(datos[desde:desde + 32768])
-    else:
-        archivo = os.path.join(carpeta, nombre + ".wav")
-        soundfile.write(archivo, datos, FS, subtype="PCM_16")
+    # De a bloques: el codificador de Vorbis se queda sin pila (y se cae sin avisar en Windows)
+    # si recibe un tema entero de una vez
+    # compression_level: 0 = la mejor calidad, 1 = el archivo mas chico (0.4: alta calidad)
+    with soundfile.SoundFile(archivo, "w", FS, 2, format="OGG", subtype="VORBIS",
+                             compression_level=0.4) as salida:
+        for desde in range(0, len(datos), 32768):
+            salida.write(datos[desde:desde + 32768])
     return archivo
+
+
+def archivos_de_sonido(carpeta=CARPETA):
+    # {nombre del archivo: ruta}: todos los OGG de efectos/ y sus subcarpetas
+    encontrados = {}
+    for raiz, _, archivos in os.walk(carpeta):
+        for archivo in archivos:
+            if archivo.endswith(".ogg"):
+                encontrados[archivo] = os.path.join(raiz, archivo)
+    return encontrados
 
 
 ARCHIVO_FICHAS = os.path.join(CARPETA, "fichas.json")
@@ -93,10 +103,8 @@ def rehacer_fichas(carpeta=CARPETA):
     import soundfile
     viejas = leer_fichas()
     fichas = {}
-    for archivo in sorted(os.listdir(carpeta)):
-        if not archivo.endswith((".wav", ".ogg")):
-            continue
-        audio, _ = soundfile.read(os.path.join(carpeta, archivo), always_2d=True)
+    for archivo, lugar in sorted(archivos_de_sonido(carpeta).items()):
+        audio, _ = soundfile.read(lugar, always_2d=True)
         nueva = dict(viejas.get(archivo, {}))
         # Los temas (dan la vuelta): la musica, los ambientes y el laser. Los OGG de los
         # colores de un efecto armonico son efectos
@@ -160,8 +168,7 @@ def main():
             with armonia.en_color(color):
                 obra = obras[nombre]()
                 audio = obra.mezclar()
-            archivo = guardar(nombre if color is None else "%s_%s" % (nombre, color), audio, obra.vuelta,
-                              ogg=color is not None)
+            archivo = guardar(nombre, audio, color)
             fichas[os.path.basename(archivo)] = ficha(audio, obra.vuelta)
             if obra.vuelta and obra.acordes:
                 # La armonia del tema: el color de cada compas (lo usa el juego para elegir el
@@ -170,15 +177,9 @@ def main():
                     {"acordes": obra.acordes, "colores": [armonia.color_de_acorde(a) for a in obra.acordes],
                      "compas_ms": round(obra.segundo(16) * 1000, 3)})
             print("%-24s %s  (%.1f s)  -> %s" % (nombre, informe(audio, obra.vuelta), time.time() - inicio,
-                                                os.path.basename(archivo)))
+                                                os.path.relpath(archivo, CARPETA)))
             if "--escuchar" in sys.argv:
                 escuchar(audio)
-        if nombre in ARMONICOS:
-            # Ya tiene sus colores: el archivo de antes (sin color) no se usa mas
-            viejo = os.path.join(CARPETA, nombre + ".wav")
-            if os.path.exists(viejo):
-                os.remove(viejo)
-            fichas.pop(nombre + ".wav", None)
     escribir_fichas(fichas)
 
 

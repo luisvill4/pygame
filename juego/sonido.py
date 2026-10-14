@@ -38,11 +38,17 @@ importantes (DETALLE y ACCION, hasta PISO_DETALLES) y, si no alcanza, todos. Cua
 despeja, vuelven de a poco (RECUPERACION_MEZCLA). Es lo que hace un compresor en el bus de
 efectos de una consola, pero sabiendo de antemano lo que va a sonar.
 
-Para agregar un efecto: poner el archivo en efectos/ y una linea en CATALOGO. Despues,
+Los archivos: todos OGG, en efectos/ ordenados en carpetas por familia (musica/, ambiente/,
+interfaz/, juego/, enemigos/, director/ y jefes/; un armonico, en su propia carpeta con sus
+colores). Los escribe el estudio (herramientas/componer.py). El juego busca cada uno por su
+NOMBRE en cualquier subcarpeta (ver ruta_del_sonido): la carpeta es solo para ordenar.
+
+Para agregar un efecto: componerlo en el estudio y sumar una linea en CATALOGO. Despues,
 sonidos.reproducir("nombre") (o con la x) donde pase la cosa, en la logica.
 """
 import json
 import math
+import os
 import random
 
 import pygame
@@ -90,7 +96,7 @@ ARMONICOS = set(
 
 
 def archivo_de_color(archivo, color):
-    # "moneda_1.wav" -> "moneda_1_fa.ogg"
+    # "moneda_1.ogg" -> "moneda_1_fa.ogg"
     return "%s_%s.ogg" % (archivo.rsplit(".", 1)[0], color)
 
 
@@ -116,9 +122,8 @@ class Efecto:
         self.paneo = paneo                  # False: siempre al centro (la interfaz, los momentos)
 
 
-# Los temas de musica (nombre -> archivo). "juego" (y sus colores), "tension", "iniciales" y
-# "fin" salen del estudio (herramientas/componer.py); "menu", "jefe" (y los de cada jefe) y
-# "gasolinera", del compositor viejo (herramientas/componer_musica.py). Una escena que pide SILENCIO deja todo callado (con fundido)
+# Los temas de musica (nombre -> archivo), todos del estudio (herramientas/estudio/obras/musica.py
+# y musica_jefes.py). Una escena que pide SILENCIO deja todo callado (con fundido)
 MUSICAS = {
     "juego": "musica_juego.ogg",
     "menu": "musica_menu.ogg",
@@ -132,7 +137,7 @@ MUSICAS = {
     "juego_4": "musica_juego_4.ogg",
     "juego_5": "musica_juego_5.ogg",
     "tension": "musica_tension.ogg",       # el nivel antes del jefe
-    # Un tema para cada jefe, en el estilo de musica_jefe (el del Ojo); del compositor viejo
+    # Un tema para cada jefe, todos en Re menor como musica_jefe (el del Ojo)
     "jefe_fortaleza": "musica_jefe_fortaleza.ogg",
     "jefe_serpiente": "musica_jefe_serpiente.ogg",
     "jefe_colmena": "musica_jefe_colmena.ogg",
@@ -152,19 +157,19 @@ AMBIENTES = {
 
 
 def _variantes(nombre, cuantas):
-    # ["nombre_1.wav", "nombre_2.wav"...]: se turnan sin repetir (ver Sonidos._elegir_variante)
-    return ["%s_%d.wav" % (nombre, numero) for numero in range(1, cuantas + 1)]
+    # ["nombre_1.ogg", "nombre_2.ogg"...]: se turnan sin repetir (ver Sonidos._elegir_variante)
+    return ["%s_%d.ogg" % (nombre, numero) for numero in range(1, cuantas + 1)]
 
 
 def _escala(nombre, cuantas, *args, **ficha):
-    # {"nombre_1": Efecto("nombre_1.wav"), ...}: una escala (la moneda, la cadena...) se pide
+    # {"nombre_1": Efecto("nombre_1.ogg"), ...}: una escala (la moneda, la cadena...) se pide
     # por numero, no al azar
-    return {"%s_%d" % (nombre, numero): Efecto("%s_%d.wav" % (nombre, numero), *args, **ficha)
+    return {"%s_%d" % (nombre, numero): Efecto("%s_%d.ogg" % (nombre, numero), *args, **ficha)
             for numero in range(1, cuantas + 1)}
 
 
 def _uno(nombre, *args, **ficha):
-    return {nombre: Efecto(nombre + ".wav", *args, **ficha)}
+    return {nombre: Efecto(nombre + ".ogg", *args, **ficha)}
 
 
 def _armar(*grupos):
@@ -306,15 +311,30 @@ CATALOGO = _armar(
 
 
 _cache = {}     # archivo -> Sound: los temas tardan en abrirse y los tests crean muchas App
+_rutas = {}     # nombre del archivo -> su ruta completa (se arma una vez: ver ruta_del_sonido)
+
+
+def ruta_del_sonido(archivo):
+    # Donde esta "moneda_1_fa.ogg": el primer pedido recorre efectos/ y sus subcarpetas y anota
+    # cada archivo por su nombre (asi el catalogo no sabe de carpetas). None si no existe
+    if not _rutas:
+        for raiz, _, archivos in os.walk(ruta("efectos")):
+            for nombre in archivos:
+                if nombre.endswith(".ogg"):
+                    _rutas[nombre] = os.path.join(raiz, nombre)
+    return _rutas.get(archivo)
 
 
 def cargar(archivo):
     # El Sound de ese archivo de efectos/ (None si no hay audio o no existe)
     if archivo not in _cache:
+        lugar = ruta_del_sonido(archivo)
+        if lugar is None:
+            return None         # falta el archivo: ese sonido no suena
         try:
-            _cache[archivo] = pygame.mixer.Sound(ruta("efectos/" + archivo))
+            _cache[archivo] = pygame.mixer.Sound(lugar)
         except (pygame.error, FileNotFoundError):
-            return None         # sin audio o falta el archivo: ese sonido no suena
+            return None         # sin audio: ese sonido no suena
     return _cache[archivo]
 
 

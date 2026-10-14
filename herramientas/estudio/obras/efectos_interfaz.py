@@ -14,7 +14,8 @@ from herramientas.estudio.obras.capas import tono, deslizar, cuerpo, aire, golpe
 def registrar_familia(prefijo, valores, fabrica):
     # Una obra por valor: prefijo_1, prefijo_2... (variantes o escalas)
     for numero, valor in enumerate(valores, start=1):
-        obra("%s_%d" % (prefijo, numero))(lambda numero=numero, valor=valor: fabrica(numero, valor))
+        obra("%s_%d" % (prefijo, numero), fabrica.__module__)(
+            lambda numero=numero, valor=valor: fabrica(numero, valor))
 
 
 # ---------- Moverse, aceptar, volver ----------
