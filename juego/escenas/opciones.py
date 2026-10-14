@@ -184,11 +184,15 @@ class Interruptor(Ajuste):
 
 
 class Volumen(Ajuste):
-    # Una barra de cuadritos de 0 a VOLUMEN_MAX
+    # Una barra de cuadritos de 0 a VOLUMEN_MAX. Tocarla saca el silencio de la tecla M
+    # (si estas subiendo el volumen, lo queres oir). Con el silencio puesto se ve en gris
     def cambiar(self, app, direccion):
+        app.opciones.silencio = False
         self.poner(app, min(max(self.valor(app) + direccion, 0), VOLUMEN_MAX))
 
     def dibujar_valor(self, pantalla, app, y, color, elegida):
+        if app.opciones.silencio:
+            color = GRIS
         inicio_barra = VALOR_X - 22 - VOLUMEN_MAX * 16
         flecha = AMARILLO if elegida else GRIS
         dibujo.flecha(pantalla, VALOR_X, y, 6, 1, flecha)
@@ -225,8 +229,9 @@ AJUSTES = [
           "EL BRILLO DE LAS BALAS, LA MONEDA, LAS CAPSULAS Y LAS EXPLOSIONES."),
     Volumen("VOLUMEN", "SONIDO", "volumen",
             "EL VOLUMEN DE TODO. LA TECLA M APAGA Y PRENDE EL SONIDO."),
-    Interruptor("MUSICA", "SONIDO", "musica", "LA MUSICA DE FONDO."),
-    Interruptor("EFECTOS", "SONIDO", "efectos", "LOS SONIDOS DEL JUEGO: MONEDAS, GOLPES, MENUS..."),
+    Volumen("MUSICA", "SONIDO", "volumen_musica", "LA MUSICA DE FONDO. EN 0 NO SUENA."),
+    Volumen("EFECTOS", "SONIDO", "volumen_efectos", "LOS SONIDOS DEL JUEGO: MONEDAS, GOLPES, MENUS..."),
+    Interruptor("LATIDO", "SONIDO", "latido", "UN LATIDO SUAVE CUANDO TE QUEDA UNA SOLA VIDA."),
     Lista("TEMBLOR", "ACCESIBILIDAD", "temblor", ORDEN_TEMBLOR,
           "CUANTO SE SACUDE LA PANTALLA. EL MARCADOR NUNCA TIEMBLA."),
     Lista("DESTELLOS", "ACCESIBILIDAD", "destellos", ORDEN_DESTELLOS,
@@ -235,6 +240,8 @@ AJUSTES = [
                 "LOS JEFES MARCAN HACIA DONDE VAN A DISPARAR ANTES DE HACERLO."),
     Lista("VIBRACION", "ACCESIBILIDAD", "vibracion", ORDEN_VIBRACION,
           "QUE TAN FUERTE VIBRA EL MANDO.", al_cambiar=_probar_vibracion),
+    Interruptor("AUDIO MONO", "ACCESIBILIDAD", "audio_mono",
+                "TODO SUENA IGUAL POR LOS DOS LADOS (PARA UN SOLO AURICULAR U OIDO)."),
 ]
 
 
@@ -274,12 +281,13 @@ class Opciones(Escena):
                 # Da la vuelta: de VOLVER se pasa al primer ajuste
                 self.fila = (self.fila + (1 if accion == ABAJO else -1)) % (len(self.filas()) + 1)
                 self.cursor_fila.ir_a(self.fila)
+                self.app.sonidos.reproducir("ui_mover")
             elif accion in (IZQUIERDA, DERECHA) and not self.en_volver():
                 self._cambiar(self.filas()[self.fila], 1 if accion == DERECHA else -1)
             elif accion == ACEPTAR and not self.en_volver() and self.filas()[self.fila].interruptor:
                 self._cambiar(self.filas()[self.fila], 1)
             elif accion == VOLVER or (accion == ACEPTAR and self.en_volver()):
-                self.app.sonidos.reproducir("seleccion")
+                self.app.sonidos.reproducir("ui_volver")
                 self.app.cambiar_escena(self.volver_a)
 
     def _cambiar_pestana(self, direccion):
@@ -287,14 +295,18 @@ class Opciones(Escena):
         self.cursor_seccion.ir_a(self.pestana)
         self.fila = 0
         self.cursor_fila.saltar_a(0)
-        self.app.sonidos.reproducir("seleccion")
+        self.app.sonidos.reproducir("ui_pestana")
 
     def _cambiar(self, ajuste, direccion):
         # Cambia el valor (direccion: -1 o 1), lo aplica al instante y lo guarda
         ajuste.cambiar(self.app, direccion)
         self.app.sonidos.aplicar_volumen(self.app.opciones)
         self.app.opciones.guardar()
-        self.app.sonidos.reproducir("seleccion")
+        # (despues de aplicar el volumen: sirve de muestra de como quedo)
+        if ajuste.interruptor:
+            self.app.sonidos.reproducir("ui_llave_si" if ajuste.valor(self.app) else "ui_llave_no")
+        else:
+            self.app.sonidos.reproducir("ui_valor_sube" if direccion > 0 else "ui_valor_baja")
 
     # ---------- Dibujo ----------
 

@@ -61,6 +61,9 @@ class JefeOjo(Jefe):
 
     # ---------- Fases ----------
 
+    SONIDOS_FASE = {"atacar": "ojo_carga", "cansado": "ojo_cansado", "flotar": "ojo_flota"}
+    FASES_VENTANA = ("cansado",)
+
     def al_congelarse(self):
         self.proximo_disparo += MS_POR_FRAME
 
@@ -68,6 +71,7 @@ class JefeOjo(Jefe):
         self.cambiar_fase("flotar", JEFE_FLOTAR, partida.tiempo)
 
     def al_recibir_golpe(self, partida):
+        self.sonar(partida, "ojo_voz")
         self.cambiar_fase("flotar", JEFE_FLOTAR, partida.tiempo)
 
     def actualizar_fase(self, partida):
@@ -145,6 +149,7 @@ class JefeOjo(Jefe):
         for direccion in direcciones:
             partida.balas.append(Bala(ojo_x, ojo_y, math.cos(direccion) * rapidez, math.sin(direccion) * rapidez))
         partida.efectos.anillo(ojo_x, ojo_y, EMBESTIDA, 10, 3, 2)
+        self.sonar(partida, "ojo_abanico" if self.ataque == "abanico" else "ojo_anillo", ojo_x)
 
     # ---------- Dibujo ----------
 

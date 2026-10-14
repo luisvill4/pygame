@@ -236,6 +236,10 @@ class Colmena(Jefe):
 
     # ---------- Primera parte: las compuertas ----------
 
+    SONIDOS_FASE = {"abrir": "compuerta_abre", "enfurecerse": "furia", "temblar": "temblar",
+                    "embestir": "embestida_colmena", "flotar": "panal"}
+    FASES_VENTANA = ("expuesta", "aturdida")
+
     def al_terminar_de_entrar(self, partida):
         self.cambiar_fase_pulsos("flotar", 4, partida.tiempo)
 
@@ -318,6 +322,7 @@ class Colmena(Jefe):
         abeja.salir_de(partida, *compuerta.salida(self), compuerta.angulo)
         partida.enemigos.append(abeja)
         salida_x, salida_y = compuerta.salida(self)
+        self.sonar(partida, "abeja_sale", salida_x)
         partida.efectos.explosion(salida_x, salida_y, MIEL, 8, 3, 2)
 
     def al_romper_parte(self, partida, compuerta):
@@ -333,6 +338,7 @@ class Colmena(Jefe):
         if not self.partes_vivas():
             nucleo_x, nucleo_y = self.centro_nucleo()
             partida.efectos.texto_flotante("¡A CASA, HIJAS!", nucleo_x, nucleo_y - 110, ROJO)
+            self.sonar(partida, "llamado", nucleo_x)
             for abeja in self.abejas(partida):
                 abeja.volver_a_casa(nucleo_x, nucleo_y)
             partida.efectos.sacudir(16, AMARILLO)
@@ -427,7 +433,7 @@ class Colmena(Jefe):
         partida.efectos.pedazos(centro_x, centro_y, PEDAZOS, 8, 4)
         partida.efectos.sacudir(12, AMARILLO)
         partida.entrada.vibrar("impacto")
-        partida.sonidos.reproducir("golpe")
+        self.sonar(partida, "colmena_choca", centro_x)
         if self.rebotes > 0:
             self.rebotes -= 1
         else:

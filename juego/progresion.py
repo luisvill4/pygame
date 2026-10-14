@@ -31,7 +31,8 @@ from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, PRESUPUESTO_INICIAL
                           OLEADA_PRESUPUESTO, OLEADA_PUNTOS, REFUERZO_ESPERA, CARTEL_JEFE, AMARILLO, ROJO,
                           JEFE_CADA_NIVELES, ANOMALIA_NIVEL, ANOMALIA_ESPERA, RESPIRO_ANOMALIA, ANOMALIA_PROPIA,
                           DESAFIO_DESDE_NIVEL, DESAFIO_ESPERA, DESAFIO_PUNTOS, CARTEL_RANGO, RANGO_SELLO, VERDE,
-                          MEJORA_PRIMER_NIVEL, ENERGIA_DESAFIO, ENERGIA_OLEADA, AVISO_OLEADA, AVISO_ANOMALIA)
+                          MEJORA_PRIMER_NIVEL, ENERGIA_DESAFIO, ENERGIA_OLEADA, AVISO_OLEADA, AVISO_ANOMALIA,
+                          MS_POR_FRAME)
 from juego.avisos import Aviso
 from juego.enemigos import crear_enemigos, TIPOS_ENEMIGO
 from juego.anomalias import TIPOS_ANOMALIA, crear_anomalia
@@ -125,6 +126,7 @@ class Director:
                 if nivel > 1:
                     self.nuevo_tipo = TIPOS_ENEMIGO[tipo]
                     self.tiempo_cartel_nuevo = partida.tiempo
+                    partida.sonidos.reproducir("ficha_enemigo")
         disponible = self.presupuesto() - self.costo_actual()
         while self.cantidad_actual() < ENEMIGOS_MAX:
             tipo = self.elegir_tipo(disponible)
@@ -272,10 +274,12 @@ class Director:
             self.anomalia.actualizar(partida)
             if self.anomalia.termino(partida):
                 self.terminar_anomalia()
+                partida.sonidos.reproducir("anomalia_fin")      # (si la corta el jefe, no suena)
         elif partida.tiempo >= self.proxima_anomalia and tranquilo and not self.en_oleada:
             self.empezar_anomalia()
         if partida.tiempo >= self.proximo_desafio and partida.jefe is None:
             self.proponer_desafio()
+        self._sonidos_del_rango()
         if not self.rango_pagado and partida.tiempo >= self.tiempo_cartel_rango + RANGO_SELLO:
             self.pagar_rango()
         if self.gasolinera_tras_cierre and not self.cerrando_sector():
@@ -302,7 +306,7 @@ class Director:
         self.en_oleada = True
         self.oleada_hasta = partida.tiempo + OLEADA_DURACION
         self.vidas_al_empezar_oleada = partida.vidas
-        partida.sonidos.reproducir("nuevo_record")
+        partida.sonidos.reproducir("oleada")
         partida.entrada.vibrar("oleada")
         partida.efectos.sacudir(10, ROJO)
         partida.avisar(Aviso("ALERTA", "¡OLEADA!", "AGUANTA SIN PERDER VIDAS", ROJO, AVISO_OLEADA, alerta=True),
@@ -321,7 +325,9 @@ class Director:
             return
         self.en_oleada = False
         self.proxima_oleada = partida.tiempo + random.randint(*OLEADA_ESPERA)
-        # Los enemigos de la oleada se retiran
+        # Los enemigos de la oleada se retiran (un solo "poof" para todo el grupo)
+        if not superada and any(e.de_oleada for e in partida.enemigos):
+            partida.sonidos.reproducir("retirada")
         for enemigo in [e for e in partida.enemigos if e.de_oleada]:
             centro_x, centro_y = enemigo.centro()
             partida.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color], 14, 3, 3)
@@ -333,7 +339,7 @@ class Director:
             partida.efectos.texto_flotante("+" + str(ganados), nave_x, nave_y - 40, AMARILLO)
             partida.avisar(Aviso("PREMIO", "¡OLEADA SUPERADA!", "+" + str(ganados) + " PUNTOS Y UN POWER-UP",
                                  VERDE, AVISO_OLEADA))
-            partida.sonidos.reproducir("powerup")
+            partida.sonidos.reproducir("oleada_superada")
             if partida.capsula is None:
                 partida.proximo_powerup = partida.tiempo
             partida.ganar_energia(ENERGIA_OLEADA)
@@ -360,7 +366,7 @@ class Director:
         self.proxima_anomalia = math.inf
         # Ninguna oleada encima de la anomalia ni justo despues
         self.proxima_oleada = max(self.proxima_oleada, self.anomalia.hasta + RESPIRO_ANOMALIA)
-        partida.sonidos.reproducir("nuevo_record")
+        partida.sonidos.reproducir(self.anomalia.tipo + "_llega")
         partida.entrada.vibrar("anomalia")
         partida.efectos.sacudir(10, self.anomalia.color)
         partida.avisar(Aviso("ANOMALIA", self.anomalia.nombre, self.anomalia.pista, self.anomalia.color,
@@ -395,7 +401,7 @@ class Director:
         self.desafio = clase()
         self.ultimo_desafio = clase.tipo
         self.tiempo_cartel_desafio = partida.tiempo
-        partida.sonidos.reproducir("seleccion")
+        partida.sonidos.reproducir("desafio_nuevo")
 
     def desafio_en_curso(self):
         return self.desafio is not None and self.desafio.en_curso()
@@ -408,6 +414,7 @@ class Director:
             return
         self.tiempo_cartel_desafio = partida.tiempo
         if desafio.estado == "fallado":
+            partida.sonidos.reproducir("desafio_fallado")
             return
         self.bitacora.desafio_cumplido = True
         partida.estadisticas.desafios += 1
@@ -415,7 +422,7 @@ class Director:
         nave_x, nave_y = partida.nave.centro()
         partida.efectos.texto_flotante("¡DESAFIO! +" + str(ganados), nave_x, nave_y - 40, VERDE)
         partida.efectos.anillo(nave_x, nave_y, [(0, 90, 40), VERDE, (255, 255, 255)], 32, 6)
-        partida.sonidos.reproducir("powerup")
+        partida.sonidos.reproducir("desafio_cumplido")
         partida.entrada.vibrar("desafio")
         if partida.capsula is None:
             partida.proximo_powerup = partida.tiempo     # de premio, un power-up enseguida
@@ -429,16 +436,35 @@ class Director:
 
     # ---------- Rango ----------
 
+    def _sonidos_del_rango(self):
+        # Las filas del cartel del rango salen de a una (carteles.rango: la fila i a los
+        # 300 + 400 * i ms y cada estrella 80 ms despues de la anterior): cada estrella suena
+        # una nota mas arriba (estrella_1 a _5); una fila sin estrellas, un tic
+        if self.rango is None or self.rango_pagado:
+            return
+        partida = self.partida
+        transcurrido = partida.tiempo - self.tiempo_cartel_rango
+        antes = transcurrido - MS_POR_FRAME
+        estrellas = 0
+        for i, fila in enumerate(self.rango["filas"]):
+            desde_fila = 300 + i * 400
+            ganadas = fila[2]
+            momentos = [desde_fila + j * 80 for j in range(ganadas)] or [desde_fila]
+            for j, momento in enumerate(momentos):
+                if antes < momento <= transcurrido:
+                    if ganadas:
+                        partida.sonidos.reproducir("estrella_%d" % min(estrellas + j + 1, 5))
+                    else:
+                        partida.sonidos.reproducir("teclear")
+            estrellas += ganadas
+
     def pagar_rango(self):
         # Cuando la letra aparece en el cartel: el premio y un golpe de efecto
         partida = self.partida
         self.rango_pagado = True
         if self.rango["puntos"]:
             partida.sumar_puntos(self.rango["puntos"])
-        if self.rango["letra"] in ("S", "A"):
-            partida.sonidos.reproducir("nuevo_record")
-        else:
-            partida.sonidos.reproducir("seleccion")
+        partida.sonidos.reproducir("sello_" + self.rango["letra"])
         partida.efectos.sacudir(10)
         # El sello de la letra: S y A pegan mas fuerte
         partida.entrada.vibrar("sello", fuerza=1.3 if self.rango["letra"] in ("S", "A") else 1)

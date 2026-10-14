@@ -49,7 +49,9 @@ def test_salir_cierra_el_juego(app):
     avanzar(app)
     tecla(pygame.K_RETURN)
     avanzar(app)
-    assert not app.ejecutando
+    assert app.ejecutando                       # primero suena el apagado...
+    avanzar(app, 30)
+    assert not app.ejecutando                   # ...y medio segundo despues se cierra
 
 
 def test_las_tres_paginas_se_dibujan_con_y_sin_records(app):

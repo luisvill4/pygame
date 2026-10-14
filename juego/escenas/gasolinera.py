@@ -28,7 +28,9 @@ from juego.config import (ANCHO, CENTRO_X, ANCHO_MENU, FONDO, BLANCO, GRIS, AMAR
 from juego.efectos import Efectos
 from juego.entrada import ACEPTAR, VOLVER, IZQUIERDA, DERECHA
 from juego.escenas.base import Escena
+from juego.sonido import SILENCIO
 from juego.tienda import Tienda
+from juego.config import SECTORES
 
 PASOS_SIN_ELEGIR = 30       # pasos (medio segundo) en que se ignoran las teclas
 PASOS_ENTRE_CARTAS = 4      # cada carta cae este numero de pasos despues de la anterior
@@ -64,6 +66,7 @@ VENDEDOR = [".XXXXX.",
 
 
 class Gasolinera(Escena):
+    ambiente = SILENCIO
     musica = "gasolinera"
 
     def __init__(self, app, escena_juego):
@@ -80,7 +83,9 @@ class Gasolinera(Escena):
         self.paso_compra = -100             # cuando se compro algo (el numero destella)
         self.efectos = Efectos()            # propios: las particulas del juego quedan quietas
         self.estacion = pygame.Surface((ANCHO_MENU, 300), pygame.SRCALPHA)
-        app.sonidos.reproducir("nuevo_record")
+        app.sonidos.reproducir("tienda")
+        app.sonidos.reproducir_luego("surtidor", 300)      # el tanque se llena (PASOS_TANQUE)
+        self.neon_apagado = False
 
     def elegido_actual(self):
         return self.tienda.articulos()[self.elegido]
@@ -99,6 +104,8 @@ class Gasolinera(Escena):
         if diferencia:
             paso = max(1, abs(diferencia) // 5)
             self.creditos_visibles += paso if diferencia > 0 else -paso
+        self._sonar_cartas_que_caen()
+        self._sonar_neon()
         if self.pasos < PASOS_SIN_ELEGIR:
             return
         cantidad = len(self.tienda.articulos())
@@ -111,10 +118,26 @@ class Gasolinera(Escena):
         elif entrada.pulso(ACEPTAR) and cantidad:
             self._comprar()
 
+    def _sonar_neon(self):
+        # El cartel GAS titila (_dibujar_cartel, con el mismo reloj): cuando vuelve a prender, zumba
+        ticks = pygame.time.get_ticks()
+        apagado = ticks % 2600 < 90 or 300 < ticks % 2600 < 360
+        if self.neon_apagado and not apagado:
+            self.app.sonidos.reproducir("neon")
+        self.neon_apagado = apagado
+
+    def _sonar_cartas_que_caen(self):
+        # Cada articulo que cae al mostrador suena (como en _dibujar_carta: las cartas despues
+        # de cada sorteo, los servicios una vez), una nota mas arriba cada uno
+        for indice, articulo in enumerate(self.tienda.articulos()):
+            desde = self.desde_sorteo if articulo in self.tienda.cartas else 0
+            if self.pasos - desde - indice * PASOS_ENTRE_CARTAS == 1:     # (pasos ya sumo este paso)
+                self.app.sonidos.reproducir("carta_%d" % min(indice + 1, 6))
+
     def _elegir(self, indice):
         self.elegido = indice
         self.cursor.ir_a(indice)
-        self.app.sonidos.reproducir("seleccion")
+        self.app.sonidos.reproducir("ui_mover")
 
     def _comprar(self):
         articulo = self.elegido_actual()
@@ -123,10 +146,22 @@ class Gasolinera(Escena):
         if not self.tienda.comprar(articulo):
             # No alcanza (o ya esta vendido): la carta tiembla
             self.temblor = PASOS_TEMBLOR
-            self.app.sonidos.reproducir("golpe")
+            self.app.sonidos.reproducir("ui_error")
+            self.app.sonidos.reproducir_luego("vendedor_no", 120)
             return
-        self.app.sonidos.reproducir("moneda")
-        self.app.sonidos.reproducir("powerup")
+        # "Ka-ching" y lo que compraste: la carta (y su sello de VENDIDA), el escudo, la vida
+        # o el mazo que se baraja
+        self.app.sonidos.reproducir("caja")
+        tipo = getattr(articulo, "tipo", None)
+        if tipo == "sortear":
+            self.app.sonidos.reproducir_luego("barajar", 150)
+        elif tipo == "escudo":
+            self.app.sonidos.reproducir_luego("pw_escudo", 150)
+        elif tipo == "reparar":
+            self.app.sonidos.reproducir_luego("pw_vida", 150)
+        else:
+            self.app.sonidos.reproducir_luego("mejora_elegida", 120)
+            self.app.sonidos.reproducir_luego("sello", 420)
         self.app.entrada.vibrar("mejora")
         self.paso_compra = self.pasos
         carta_x, carta_y = self._centro_carta(self.elegido)
@@ -145,7 +180,11 @@ class Gasolinera(Escena):
     def _seguir_viaje(self):
         self.partida.director.gasolinera = False
         self.app.fondo.saltar_al_hiperespacio()     # rumbo al sector nuevo
-        self.app.sonidos.reproducir("seleccion")
+        self.app.sonidos.reproducir("ui_volver")
+        self.app.sonidos.reproducir("hiperespacio")
+        # Y al llegar, el acorde del sector nuevo (con su cartel)
+        numero = SECTORES.index(self.partida.director.sector) + 1
+        self.app.sonidos.reproducir_luego("sector_nuevo_%d" % numero, 700)
         self.app.cambiar_escena(self.escena_juego)
 
     # ---------- Dibujo ----------

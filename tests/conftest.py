@@ -22,7 +22,7 @@ from tests.ayudas import TeclasFalsas  # noqa: E402
 
 @pytest.fixture
 def app(tmp_path):
-    aplicacion = App(carpeta_datos=str(tmp_path), usar_mandos=False)
+    aplicacion = App(carpeta_datos=str(tmp_path), usar_mandos=False, presentacion=False)
     aplicacion.reloj_falso = 0
     aplicacion.ahora = lambda: aplicacion.reloj_falso
     aplicacion.teclas = set()

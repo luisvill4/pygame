@@ -1,12 +1,18 @@
 """
-Compositor de la musica del juego: chiptune hecho con codigo.
+El compositor VIEJO: chiptune hecho con codigo.
+
+YA NO HACE SONIDOS DEL JUEGO. Todo lo que suena sale del estudio (herramientas/componer.py).
+Sus temas (menu, jefe, gasolinera y los de cada jefe) se rehicieron en el estudio para que
+todo el juego tenga un solo sonido; estos quedan para escucharlos o compararlos, y se
+guardan en herramientas/chiptune/ (nunca en efectos/: pisarian los del juego).
 
 Uso (desde la carpeta del juego):
     python herramientas/componer_musica.py                  todo lo de COMPOSICIONES
     python herramientas/componer_musica.py musica_jefe      solo ese (o varios nombres)
+    python herramientas/componer_musica.py --escuchar x     lo compone y lo hace sonar
 
-Escribe en efectos/ lo que esta en COMPOSICIONES (abajo de todo): los temas de menu,
-jefe y gasolinera. Solo usa la biblioteca de Python. Los temas se pasan a OGG con
+Escribe en herramientas/chiptune/ lo que esta en COMPOSICIONES (abajo de todo): los temas
+de menu, jefe y gasolinera. Solo usa la biblioteca de Python. Los temas se pasan a OGG con
 ffmpeg si esta (pesan 10 veces menos); si no, quedan en WAV y avisa (hay que cambiar
 la extension en sonido.py). Los efectos (vuelta=False) quedan siempre en WAV.
 
@@ -22,6 +28,18 @@ Como funciona (como una consola de 8 bits):
   notas que se apagan) se suma al principio: asi da la vuelta sin un "clic".
   Un EFECTO (vuelta=False) no da la vuelta: tiene una cola de silencio para que las
   notas se apaguen y al final se recorta lo que quedo callado.
+
+Herramientas para EFECTOS (en segundos, no en la grilla; ver nuevo_efecto()):
+- secuencia("G5:40 C6:90 -:20 C5+E5+G5:300"): notas seguidas con su duracion en ms
+  ("-" silencio, "+" notas juntas: un acorde).
+- barrido([(0, "A3"), (0.6, "Eb4")]): una nota que cambia de altura siguiendo una CURVA
+  (puntos de segundo y valor, como la automatizacion de un programa de musica).
+- ruido(segundos, filtro=[(0, 800), (0.06, 6000)]): ruido con un filtro que se mueve
+  (dash, explosiones, viento, vapor); "chasquidos" lo vuelve crepitar.
+- tremolo=(desde_hz, hasta_hz, profundidad) hace temblar el volumen y
+  vibrato=(desde_hz, hasta_hz, semitonos) la afinacion, cada vez mas rapido si hasta > desde.
+- dinamica ("pp", "p", "mf", "f", "ff"): que tan fuerte queda el archivo. La musica va a "ff".
+Al guardar se mide cuanto dura y que tan fuerte suena (pico y RMS, en dB).
 """
 import array
 import math
@@ -36,6 +54,9 @@ import wave
 FRECUENCIA = 44100          # muestras por segundo
 PASOS_POR_COMPAS = 16       # semicorcheas
 COLA_EFECTO = 2.0           # segundos de mas al final de un efecto (para que se apague)
+# Que tan fuerte queda el archivo (el pico de la mezcla). La musica va a "ff" y los efectos
+# eligen la suya: asi un tic de menu no suena como una explosion
+DINAMICAS = {"pp": 0.1, "p": 0.18, "mf": 0.3, "f": 0.45, "ff": 0.6}
 
 NOTAS = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
 # Intervalos (en semitonos desde la fundamental) de cada tipo de acorde
@@ -51,6 +72,41 @@ def midi(nombre):
 
 def hertz(nota_midi):
     return 440 * 2 ** ((nota_midi - 69) / 12)
+
+
+def a_hertz(valor):
+    # Una altura en Hz: un numero ya lo es; un nombre de nota ("A4") se convierte
+    return hertz(midi(valor)) if isinstance(valor, str) else valor
+
+
+def curva(puntos, t, exponencial=False):
+    # Automatizacion: el valor en el segundo t de una lista de (segundo, valor), uniendo los
+    # puntos con rectas. 'exponencial' los une con una curva que el oido escucha pareja:
+    # es la que va para alturas y filtros (de 100 a 200 Hz suena igual que de 1000 a 2000)
+    if t <= puntos[0][0]:
+        return puntos[0][1]
+    for (t0, v0), (t1, v1) in zip(puntos, puntos[1:]):
+        if t <= t1:
+            avance = (t - t0) / (t1 - t0) if t1 > t0 else 1
+            if exponencial:
+                return v0 * (v1 / v0) ** avance
+            return v0 + (v1 - v0) * avance
+    return puntos[-1][1]
+
+
+class Oscilador:
+    # Una oscilacion lenta (un "LFO") que va de 'desde' a 'hasta' Hz en 'duracion' segundos:
+    # mueve el volumen (tremolo) o la afinacion (vibrato). Si 'hasta' es mayor, se acelera
+    def __init__(self, desde, hasta, duracion):
+        self.desde = desde
+        self.hasta = hasta
+        self.duracion = max(duracion, 0.001)
+        self.fase = 0.0
+
+    def siguiente(self, t):
+        # -1 a 1 en el segundo t (hay que llamarlo una vez por muestra, en orden)
+        self.fase += (self.desde + (self.hasta - self.desde) * min(1, t / self.duracion)) / FRECUENCIA
+        return math.sin(2 * math.pi * self.fase)
 
 
 def leer_acorde(nombre):
@@ -79,11 +135,15 @@ class Instrumento:
             return t / self.ataque
         return self.sostenido + (1 - self.sostenido) * math.exp(-(t - self.ataque) / self.caida)
 
-    def tocar(self, pista, inicio, duracion, frecuencia, volumen):
-        # Suma la nota a la pista (una lista que "da la vuelta": ver el comentario de arriba)
+    def tocar(self, pista, inicio, duracion, frecuencia, volumen, tremolo=None, vibrato=None):
+        # Suma la nota a la pista (una lista que "da la vuelta": ver el comentario de arriba).
+        # 'frecuencia' es un numero o una funcion del segundo (un barrido). 'tremolo' y
+        # 'vibrato': (desde_hz, hasta_hz, profundidad o semitonos), o None
         largo = len(pista)
         muestras_nota = int(duracion * FRECUENCIA)
         muestras_liberacion = int(self.liberacion * FRECUENCIA)
+        temblor = Oscilador(tremolo[0], tremolo[1], duracion) if tremolo else None
+        ondulacion = Oscilador(vibrato[0], vibrato[1], duracion) if vibrato else None
         fase = 0.0
         filtrada = 0.0
         al_soltar = 0.0
@@ -94,9 +154,13 @@ class Instrumento:
                 env = al_soltar
             else:
                 env = al_soltar * (1 - (i - muestras_nota) / muestras_liberacion)
-            f = frecuencia
+            f = frecuencia(t) if callable(frecuencia) else frecuencia
             if self.vibrato and t > 0.12:
                 f *= 1 + self.vibrato * math.sin(2 * math.pi * 5.5 * t)
+            if ondulacion is not None:
+                f *= 2 ** (vibrato[2] * ondulacion.siguiente(t) / 12)
+            if temblor is not None:
+                env *= 1 - tremolo[2] * (0.5 + 0.5 * temblor.siguiente(t))
             fase = (fase + f / FRECUENCIA) % 1
             if self.onda == "pulso":
                 valor = 1.0 if fase < self.ciclo else -1.0
@@ -146,8 +210,9 @@ BATERIA = {"K": bombo, "S": caja, "h": platillo, "H": platillo_abierto}
 # ---------- El tema ----------
 
 class Tema:
-    def __init__(self, nombre, bpm, acordes, swing=0.0, vuelta=True):
+    def __init__(self, nombre, bpm, acordes, swing=0.0, vuelta=True, dinamica="ff"):
         self.nombre = nombre
+        self.pico = DINAMICAS[dinamica]     # que tan fuerte queda el archivo
         self.vuelta = vuelta            # True: musica que se repite; False: un efecto que suena una vez
         self.bpm = bpm
         self.acordes = acordes          # uno por compas
@@ -229,6 +294,76 @@ class Tema:
                     notas.append((compas * PASOS_POR_COMPAS + paso, pasos, nota))
         self.tocar_notas(notas, instrumento, volumen / 3)
 
+    # ---------- Herramientas de efectos (en segundos) ----------
+
+    def secuencia(self, notas, instrumento, volumen, inicio=0.0, eco=0.0, retraso_eco=0.12, legato=0.9,
+                  tremolo=None, vibrato=None):
+        # "G5:40 C6:90 -:20 C5+E5+G5:300": cada nota (o acorde, con "+") y cuantos ms dura,
+        # una detras de otra desde el segundo 'inicio'. "-" es silencio
+        pista = self.nueva_voz(volumen)
+        t = inicio
+        for simbolo in notas.split():
+            alturas, ms = simbolo.split(":")
+            segundos = int(ms) / 1000
+            if alturas != "-":
+                for nota in alturas.split("+"):
+                    instrumento.tocar(pista, round(t * FRECUENCIA), segundos * legato, hertz(midi(nota)), 1.0,
+                                      tremolo, vibrato)
+            t += segundos
+        if eco:
+            agregar_eco(pista, round(retraso_eco * FRECUENCIA), eco, self.vuelta)
+
+    def barrido(self, alturas, instrumento, volumen, inicio=0.0, eco=0.0, retraso_eco=0.12, tremolo=None,
+                vibrato=None):
+        # Una nota que cambia de altura: alturas = [(segundo, nota o Hz), ...] (al menos dos).
+        # Dura hasta el ultimo punto (mas la liberacion del instrumento)
+        puntos = [(t, a_hertz(valor)) for t, valor in alturas]
+        pista = self.nueva_voz(volumen)
+        instrumento.tocar(pista, round(inicio * FRECUENCIA), puntos[-1][0], lambda t: curva(puntos, t, True),
+                          1.0, tremolo, vibrato)
+        if eco:
+            agregar_eco(pista, round(retraso_eco * FRECUENCIA), eco, self.vuelta)
+
+    def ruido(self, segundos, volumen, inicio=0.0, filtro=((0, 8000),), pasa_altos=None, forma=None,
+              tremolo=None, chasquidos=0):
+        # Ruido (sin altura: nunca desafina) con un filtro que se mueve:
+        # - filtro: curva de hasta donde deja pasar los agudos (Hz; mas alto = mas brillante)
+        # - pasa_altos: curva opcional que ademas saca los graves (vapor, platillos)
+        # - forma: curva del volumen (0 a 1); por defecto empieza de golpe y se apaga parejo
+        # - tremolo: (desde_hz, hasta_hz, profundidad); chasquidos: cuantos "crac" por segundo
+        #   en vez de un soplido continuo (brasas, chispas, un cascabel)
+        pista = self.nueva_voz(volumen)
+        largo = len(pista)
+        comienzo = round(inicio * FRECUENCIA)
+        filtro = [(t, a_hertz(valor)) for t, valor in filtro]
+        if pasa_altos is not None:
+            pasa_altos = [(t, a_hertz(valor)) for t, valor in pasa_altos]
+        forma = forma or [(0, 0), (0.003, 1), (segundos, 0)]
+        temblor = Oscilador(tremolo[0], tremolo[1], segundos) if tremolo else None
+        bajo_1 = bajo_2 = alto_1 = alto_2 = 0.0     # dos filtros de un polo seguidos: corte mas marcado
+        chasquido = 0                               # muestras que le quedan al "crac" que suena
+        for i in range(int(segundos * FRECUENCIA)):
+            t = i / FRECUENCIA
+            valor = self.azar.uniform(-1, 1)
+            if chasquidos:
+                if chasquido <= 0 and self.azar.random() < chasquidos / FRECUENCIA:
+                    chasquido = int(0.004 * FRECUENCIA)
+                valor = valor if chasquido > 0 else 0.0
+                chasquido -= 1
+            corte = 1 - math.exp(-2 * math.pi * curva(filtro, t, True) / FRECUENCIA)
+            bajo_1 += corte * (valor - bajo_1)
+            bajo_2 += corte * (bajo_1 - bajo_2)
+            salida = bajo_2
+            if pasa_altos is not None:
+                corte = 1 - math.exp(-2 * math.pi * curva(pasa_altos, t, True) / FRECUENCIA)
+                alto_1 += corte * (salida - alto_1)
+                alto_2 += corte * (alto_1 - alto_2)
+                salida -= alto_2
+            nivel = curva(forma, t)
+            if temblor is not None:
+                nivel *= 1 - tremolo[2] * (0.5 + 0.5 * temblor.siguiente(t))
+            pista[(comienzo + i) % largo] += salida * nivel
+
     def mezclar(self):
         # Suma las voces, ajusta el volumen y lo "redondea" suave para que no se rompa
         mezcla = [0.0] * self.largo
@@ -238,7 +373,31 @@ class Tema:
         if not self.vuelta:
             mezcla = recortar_silencio(mezcla)
         maximo = max(abs(valor) for valor in mezcla) or 1
-        return [math.tanh(1.3 * valor / maximo) / math.tanh(1.3) * 0.6 for valor in mezcla]
+        return [math.tanh(1.3 * valor / maximo) / math.tanh(1.3) * self.pico for valor in mezcla]
+
+
+def nuevo_efecto(nombre, segundos, dinamica="mf"):
+    # Un Tema para un efecto armado en segundos (secuencia, barrido, ruido): tiene lugar
+    # para 'segundos' mas la cola, y al guardarlo se recorta el silencio del final.
+    # (Si ademas usa grillas, son de compases de 2 s: 120 bpm)
+    return Tema(nombre, 120, ["C"] * max(1, math.ceil(segundos / 2)), vuelta=False, dinamica=dinamica)
+
+
+def medir(muestras):
+    # (segundos, pico en dB, RMS en dB): cuanto dura y que tan fuerte suena. 0 dB es el
+    # maximo; el RMS es el volumen "que se siente" (sirve para emparejar efectos)
+    pico = max((abs(m) for m in muestras), default=0) or 1e-9
+    rms = math.sqrt(sum(m * m for m in muestras) / max(len(muestras), 1)) or 1e-9
+    return len(muestras) / FRECUENCIA, 20 * math.log10(pico), 20 * math.log10(rms)
+
+
+def escuchar(muestras):
+    # Lo hace sonar (para componer de oido sin abrir el juego)
+    import pygame
+    pygame.mixer.init(FRECUENCIA, -16, 1)
+    sonido = pygame.mixer.Sound(buffer=array.array("h", (int(m * 32767) for m in muestras)).tobytes())
+    sonido.play()
+    pygame.time.wait(int(sonido.get_length() * 1000) + 150)
 
 
 def pasos_de(grilla, pasos_esperados):
@@ -377,23 +536,138 @@ def tema_gasolinera():
     return tema
 
 
+# ---------- Un tema para cada jefe (el Ojo usa musica_jefe) ----------
+# Todos en Re menor (como musica_jefe): asi los efectos de los jefes, pensados en Re menor
+# (LISTA_DE_SONIDOS.md, seccion 7), afinan con cualquiera. Cada uno con la personalidad de su jefe
+
+
+def tema_fortaleza():
+    # ACORAZADO IMPERIAL - "Marcha imperial": una marcha militar a 132 bpm. Redoblante de
+    # desfile, bajo "oom-pah" (fundamental y quinta) y una melodia de metales con puntillos
+    tema = Tema("jefe_fortaleza", 132, ["Dm", "Dm", "Gm", "A", "Dm", "Bb", "Gm", "A",
+                                        "Bb", "C", "Dm", "Dm", "Gm", "A", "Dm", "A"])
+    tema.melodia("""
+        D4 . . A4 . . D5 . . . . . F5 . E5 . | D5 . . . . . . . A4 . . . . . . . |
+        G4 . . Bb4 . . D5 . . . . . G5 . F5 . | E5 . . . . . . . C#5 . . . A4 . . . |
+        D4 . . A4 . . D5 . . . . . F5 . A5 . | Bb5 . . . . . A5 . G5 . . . F5 . . . |
+        G5 . . F5 . . E5 . . . D5 . E5 . . . | A4 . . . . . . . - - - - C#5 . E5 . |
+        F5 . . . . . D5 . Bb4 . . . D5 . F5 . | G5 . . . . . E5 . C5 . . . E5 . G5 . |
+        A5 . . . . . . . F5 . . . D5 . . . | A4 . . D5 . . F5 . . A5 . . . . . . |
+        Bb5 . . . A5 . G5 . . . F5 . G5 . . . | A5 . . . . . . . E5 . . . C#5 . . . |
+        D5 . . F5 . . A5 . . . D6 . . . . . | C#6 . . . . . . . A5 . . . E5 . C#5 .
+    """, PULSO_REDONDO, 0.32, eco=0.2)
+    tema.acompanar("X - - - X - - - X - - - X - X -", TECLADO, 0.22)
+    tema.bajo("R . . . 5 . . . R . . . 5 . 5 .", BAJO, 0.5)
+    marcha = ["K - - - S - - S K - - - S - S S"] * 7 + ["K - S S K - S S K S S S S S S S"]
+    tema.bateria(" | ".join(marcha * 2), 0.4)
+    return tema
+
+
+def tema_serpiente():
+    # DEVORADORA DE ESTRELLAS - "Danza de escamas": 120 bpm con swing, una flauta nasal de
+    # encantador de serpientes (pulso fino) con adornos frigios (Mi bemol de paso) sobre Re menor
+    tema = Tema("jefe_serpiente", 120, ["Dm", "Dm", "Gm", "Dm", "Bb", "A", "Dm", "Dm",
+                                        "Gm", "Gm", "Dm", "Dm", "Bb", "A", "Dm", "A"], swing=0.3)
+    tema.melodia("""
+        D5 . Eb5 D5 C#5 . D5 . . . F5 . E5 . D5 . | A4 . . . . . . . - - - - - - - - |
+        G4 . A4 Bb4 A4 . G4 . . . Bb4 . A4 . G4 . | F4 . . . E4 . D4 . . . . . - - - - |
+        D5 . Eb5 D5 C5 . Bb4 . . . D5 . C5 . Bb4 . | A4 . . . . . . . C#5 . . . E5 . . . |
+        F5 . E5 . D5 . Eb5 . D5 . . . . . . . | - - - - - - - - A4 . D5 . F5 . A5 . |
+        Bb5 . A5 . G5 . . . A5 . Bb5 . A5 . G5 . | D5 . . . . . . . - - G4 . A4 . Bb4 . |
+        A4 . . . D5 . . . F5 . E5 . D5 . C#5 . | D5 . . . . . . . - - - - - - - - |
+        F5 . . . Eb5 . D5 . . . C5 . Bb4 . . . | C#5 . . . E5 . . . A5 . . . G5 . E5 . |
+        F5 . E5 . D5 . . . A4 . . . D5 . . . | C#5 . . . . . . . E5 . . . A4 . . .
+    """, PULSO_FINO, 0.34, eco=0.25)
+    tema.arpegio([0, 2, 1, 2], CAMPANA, 0.06, eco=0.2)
+    tema.bajo("R . . R . . 5 . R . . R . . 8 .", BAJO, 0.5)
+    ritmo = ["K - - K - - S - K - K - S - - -"] * 7 + ["K - - K - - S - K - S - S S S S"]
+    tema.bateria(" | ".join(ritmo * 2), 0.35)
+    return tema
+
+
+def tema_colmena():
+    # MADRE DEL ENJAMBRE - "Enjambre de cristal": 160 bpm, un riff de semicorcheas que zumba
+    # en el registro grave (como las alas), bajo en octavas y la bateria empujando siempre
+    tema = Tema("jefe_colmena", 160, ["Dm", "C", "Bb", "A", "Dm", "C", "Bb", "C",
+                                      "Gm", "A", "Dm", "Bb", "Gm", "A", "Dm", "A"])
+    tema.melodia("""
+        D5 . F5 . A5 . . . G5 . F5 . E5 . D5 . | E5 . . . C5 . . . G4 . . . C5 . E5 . |
+        F5 . . . D5 . . . Bb4 . . . D5 . F5 . | E5 . . . . . . . C#5 . . . . . . . |
+        A5 . . . G5 . F5 . . . E5 . F5 . A5 . | G5 . . . E5 . C5 . . . E5 . G5 . . . |
+        F5 . . . D5 . Bb4 . . . D5 . F5 . . . | E5 . . . . . . . G5 . . . . . . . |
+        Bb5 . . . A5 . G5 . . . D5 . G5 . . . | A5 . . . . . E5 . . . C#5 . E5 . . . |
+        F5 . . . E5 . D5 . . . A4 . D5 . F5 . | D5 . . . . . . . F5 . . . Bb5 . . . |
+        G5 . . . Bb5 . . . D6 . . . C6 . Bb5 . | A5 . . . . . . . E5 . . . C#5 . . . |
+        D5 . . . F5 . . . A5 . . . D6 . . . | C#6 . . . . . . . A5 . . . E5 . . .
+    """, PULSO_MEDIO, 0.3, eco=0.15)
+    tema.arpegio([0, 0, 1, 0, 2, 0, 1, 0], PULSO_FINO, 0.16)        # el zumbido de las alas
+    tema.bajo("R . 8 . R . 8 . R . 8 . R . 8 .", BAJO, 0.5)
+    ritmo = ["K - h - S - h K K - h - S - h h"] * 7 + ["K - h h S - h h K S K S S S S S"]
+    tema.bateria(" | ".join(ritmo * 2), 0.4)
+    return tema
+
+
+def tema_singularidad():
+    # EL FIN DE LA LUZ - "Horizonte de sucesos": 100 bpm a medio tiempo, notas largas que caen
+    # al centro, campanas lentas con mucho eco y un bajo que pesa (ni la luz escapa)
+    tema = Tema("jefe_singularidad", 100, ["Dm", "Dm", "Bb", "Bb", "Gm", "Gm", "A", "A",
+                                           "Dm", "Bb", "Gm", "A"])
+    tema.melodia("""
+        D5 . . . . . . . . . . . A4 . . . | F5 . . . . . . . E5 . . . D5 . . . |
+        D5 . . . . . . . . . . . F5 . . . | Bb5 . . . . . . . A5 . . . F5 . . . |
+        G5 . . . . . . . . . . . D5 . . . | Bb4 . . . . . . . C5 . . . D5 . . . |
+        E5 . . . . . . . . . . . . . . . | C#5 . . . . . . . E5 . . . A5 . . . |
+        A5 . . . . . . . F5 . . . D5 . . . | F5 . . . . . . . . . . . D5 . . . |
+        G5 . . . . . . . Bb5 . . . A5 . . . | A5 . . . . . . . - - - - - - - -
+    """, PULSO_REDONDO, 0.3, eco=0.35)
+    tema.arpegio([0, 1, 2, 3], CAMPANA, 0.12, eco=0.35)
+    tema.bajo("R . . . . . . . . . . . 5 . . .", BAJO, 0.55)
+    ritmo = ["K - - - - - - - S - - - - - K -"] * 11 + ["K - - - - - K - S - S - S S S S"]
+    tema.bateria(" | ".join(ritmo), 0.4)
+    return tema
+
+
 # Lo que compone este archivo: nombre del archivo (sin extension) -> funcion que arma el Tema.
 # Para agregar un tema o un efecto: escribir su funcion y sumarla aca
-COMPOSICIONES = {"musica_menu": tema_menu, "musica_jefe": tema_jefe, "musica_gasolinera": tema_gasolinera}
-CARPETA_EFECTOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "efectos")
+COMPOSICIONES = {"musica_menu": tema_menu, "musica_jefe": tema_jefe, "musica_gasolinera": tema_gasolinera,
+                 "musica_jefe_fortaleza": tema_fortaleza, "musica_jefe_serpiente": tema_serpiente,
+                 "musica_jefe_colmena": tema_colmena, "musica_jefe_singularidad": tema_singularidad}
+# (no en efectos/: los temas del juego ahora salen del estudio y estos los pisarian)
+CARPETA_EFECTOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chiptune")
+
+
+def _guardar_ogg(archivo, muestras):
+    # Sin ffmpeg, con soundfile (si esta). De a bloques: el codificador de Vorbis se queda sin
+    # pila en Windows si recibe todo de una vez. Devuelve False si no se pudo
+    try:
+        import numpy
+        import soundfile
+    except ImportError:
+        return False
+    with soundfile.SoundFile(archivo, "w", FRECUENCIA, 1, format="OGG", subtype="VORBIS",
+                             compression_level=0.4) as salida:
+        for desde in range(0, len(muestras), 32768):
+            salida.write(numpy.asarray(muestras[desde:desde + 32768], dtype=float))
+    return True
 
 
 def guardar(nombre, muestras, a_ogg=True, carpeta=CARPETA_EFECTOS):
+    os.makedirs(carpeta, exist_ok=True)
+    segundos, pico, rms = medir(muestras)
+    print("  %.2f s, pico %.1f dB, RMS %.1f dB" % (segundos, pico, rms))
     archivo_wav = os.path.join(carpeta, nombre + ".wav")
     with wave.open(archivo_wav, "wb") as archivo:
         archivo.setnchannels(1)
         archivo.setsampwidth(2)
         archivo.setframerate(FRECUENCIA)
         archivo.writeframes(array.array("h", (int(m * 32767) for m in muestras)).tobytes())
+    archivo_ogg = os.path.join(carpeta, nombre + ".ogg")
     if a_ogg and shutil.which("ffmpeg"):
-        archivo_ogg = os.path.join(carpeta, nombre + ".ogg")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", archivo_wav,
                         "-c:a", "libvorbis", "-q:a", "5", archivo_ogg], check=True)
+        os.remove(archivo_wav)
+        print("  ->", os.path.normpath(archivo_ogg))
+    elif a_ogg and _guardar_ogg(archivo_ogg, muestras):
         os.remove(archivo_wav)
         print("  ->", os.path.normpath(archivo_ogg))
     elif a_ogg:
@@ -403,11 +677,15 @@ def guardar(nombre, muestras, a_ogg=True, carpeta=CARPETA_EFECTOS):
 
 
 if __name__ == "__main__":
-    pedidos = sys.argv[1:] or list(COMPOSICIONES)
+    con_escuchar = "--escuchar" in sys.argv
+    pedidos = [nombre for nombre in sys.argv[1:] if not nombre.startswith("--")] or list(COMPOSICIONES)
     for nombre in pedidos:
         if nombre not in COMPOSICIONES:
             sys.exit("No existe '%s'. Se puede componer: %s" % (nombre, ", ".join(COMPOSICIONES)))
     for nombre in pedidos:
         print("Componiendo", nombre, "...")
         tema = COMPOSICIONES[nombre]()
-        guardar(nombre, tema.mezclar(), a_ogg=tema.vuelta)
+        muestras = tema.mezclar()
+        guardar(nombre, muestras, a_ogg=tema.vuelta)
+        if con_escuchar:
+            escuchar(muestras)

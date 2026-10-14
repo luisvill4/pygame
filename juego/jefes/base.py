@@ -198,7 +198,31 @@ class Jefe:
 
     # ---------- Cada frame ----------
 
+    # Lo que suena al ENTRAR en cada fase (nombre de fase -> efecto de sonido.CATALOGO) y en que
+    # fases se le puede pegar: al entrar en una, suena "vulnerable" (siempre igual: el jugador
+    # aprende "¡ahora!"). Cada jefe completa las suyas
+    SONIDOS_FASE = {}
+    FASES_VENTANA = ()
+    SONIDO_ENTRADA = None       # lo que suena mientras entra (durante la ¡ALERTA!), si tiene
+
+    def sonar(self, partida, nombre, x=None):
+        # Un efecto del jefe, por defecto desde donde esta (paneo)
+        partida.sonidos.reproducir(nombre, self.centro()[0] if x is None else x)
+
+    def _sonidos_de_fase(self, partida, antes):
+        if self.fase == antes:
+            return
+        if self.fase in self.SONIDOS_FASE:
+            self.sonar(partida, self.SONIDOS_FASE[self.fase])
+        if self.fase in self.FASES_VENTANA:
+            self.sonar(partida, "vulnerable")
+
     def actualizar(self, partida):
+        antes = getattr(self, "fase", None)
+        self._actualizar(partida)
+        self._sonidos_de_fase(partida, antes)
+
+    def _actualizar(self, partida):
         if self.congelado(partida):
             # Congelado no se mueve ni ataca, y su fase no avanza
             self.fase_desde += MS_POR_FRAME
@@ -214,6 +238,7 @@ class Jefe:
                 explosion_x, explosion_y = self.punto_de_explosion()
                 partida.efectos.explosion(explosion_x, explosion_y, FUEGO, 12, 4, 4)
                 partida.efectos.sacudir(3)
+                partida.sonidos.reproducir("agonia", explosion_x)     # (con enfriamiento: no se amontonan)
             if partida.tiempo > self.fase_hasta:
                 partida.jefe_vencido()
         else:
@@ -249,7 +274,8 @@ class Jefe:
         self.vida -= 1
         self.golpe_hasta = partida.tiempo + 300
         self.ultimo_golpe = partida.tiempo
-        partida.sonidos.reproducir("golpe")
+        # El golpe que lo mata es otro sonido (y la musica se corta: ver Juego.musica)
+        partida.sonidos.reproducir("golpe_final" if self.vida <= 0 else "jefe_golpe", nucleo_x)
         efectos.explosion(nucleo_x, nucleo_y, ORO, 40, 8, 5)
         efectos.anillo(nucleo_x, nucleo_y, ENERGIA, 24, 6)
         efectos.onda_de_choque(nucleo_x, nucleo_y, 130, self.color, 22)
@@ -257,12 +283,15 @@ class Jefe:
         partida.entrada.vibrar("jefe_golpe")
         partida.congelar_frames = 6
         if self.vida <= 0:
+            partida.golpe_final(nucleo_x, nucleo_y, self.color)      # el cuadro de impacto y la camara lenta
             self.empezar_a_morir(partida)
         else:
             efectos.texto_flotante("¡GOLPE!", nucleo_x, nucleo_y - 50, CIAN)
             self.al_recibir_golpe(partida)
 
     def empezar_a_morir(self, partida):
+        partida.sonidos.parar_loops()       # (un laser que quedo prendido)
+        partida.sonidos.parar_musica(fundido=150)      # el golpe final corta la musica
         romper_balas(partida.balas, partida.efectos, EMBESTIDA)
         self.cambiar_fase("morir", 2000, partida.tiempo)
 
@@ -277,7 +306,7 @@ class Jefe:
         parte.vida -= 1
         parte.golpe_hasta = partida.tiempo + 300
         self.ultimo_golpe = partida.tiempo
-        partida.sonidos.reproducir("golpe")
+        partida.sonidos.reproducir("jefe_parte" if parte.vida > 0 else "parte_rota", parte_x)
         efectos.explosion(parte_x, parte_y, ORO, 24, 6, 4)
         efectos.onda_de_choque(parte_x, parte_y, 70, self.color, 16)
         efectos.sacudir(8, BLANCO)
@@ -316,8 +345,7 @@ class Jefe:
         partida.efectos.sacudir(35, BLANCO)
         partida.entrada.vibrar("jefe_explota")
         partida.congelar_frames = 8
-        partida.sonidos.reproducir("golpe")
-        partida.sonidos.reproducir("powerup")
+        partida.sonidos.reproducir("jefe_explota", centro_x)
 
     # ---------- Dibujo ----------
 

@@ -103,6 +103,7 @@ class Abeja(Enemigo):
             if ahora >= self.proxima_picada:
                 self.estado = "aviso"
                 self.estado_hasta = ahora + AVISO_PICADA
+                partida.sonidos.reproducir("abeja_aviso", self.x)
         elif self.estado == "aviso":
             self.vx *= 0.85
             self.vy *= 0.85

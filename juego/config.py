@@ -43,7 +43,29 @@ ATRASO_MAXIMO = 250             # ms: si la ventana se trabo mas que esto, no se
 RESOLUCIONES = [("1066x600", 1066, 600), ("1280x720", 1280, 720), ("1600x900", 1600, 900),
                 ("1920x1080", 1920, 1080), ("COMPLETA", 0, 0)]
 VOLUMEN_MAX = 10                # pasos de la barra de volumen (tambien es el volumen de fabrica)
+VERSION = "1.0"                 # se ve abajo en la pantalla de titulo
+
+# Sonido (ver sonido.py, MAPA_DE_AUDIO.md y LISTA_DE_SONIDOS.md)
 FUNDIDO_MUSICA = 700            # ms que tarda un tema en apagarse (y el nuevo en subir) al cambiar
+FUNDIDO_AMBIENTE = 1500         # lo mismo para el ambiente de cada sector (mas lento: es un fondo)
+CANALES_AUDIO = 24              # sonidos a la vez: 2 musica + 2 ambiente + 2 loops + 18 efectos
+# Volumen de cada categoria, relativo (la mezcla): asi se equilibra todo sin tocar los archivos.
+# Deja MARGEN (headroom), como una mezcla profesional: los temas estan a -14 LUFS y aca bajan
+# a -20 (0.5), los efectos quedan un poco por encima de la musica y la suma casi nunca llega
+# al maximo (con todo al 1.0, medido con un bot: 53 de 362 segundos sonaban recortados)
+MEZCLA = {"MUSICA": 0.5, "EFECTOS": 0.7, "INTERFAZ": 0.6, "AMBIENTE": 0.3}
+PANEO_MINIMO = 0.35             # el lado "lejano" de un sonido paneado nunca baja de esto (0 a 1)
+ATENUAR_MUSICA = 0.4            # en un gran momento (logro, record...) la musica baja a esto...
+ATENUAR_VUELTA = 600            # ...y despues tarda estos ms en volver
+# El "limitador" del mezclador: con las fichas de efectos/fichas.json sabe cuanto suena cada
+# cosa en cada momento, y si la suma se pasaria del maximo (el audio se recorta: suena
+# saturado), baja los efectos. Primero los de menos importancia (DETALLE y ACCION)
+TECHO_MEZCLA = 0.89             # la suma de todo nunca pasa de esto (0.89 = -1 dB del maximo)
+PISO_DETALLES = 0.35            # los detalles bajan hasta aca antes de tocar a los importantes
+RECUPERACION_MEZCLA = 300       # ms que tarda en volver al volumen entero cuando se despeja
+# Los efectos armonicos suenan en el acorde que viene si cambia dentro de estos ms (ver
+# Sonidos.color_actual)
+ADELANTO_ACORDE = 120
 
 # Archivos que escribe el juego (se crean solos si no existen)
 NOMBRE_RECORDS = "records.json"
@@ -278,12 +300,23 @@ JEFE_FLOTAR = 2500              # ms que se mueve de lado a lado antes de atacar
 JEFE_CANSADO = 2500             # ms que deja el nucleo al descubierto
 JEFE_RAFAGAS = 3                # rafagas de balas en cada ataque
 CARTEL_JEFE = 2000              # ms que se ve "¡JEFE VENCIDO!" (los enemigos vuelven despues)
+
+# El impacto de los momentos clave (ver impactos.py)
+IMPACTO_PASOS = 24              # pasos que se congela el juego en el golpe final al jefe (el cuadro de impacto)
+IMPACTO_DESTELLO = 4            # los primeros, un destello blanco (no con DESTELLOS REDUCIDOS)
+CAMARA_LENTA_JEFE = 72          # despues, pasos de camara lenta (a media velocidad: 1.2 s)
+HERIDA_MS = 700                 # al perder una vida, lo que tarda en apagarse la vineta roja
+LATIDO_MS = 1600                # con una sola vida: cada cuanto late el corazon (sonido y vineta)
+VINETA_HERIDA = (90, 0, 20)     # el color de la vineta
+VINETA_ULTIMA_VIDA = 0.45       # que tan fuerte late la vineta con una vida (0 a 1)
+NEGRO_VELO = (4, 4, 12)         # el velo oscuro del cuadro de impacto
 CARTEL_SECTOR = 2500            # ms que se ve el cartel del sector nuevo
 # Avisos de la franja de arriba: salen de a uno, en una cola (ver avisos.py). Ms que se ve cada uno
 AVISO_NIVEL = 1800              # "NIVEL 7" y cuanto falta para el jefe
 AVISO_OLEADA = 2200             # "¡OLEADA!" y "¡OLEADA SUPERADA!"
 AVISO_ANOMALIA = 3200           # el nombre de la anomalia y su consejo
 AVISO_RECORD = 2400             # "¡NUEVO RECORD!"
+AVISO_ULTIMA_VIDA = 2400        # "¡ULTIMA VIDA!"
 # Carteles y fichas que tapan algo (la nave, la moneda, un enemigo, una bala...) se vuelven
 # casi transparentes, asi se sigue leyendo el mensaje sin perder de vista el juego
 CARTEL_ALFA_TAPANDO = 70        # opacidad (0 = invisible, 255 = normal) mientras tapa algo

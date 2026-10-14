@@ -90,6 +90,7 @@ class Enemigo:
     nombre = ""                 # como se presenta la primera vez ("NUEVO ENEMIGO: ...")
     pista = "ESQUIVALO"         # consejo que se muestra al presentarlo
     color = BLANCO              # color de la "X" de aviso y del dibujo de respaldo
+    sonido_roto = "enemigo_roto"    # lo que suena cuando el dash lo rompe (sonido.CATALOGO)
     archivo_sprite = None       # por defecto: tipo + ".png"
     tamano = 40                 # lado del dibujo (y de cada cuadro del sprite)
     radio = RADIO_ENEMIGO       # radio del circulo de daño
@@ -220,6 +221,8 @@ class Enemigo:
     def actualizar(self, partida, congelado):
         if not self.activo(partida.tiempo) or congelado or self.aturdido(partida.tiempo):
             return
+        if not self.naciendo and partida.tiempo - self.aparece_en < 20:
+            partida.sonidos.reproducir("aparece", self.x)      # se materializo (termino la "X")
         self.naciendo = False
         self.mover(partida)
         paso = self.paso(partida)

@@ -31,7 +31,7 @@ Reglas importantes:
 import math
 import random
 
-from juego import hud, dibujo, carteles
+from juego import hud, dibujo, carteles, impactos
 from juego.config import (ANCHO, COMBO_TIEMPO, COMBO_MAXIMO, MS_POR_FRAME, ENERGIA_MONEDA, ENERGIA_COMBO,
                           ENERGIA_PERFECTO, ENERGIA_ENEMIGO, ENERGIA_INICIAL, ENERGIA_POR_NIVEL, ENERGIA_MAXIMA,
                           PUNTOS_ENEMIGO_CONGELADO, NAVE_VELOCIDAD, RECARGA_POR_DESTRUIR,
@@ -41,7 +41,8 @@ from juego.config import (ANCHO, COMBO_TIEMPO, COMBO_MAXIMO, MS_POR_FRAME, ENERG
                           MEJORA_FILO_PUNTOS, MEJORA_ROCE, MEJORA_ATRACCION, MEJORA_COMBO,
                           MEJORA_SUERTE, MEJORA_POTENCIA, MEJORA_MOTOR, FENIX_INVULNERABLE, ATURDIDO_ONDA,
                           EMPUJE_ONDA, NARANJA, NOVA_RADIO, REPETIR_POWERUP, MEJORA_ECO, INTERCEPTAR_PUNTOS,
-                          ATURDIDO_INTERCEPTAR, MAGENTA, CREDITOS_POR_MONEDA,
+                          ATURDIDO_INTERCEPTAR, MAGENTA, CREDITOS_POR_MONEDA, ECO_RETRASO, BUFFER_DASH,
+                          IMPACTO_PASOS, CAMARA_LENTA_JEFE, LATIDO_MS, AVISO_ULTIMA_VIDA,
                           DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
                           ESCARCHA, EMBESTIDA, ARCOIRIS, AVISO_NIVEL, AVISO_RECORD)
 from juego.avisos import Aviso, ColaDeAvisos
@@ -82,6 +83,11 @@ class Partida:
         self.nave = Nave()
         self.vidas_max = self.reglas["vidas"]
         self.vidas = self.vidas_max
+        self.segmentos_sonados = 0          # segmentos de la barra del jefe que ya sonaron al llenarse
+        self.proximo_latido = 0             # cuando late el corazon (con una sola vida y la opcion LATIDO)
+        self.tiempo_herida = -100000        # cuando se perdio la ultima vida (la vineta roja)
+        self.impacto = None                 # el cuadro de impacto del golpe final (impactos.nuevo_impacto)
+        self.camara_lenta = 0               # pasos de camara lenta que quedan (despues del golpe final)
         self.puntaje = 0
         self.puntaje_visible = 0        # el del marcador: cuenta hacia el puntaje de a poco
         self.combo = 0                  # monedas seguidas sin dejar pasar mucho tiempo
@@ -219,7 +225,7 @@ class Partida:
         self.puntaje += puntos
         if not self.record_superado and self.puntaje_maximo > 0 and self.puntaje > self.puntaje_maximo:
             self.record_superado = True
-            self.sonidos.reproducir("nuevo_record")
+            self.sonidos.reproducir("record")
             self.entrada.vibrar("record")
             nave_x, nave_y = self.nave.centro()
             self.efectos.anillo(nave_x, nave_y, ARCOIRIS, 40, 7, 4)
@@ -270,7 +276,8 @@ class Partida:
         if faltan < JEFE_CADA_NIVELES:
             proximo = "PROXIMO NIVEL: ¡JEFE!" if faltan == 1 else "JEFE EN " + str(faltan) + " NIVELES"
             self.avisar(Aviso("¡SUBISTE!", "NIVEL " + str(self.nivel), proximo, AMARILLO, AVISO_NIVEL))
-        self.sonidos.reproducir("seleccion")
+        if self.nivel % JEFE_CADA_NIVELES:
+            self.sonidos.reproducir("nivel")        # (en el nivel del jefe suena la alerta)
         self.entrada.vibrar("subir_nivel")
         nave_x, nave_y = self.nave.centro()
         self.efectos.anillo(nave_x, nave_y, ORO, 32, 6)
@@ -293,7 +300,7 @@ class Partida:
         nave_x, nave_y = self.nave.centro()
         self.efectos.anillo(nave_x, nave_y, [(40, 40, 60), mejora.color, BLANCO], 32, 6)
         self.efectos.texto_flotante(mejora.nombre, nave_x, nave_y - 40, mejora.color)
-        self.sonidos.reproducir("powerup")
+        self.sonidos.reproducir("mejora_elegida")
         self.entrada.vibrar("mejora")
 
     def danar_jugador(self, golpe_x, golpe_y):
@@ -303,7 +310,6 @@ class Partida:
         nave = self.nave
         ahora = self.tiempo
         nave_x, nave_y = nave.centro()
-        self.sonidos.reproducir("golpe")
         self.director.al_recibir_golpe()        # para el desafio y el rango
 
         if self.activo("escudo"):
@@ -315,6 +321,7 @@ class Partida:
             self.efectos.onda_de_choque(nave_x, nave_y, 70, CIAN)
             self.efectos.explosion(golpe_x, golpe_y, FUEGO, 20, 5)
             self.efectos.sacudir(8, CIAN)
+            self.sonidos.reproducir("escudo_roto", nave_x)
             self.entrada.vibrar("escudo_roto")
             self.congelar_frames = 2
             return
@@ -322,6 +329,7 @@ class Partida:
         self.vidas -= 1
         self.combo = 0
         self.tiempo_golpe = ahora
+        self.tiempo_herida = ahora              # la vineta roja (impactos.peligro)
         # Se pierden los power-ups que duran hasta perder una vida
         aviso_y = nave.y - 10
         for powerup in TIPOS_POWERUP.values():
@@ -336,6 +344,12 @@ class Partida:
         self.efectos.sacudir(15, ROJO)
         self.entrada.vibrar("golpe")
         self.congelar_frames = 4
+        if self.vidas > 0:
+            self.sonidos.reproducir("nave_golpe", nave_x)       # (sin vidas suena el FENIX o la explosion)
+        if self.vidas == 1 and self.vidas_max > 1:
+            self.sonidos.reproducir_luego("ultima_vida", 350)     # te queda una: alarma
+            self.avisar(Aviso("PELIGRO", "¡ULTIMA VIDA!", "UN GOLPE MAS Y SE ACABA", ROJO, AVISO_ULTIMA_VIDA,
+                              alerta=True), urgente=True)
 
         if self.vidas <= 0 and self.mejora("fenix"):
             # FENIX: vuelve con una vida (y la mejora se gasta: puede volver a salir)
@@ -346,12 +360,15 @@ class Partida:
             self.efectos.anillo(nave_x, nave_y, FUEGO, 40, 7, 4)
             self.efectos.texto_flotante("¡FENIX!", nave_x, nave_y - 40, NARANJA)
             self.entrada.vibrar("fenix")
-            self.sonidos.reproducir("nuevo_record")
+            self.sonidos.reproducir("fenix")
             return
 
         if self.vidas <= 0:
             # Gran explosion de la nave; el Game Over aparece despues
             self.sonidos.parar_musica(fundido=0)       # se corta en seco
+            self.sonidos.parar_loops()
+            self.sonidos.cancelar_pendientes()
+            self.sonidos.reproducir("nave_muerte", nave_x)
             self.efectos.explosion(nave_x, nave_y, FUEGO, 90, 10, 6)
             self.efectos.explosion(nave_x, nave_y, ORO, 30, 5, 4)
             self.efectos.sacudir(35, BLANCO)
@@ -359,6 +376,13 @@ class Partida:
             self.congelar_frames = 8
             self.termino = True
             self._al_terminar()
+
+    def golpe_final(self, x, y, color):
+        # El golpe que mata al jefe: el cuadro de impacto (el juego se congela, el mundo se
+        # oscurece y salen rayos del golpe) y despues un rato de camara lenta (lo hace Juego)
+        self.impacto = impactos.nuevo_impacto(x, y, color)
+        self.congelar_frames = max(self.congelar_frames, IMPACTO_PASOS)
+        self.camara_lenta = CAMARA_LENTA_JEFE
 
     def iniciar_jefe(self, tipo=None):
         # Los enemigos explotan y se guardan hasta que venzas al jefe del sector
@@ -376,6 +400,13 @@ class Partida:
         self.enemigos.clear()
         self.efectos.sacudir(20)
         self.entrada.vibrar("jefe_llega")        # un latido: llego el jefe
+        self.sonidos.reproducir("alerta")       # (la musica se calla: ver Juego.musica)
+        self.sonidos.reproducir("franjas")
+        self.sonidos.reproducir_luego("presentacion_nombre", hud.MS_ALERTA)
+        self.sonidos.reproducir_luego("presentacion_apodo", hud.MS_ALERTA + 160)
+        if self.jefe.SONIDO_ENTRADA:
+            self.sonidos.reproducir_luego(self.jefe.SONIDO_ENTRADA, 500)
+        self.segmentos_sonados = 0
 
     def jefe_vencido(self):
         # Gran explosion y bonus de puntos (los enemigos vuelven cuando se va el cartel)
@@ -393,6 +424,8 @@ class Partida:
         self.ultimo_jefe, self.bonus_jefe = self.jefe, ganados
         self.jefe = None
         self.balas.clear()
+        self.sonidos.parar_loops()
+        self.sonidos.reproducir_luego("jefe_vencido", 500)
         self.director.al_vencer_al_jefe()      # se pasa al sector siguiente
 
     # ================================== #
@@ -418,9 +451,16 @@ class Partida:
         self.tiempo += MS_POR_FRAME
         vel_max = self.vel_max()
         dash_antes = self.nave.dash_hasta
+        extras_antes = self.nave.dash_extra
+        avisado_antes = self.nave.dash_avisado
         self.nave.actualizar(self.tiempo, dx, dy, pidio_dash, vel_max, self.recarga_dash(), self.efectos)
         if self.nave.dash_hasta != dash_antes:
-            self._al_empezar_dash()
+            self._al_empezar_dash(extra=self.nave.dash_extra < extras_antes)
+        elif self.nave.dash_avisado and not avisado_antes:
+            self.sonidos.reproducir("dash_listo")        # el destello cian: el dash se recargo
+        elif pidio_dash and self._dash_vacio():
+            self.sonidos.reproducir("dash_vacio")        # "todavia no"
+        self._latir()
         en_dash = self.nave.en_dash(self.tiempo)
         if en_dash:
             self.camino_dash.append((self.nave.x, self.nave.y))
@@ -431,6 +471,8 @@ class Partida:
 
         # El combo se corta si pasa mucho tiempo sin monedas
         if self.combo > 0 and self.tiempo - self.ultima_moneda > self.tiempo_combo():
+            if self.multiplicador_combo() > 1:
+                self.sonidos.reproducir("combo_cortado")
             self.combo = 0
         if self.activo("iman"):
             self.moneda.atraer(self.nave, self.efectos)
@@ -439,6 +481,7 @@ class Partida:
 
         self._revisar_moneda()
         self._actualizar_powerups()
+        self._avisar_powerups()
         self.director.actualizar()          # oleadas, anomalias, desafios y rango
         self.avisos.actualizar(self.tiempo)
         self._devolver_enemigos()
@@ -474,7 +517,10 @@ class Partida:
                 desde = max(desde, self.fichas_logro[-1][1] + carteles.DURACION_FICHA)
             self.fichas_logro.append([logro, desde])
             self.logros_nuevos.append(logro)
-            self.sonidos.reproducir("nuevo_record")
+            demora = max(0, desde - self.tiempo)        # (suena cuando sale su ficha)
+            self.sonidos.reproducir_luego("logro", demora)
+            if carteles.nave_del_logro(logro) is not None:
+                self.sonidos.reproducir_luego("nave_nueva", demora + 900)
             self.entrada.vibrar("logro")
 
     def _al_terminar(self):
@@ -484,7 +530,23 @@ class Partida:
             self.progreso.partidas += 1
             self.progreso.guardar()
 
-    def _al_empezar_dash(self):
+    def _dash_vacio(self):
+        # ¿Pidio el dash y no sale, ni siquiera por el buffer? (falta mas que BUFFER_DASH)
+        nave = self.nave
+        return (not nave.en_dash(self.tiempo) and nave.dash_extra == 0
+                and nave.dash_listo - self.tiempo > BUFFER_DASH)
+
+    def _latir(self):
+        # Con una sola vida (y la opcion LATIDO), un latido suave cada 1.6 s
+        if self.vidas != 1 or self.vidas_max == 1 or not getattr(self.opciones, "latido", False):
+            return
+        if self.tiempo >= self.proximo_latido:
+            # (en el golpe del latido de la vineta: impactos.peligro usa el mismo LATIDO_MS)
+            self.proximo_latido = (self.tiempo // LATIDO_MS + 1) * LATIDO_MS
+            self.sonidos.reproducir("latido")
+
+    def _al_empezar_dash(self, extra=False):
+        self.sonidos.reproducir("nave_dash_extra" if extra else "nave_dash", self.nave.centro()[0])
         self.perfecto_en_este_dash = False
         self.camino_dash = []
         self.estadisticas.dashes += 1
@@ -499,13 +561,15 @@ class Partida:
             self.efectos.explosion(nave_x, nave_y, FUEGO, 60, 9, 6)
             self.efectos.sacudir(14, NARANJA)
             self.entrada.vibrar("nova")
-            self.sonidos.reproducir("golpe")
+            self.sonidos.reproducir("nova", nave_x)
         # Mejora ONDA: al final de cada dash, una onda alrededor de la nave
         elif self.mejora("onda"):
             self.onda_expansiva(nave_x, nave_y, MEJORA_ONDA_RADIO[self.mejora("onda") - 1])
+            self.sonidos.reproducir("onda", nave_x)
         # Mejora ECO: a veces una copia repite este dash
         if self.camino_dash and self.mejora("eco") and random.random() < MEJORA_ECO[self.mejora("eco") - 1]:
             self.ecos.append(Eco(self.camino_dash, self.nave.angulo))
+            self.sonidos.reproducir_luego("eco", ECO_RETRASO * MS_POR_FRAME, self.camino_dash[0][0])
         self.camino_dash = []
 
     def onda_expansiva(self, x, y, radio):
@@ -558,7 +622,7 @@ class Partida:
             cartel = cartel[:-1] + " x" + str(multiplicador) + "!"        # "¡PERFECTO x3!"
         self.efectos.texto_flotante(cartel + " +" + str(ganados), nave_x, nave_y - 34,
                                     CIAN if self.cadena < 2 else AMARILLO)
-        self.sonidos.reproducir("seleccion")
+        self.sonidos.reproducir("perfecto_%d" % multiplicador, x)
         self.entrada.vibrar("perfecto", 1 + 0.08 * (multiplicador - 1))    # la cadena vibra un poco mas
         self.congelar_frames = max(self.congelar_frames, 3)
         self.ganar_energia(ENERGIA_PERFECTO)
@@ -577,13 +641,14 @@ class Partida:
             return
         self.perfectos_para_escudo += 1
         if self.perfectos_para_escudo < necesarios:
+            self.sonidos.reproducir("roce_carga_%d" % min(self.perfectos_para_escudo, 6))
             return
         self.perfectos_para_escudo = 0
         self.activar("escudo", HASTA_PERDER_VIDA)
         nave_x, nave_y = self.nave.centro()
         self.efectos.anillo(nave_x, nave_y, ENERGIA, 32, 6)
         self.efectos.texto_flotante("+ESCUDO", nave_x, nave_y - 60, CIAN)
-        self.sonidos.reproducir("powerup")
+        self.sonidos.reproducir("pw_escudo", nave_x)
 
     def _revisar_moneda(self):
         if not self.nave.caja_recoger().colliderect(self.moneda.caja()):
@@ -606,7 +671,10 @@ class Partida:
         else:
             self.efectos.explosion(centro_x, centro_y, ORO, 14, 4, 3)
         self.efectos.texto_flotante("+" + str(ganados), centro_x, self.moneda.y - 6, AMARILLO)
-        self.sonidos.reproducir("moneda")
+        # La moneda sube de tono con el multiplicador (el oido "lee" el combo)
+        self.sonidos.reproducir("moneda_%d" % self.multiplicador_combo(), centro_x)
+        if self.director.multiplicador_monedas() > 1:
+            self.sonidos.reproducir("oro_brillo", centro_x)
         self._vibrar_moneda(multiplicador_antes)
         if self.multiplicador_combo() > multiplicador_antes:
             self.tiempo_multiplicador = ahora
@@ -621,14 +689,17 @@ class Partida:
         multiplicador = self.multiplicador_combo()
         if multiplicador > multiplicador_antes and multiplicador == COMBO_MAXIMO:
             self.entrada.vibrar("combo_maximo")
+            self.sonidos.reproducir_luego("combo_max", 90)
         elif multiplicador > multiplicador_antes:
             self.entrada.vibrar("combo_sube")
+            self.sonidos.reproducir_luego("combo_sube_%d" % min(multiplicador - 1, 3), 90)
 
     def _actualizar_powerups(self):
         # Cada 8 a 13 segundos cae uno desde arriba; si no lo recoges, se va por abajo
         ahora = self.tiempo
         if self.capsula is None and ahora > self.proximo_powerup:
             self.capsula = Capsula(self.elegir_powerup(), random.randint(30, ANCHO - 30))
+            self.sonidos.reproducir("capsula", self.capsula.x)
         if self.capsula is None:
             return
         self.capsula.caer()
@@ -640,9 +711,24 @@ class Partida:
             self.capsula = None
             self.proximo_powerup = ahora + self.espera_powerup()
 
+    def _avisar_powerups(self):
+        # A un power-up con tiempo le queda poco: un tic a 1.5, 1 y 0.5 s (cuando parpadea en el
+        # HUD); y cuando se termina, su "power-down". (Uno solo por paso)
+        for tipo, hasta in self.activos.items():
+            if hasta == math.inf:
+                continue
+            restante = hasta - self.tiempo
+            antes = restante + MS_POR_FRAME
+            if antes > 0 >= restante:
+                self.sonidos.reproducir("pw_fin")
+                return
+            if any(antes > umbral >= restante for umbral in (1500, 1000, 500)):
+                self.sonidos.reproducir("pw_acaba")
+                return
+
     def recoger_powerup(self, powerup, x, y):
         # Agarrar un power-up en (x, y): la capsula, o el modo desarrollador
-        self.sonidos.reproducir("powerup")
+        self.sonidos.reproducir("pw_" + powerup.tipo, x)
         self.entrada.vibrar("powerup")
         powerup.al_recoger(self, x, y)
         self.efectos.onda_de_choque(x, y, 56, powerup.color, 16)
@@ -689,7 +775,7 @@ class Partida:
             if congelados and caja_nave.colliderect(enemigo.caja()):
                 # Enemigo congelado: lo rompes y ganas puntos (el hielo sigue)
                 ganados = self.sumar_puntos(PUNTOS_ENEMIGO_CONGELADO)
-                self.sonidos.reproducir("moneda")
+                self.sonidos.reproducir("hielo_roto", golpe_x)
                 self.tiempo_moneda = ahora
                 self.efectos.explosion(golpe_x, golpe_y, ESCARCHA, 40, 7, 5)
                 self.efectos.texto_flotante("+" + str(ganados), golpe_x, golpe_y - 20, HIELO)
@@ -734,7 +820,8 @@ class Partida:
         enemigo.aturdido_hasta = self.tiempo + ATURDIDO_INTERCEPTAR
         self.efectos.explosion(golpe_x, golpe_y, EMBESTIDA, 24, 6, 4)
         self.efectos.sacudir(8)
-        self.sonidos.reproducir("golpe")
+        self.sonidos.reproducir("interceptado", golpe_x)
+        self.sonidos.reproducir("aturdido", golpe_x)
         self.entrada.vibrar("interceptar")
         self.estadisticas.interceptados += 1
         self.director.al_interceptar()
@@ -750,7 +837,7 @@ class Partida:
         centro_x, centro_y = enemigo.centro()
         botin = self.mejora("botin")
         ganados = self.sumar_puntos((enemigo.puntos_dash or MEJORA_FILO_PUNTOS) * (1 + botin))
-        self.sonidos.reproducir("golpe")
+        self.sonidos.reproducir(enemigo.sonido_roto, centro_x)
         self.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color, BLANCO], 24, 6, 4)
         self.efectos.onda_de_choque(centro_x, centro_y, 36 + enemigo.tamano // 2, enemigo.color, 14)
         self.efectos.texto_flotante("+" + str(ganados), centro_x, centro_y - 20, enemigo.color)
@@ -778,11 +865,23 @@ class Partida:
         mover_balas(self)
         antes = len(self.balas)
         self.jefe.actualizar(self)
+        self._llenar_barra_del_jefe()
         # Cada bala que acaba de disparar nace con un destello (como mucho unas pocas por paso)
         for bala in self.balas[antes:antes + 6]:
             self.efectos.fogonazo(bala.x, bala.y, bala.brillo or BLANCO)
         if self.jefe is not None:
             self._choques_jefe()
+
+    def _llenar_barra_del_jefe(self):
+        # Al terminar la presentacion, la barra se llena de a un segmento (hud._barra_jefe):
+        # un tic por segmento, subiendo por Re menor (como en los juegos de pelea)
+        jefe = self.jefe
+        if jefe is None or jefe.fin_entrada is None:
+            return
+        llenos = min(jefe.vida_barra()[0], int((self.tiempo - jefe.fin_entrada - hud.MS_FRANJAS) // hud.MS_POR_SEGMENTO))
+        if llenos > self.segmentos_sonados:
+            self.segmentos_sonados = llenos
+            self.sonidos.reproducir("barra_jefe_%d" % ((llenos - 1) % 12 + 1))
 
     def _choques_jefe(self):
         jefe, nave, ahora = self.jefe, self.nave, self.tiempo
@@ -835,7 +934,7 @@ class Partida:
             ganados = self.sumar_puntos(bala.puntos)
             self.efectos.explosion(bala.x, bala.y, FUEGO, 16, 4, 3)
             self.efectos.texto_flotante("+" + str(ganados), bala.x, bala.y - 20, AMARILLO)
-            self.sonidos.reproducir("golpe")
+            self.sonidos.reproducir("bala_rota", bala.x)
             self.congelar_frames = 2
 
     def _rebotar_en(self, x, y):
@@ -858,6 +957,13 @@ class Partida:
 
     def dibujar_hud(self, pantalla):
         hud.dibujar(pantalla, self)
+
+    def dibujar_impactos(self, pantalla):
+        # Encima del mundo y debajo del HUD (el marcador siempre se lee): el cuadro de impacto
+        # del golpe final, y la vineta de la herida y de la ultima vida
+        if self.impacto is not None and self.congelar_frames > 0:
+            impactos.cuadro_de_impacto(pantalla, self, self.impacto, self.congelar_frames)
+        impactos.peligro(pantalla, self)
 
     def _dibujar_todo(self, pantalla, con_nave):
         self.moneda.dibujar(pantalla)

@@ -18,6 +18,7 @@ from juego.config import (ANCHO, CENTRO_X, FONDO, ROJO, AMARILLO, CIAN, MAGENTA,
                           TEXTO_APAGADO)
 from juego.entrada import ACEPTAR, VOLVER
 from juego.escenas.base import Escena
+from juego.sonido import SILENCIO
 from juego.carteles import COLOR_RANGO
 from juego.mejoras import TIPOS_MEJORA
 
@@ -37,6 +38,8 @@ def reloj(ms):
 
 
 class Fin(Escena):
+    ambiente = SILENCIO
+    musica = "fin"
     def __init__(self, app, partida, fila_nueva):
         super().__init__(app)
         self.partida = partida
@@ -51,9 +54,11 @@ class Fin(Escena):
     def actualizar(self, entrada):
         self.mover_fondo()
         self.app.efectos.actualizar()
+        self._sonidos()
         # Nuevo record: fuegos artificiales cuando termina de contar
         if self.fila_nueva == 0 and self.contador() == self.partida.puntaje and random.random() < 0.05:
             paleta = random.choice([FUEGO, ORO, ESCARCHA, ENERGIA, CORAZON])
+            self.app.sonidos.reproducir("fuego_artificial")
             self.app.efectos.explosion(random.randint(80, ANCHO - 80), random.randint(80, 560), paleta, 40, 6)
         # Las teclas se ignoran el primer momento (para no saltear esta pantalla sin querer)
         if self.tiempo_en_escena() <= 800:
@@ -63,11 +68,28 @@ class Fin(Escena):
         elif entrada.pulso(VOLVER):
             self._volver_al_menu()
 
+    def _sonidos(self):
+        # El puntaje cuenta con tics que suben (8 en MS_CONTADOR) y termina en un "ding";
+        # despues, cada fila de estadisticas que sale hace un tic
+        t = self.tiempo_en_escena()
+        sonados = getattr(self, "sonados", 0)
+        if self.partida.puntaje > 0 and sonados < 8 and t >= (sonados + 1) * MS_CONTADOR / 9:
+            self.app.sonidos.reproducir("contador_%d" % (sonados + 1))
+            self.sonados = sonados + 1
+        if t >= MS_CONTADOR and not getattr(self, "ding", False):
+            self.ding = True
+            if self.partida.puntaje > 0:
+                self.app.sonidos.reproducir("contador_fin")
+        filas = min(len(self.filas()), max(0, int((t - MS_CONTADOR) // MS_POR_FILA)))
+        if filas > getattr(self, "filas_sonadas", 0):
+            self.filas_sonadas = filas
+            self.app.sonidos.reproducir("teclear")
+
     def _volver_al_menu(self):
         from juego.escenas.inicio import Inicio     # (aca adentro: Inicio tambien llega hasta Fin)
         self.app.efectos.reiniciar()
         self.app.fondo.ir_a_sector(SECTORES[0], instantaneo=True)
-        self.app.sonidos.reproducir("seleccion")
+        self.app.sonidos.reproducir("ui_volver")
         self.app.cambiar_escena(Inicio(self.app))
 
     def filas(self):

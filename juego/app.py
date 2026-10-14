@@ -29,12 +29,16 @@ from juego.efectos import Efectos
 from juego.transicion import Transicion
 from juego.partida import Partida
 from juego.escenas.inicio import Inicio
+from juego.escenas.presentacion import Presentacion
 from juego.escenas.listo import Listo
 
 
 class App:
-    def __init__(self, carpeta_datos=CARPETA, usar_mandos=True):
+    def __init__(self, carpeta_datos=CARPETA, usar_mandos=True, presentacion=True):
         # carpeta_datos: donde se guardan records.json y config.json (los tests usan otra)
+        # Audio en estereo (para el paneo) y con un buffer chico: el sonido sale ~12 ms
+        # despues del evento (con el de fabrica, mas grande, se nota el retraso)
+        pygame.mixer.pre_init(44100, -16, 2, 512)
         pygame.init()
         pygame.display.set_caption("Caza Monedas")
 
@@ -42,6 +46,7 @@ class App:
         self.opciones = Opciones(os.path.join(carpeta_datos, NOMBRE_CONFIG))
         accesibilidad.opciones = self.opciones     # los efectos leen de ahi el temblor, destellos y CRT
         self.sonidos = Sonidos()
+        self.sonidos.reloj = lambda: self.ahora()      # (enfriamientos y ducking, con el reloj real)
         self.sonidos.aplicar_volumen(self.opciones)
         self.records = TablaRecords(os.path.join(carpeta_datos, NOMBRE_RECORDS))
         self.progreso = Progreso(os.path.join(carpeta_datos, NOMBRE_PROGRESO))
@@ -61,7 +66,9 @@ class App:
         self.aviso = None               # (texto, hasta cuando): aviso chico de los atajos M y F11
         self.ventana_antes = None       # la resolucion en ventana antes de F11 (para volver)
         self.transicion = None          # el barrido de rombos al cambiar de pantalla (o None)
-        self.escena = Inicio(self)
+        # Al abrir: la advertencia, "HECHO CON PYGAME" y el titulo (el acorde del logo suena
+        # ahi). Sin presentacion (los tests), directo al Inicio
+        self.escena = Presentacion(self) if presentacion else Inicio(self)
 
     def abrir_ventana(self):
         # Abre la ventana con la resolucion guardada. Si ya no existe (un config.json viejo)
@@ -81,6 +88,7 @@ class App:
         # seguir jugando, READY -> juego, la explosion)
         if transicion:
             self.transicion = Transicion(self.pantalla.copy(), self.ahora())
+            self.sonidos.reproducir("ui_transicion")
         self.escena = escena
 
     def nueva_partida(self, dificultad=None):
@@ -91,8 +99,9 @@ class App:
         self.fondo.saltar_al_hiperespacio()                         # y llega volando
         partida = Partida(self.efectos, self.sonidos, self.entrada, self.records, self.opciones, dificultad,
                           self.progreso)
-        self.sonidos.reproducir("seleccion")
-        self.cambiar_escena(Listo(self, partida))      # Listo pide la musica del juego
+        self.sonidos.reproducir("ui_empezar")
+        self.sonidos.reproducir("hiperespacio")         # (el fondo llega volando)
+        self.cambiar_escena(Listo(self, partida))      # Listo pide la musica del juego (en el GO)
 
     # ---------- El bucle ----------
 
@@ -110,20 +119,26 @@ class App:
         self._atajos()
         if self.escena.musica is not None:
             self.sonidos.tocar_musica(self.escena.musica)      # si ya suena, no hace nada
+        if self.escena.ambiente is not None:
+            self.sonidos.tocar_ambiente(self.escena.ambiente)  # (igual que la musica)
+        if self.entrada.mando_desconectado:
+            self.sonidos.reproducir("mando_fuera")
+        elif self.entrada.mando_conectado and self.ahora() > 2000:     # (no los que ya estaban al abrir)
+            self.sonidos.reproducir("mando_dentro")
         self.escena.actualizar(self.entrada)
         self.entrada.haptica.actualizar()       # los patrones de vibracion siguen con su paso
+        self.sonidos.actualizar()               # la musica vuelve de a poco despues de un momento
         self.entrada.consumir()
 
     def _atajos(self):
         # Teclas que funcionan en cualquier pantalla
         opciones = self.opciones
         if self.entrada.pulso(SILENCIO):
-            # M: si algo suena, se apaga todo; si no, se prende todo
-            sonando = opciones.musica or opciones.efectos
-            opciones.musica = opciones.efectos = not sonando
+            # M: calla todo o lo vuelve a prender (los volumenes de Opciones no se tocan)
+            opciones.silencio = not opciones.silencio
             self.sonidos.aplicar_volumen(opciones)
             opciones.guardar()
-            self.avisar("SONIDO: " + ("NO" if sonando else "SI"))
+            self.avisar("SONIDO: " + ("NO" if opciones.silencio else "SI"))
         if self.entrada.pulso(PANTALLA_COMPLETA):
             # F11: pantalla completa, o vuelve a la ventana de antes
             if opciones.resolucion == "COMPLETA":

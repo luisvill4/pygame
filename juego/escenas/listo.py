@@ -3,11 +3,19 @@ from juego import dibujo, interfaz, carteles
 from juego.dibujo import CHICA, TITULO
 from juego.config import CENTRO_X, AMARILLO, MAGENTA, VERDE, CIAN, CONTORNO, DIFICULTADES, TEXTO_SUAVE
 from juego.escenas.base import Escena
-from juego.escenas.juego import Juego
+from juego.sonido import SILENCIO
+from juego.escenas.juego import Juego, musica_del_sector
 
 
 class Listo(Escena):
-    musica = "juego"
+    @property
+    def musica(self):
+        # READY? en silencio (suena su pregunta); la musica del juego entra con el GO!
+        return musica_del_sector(self.partida) if self.tiempo_en_escena() >= 1000 else SILENCIO
+
+    @property
+    def ambiente(self):
+        return self.partida.director.sector["ambiente"]
 
     def __init__(self, app, partida):
         super().__init__(app)
@@ -15,6 +23,12 @@ class Listo(Escena):
 
     def actualizar(self, entrada):
         self.mover_fondo()
+        if not getattr(self, "ready_sonado", False):
+            self.ready_sonado = True
+            self.app.sonidos.reproducir_luego("listo_ready", 200)
+        if self.tiempo_en_escena() >= 1000 and not getattr(self, "go_sonado", False):
+            self.go_sonado = True
+            self.app.sonidos.reproducir("listo_go")
         # Si se pierde el foco durante el READY, se pausa apenas empieza el juego
         if entrada.foco_perdido or entrada.mando_desconectado:
             self.partida.pausa_pendiente = True

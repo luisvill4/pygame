@@ -251,6 +251,10 @@ class Serpiente(Jefe):
         if self.x > ANCHO * 0.3:
             self.al_terminar_de_entrar(partida)
 
+    SONIDO_ENTRADA = "siseo"            # entra nadando en zigzag
+    SONIDOS_FASE = {"acechar": "cascabel", "morder": "mordida", "mareada": "mareo", "enroscarse": "enroscar"}
+    FASES_VENTANA = ("aturdida", "mareada")
+
     def al_terminar_de_entrar(self, partida):
         self.empezar_a_nadar(partida)
 
@@ -353,6 +357,7 @@ class Serpiente(Jefe):
         direccion = math.atan2(nave_y - centro_y, nave_x - centro_x)
         rapidez = 2.6 * partida.reglas["velocidad"]
         partida.balas.append(Veneno(centro_x, centro_y, math.cos(direccion) * rapidez, math.sin(direccion) * rapidez))
+        self.sonar(partida, "escupir", centro_x)
 
     def estrellarse(self, partida):
         centro_x, centro_y = self.centro()
@@ -360,7 +365,7 @@ class Serpiente(Jefe):
         partida.efectos.sacudir(14, VERDE)
         partida.entrada.vibrar("impacto")
         partida.congelar_frames = 4
-        partida.sonidos.reproducir("golpe")
+        self.sonar(partida, "serpiente_choca", centro_x)
         self.cambiar_fase_pulsos("aturdida", SERPIENTE_VENTANA, partida.tiempo)
 
     def al_recibir_golpe(self, partida):
@@ -368,6 +373,7 @@ class Serpiente(Jefe):
         cola = self.segmentos.pop()
         partida.efectos.pedazos(cola.x, cola.y, ESCAMAS, 14, 5)
         partida.efectos.texto_flotante("¡SSSIII!", cola.x, cola.y - 30, VERDE)
+        self.sonar(partida, "corte", cola.x)
         self.sentido = -self.sentido
         self.empezar_a_nadar(partida)
 

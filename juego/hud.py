@@ -23,7 +23,7 @@ import random
 
 import pygame
 
-from juego import dibujo, nave, recursos, accesibilidad, carteles
+from juego import impactos, dibujo, nave, recursos, accesibilidad, carteles
 from juego.carteles import texto, cinta, franja, DURACION_FICHA, FONDO_CINE, ROJO_OSCURO
 from juego.dibujo import MINI, CHICA, GRANDE
 from juego.config import (ANCHO, CENTRO_X, ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA, VERDE, NARANJA,
@@ -213,14 +213,40 @@ def _marcador(pantalla, partida):
         cargado = 1 - (partida.nave.dash_listo - ahora) / partida.recarga_dash()
         dibujo.barra(pantalla, pygame.Rect(derecha - 64, 547, 64, 4), cargado, CIAN, borde=None)
 
-    # Vidas (derecha): parpadean despues de recibir un golpe
+    # Vidas (derecha): la que se acaba de perder destella en blanco antes de vaciarse, y la
+    # ultima que queda late en rojo con el corazon (impactos.latiendo)
     texto(pantalla, "VIDAS", CHICA, ROJO, derecha, 22, alinear="derecha")
-    if ahora - partida.tiempo_golpe < 800 and dibujo.parpadeo(80):
-        return
+    recien_perdida = ahora - partida.tiempo_golpe < 800
     for i in range(partida.vidas_max):
         icono_x = derecha - partida.vidas_max * 28 + 3 + i * 28
-        icono = nave.imagen("icono") if i < partida.vidas else nave.imagen("icono_vacio")
+        if i < partida.vidas:
+            icono = _icono_rojo() if impactos.latiendo(partida) else nave.imagen("icono")
+        elif i == partida.vidas and recien_perdida:
+            icono = _icono_blanco() if dibujo.parpadeo(80) else nave.imagen("icono_vacio")
+        else:
+            icono = nave.imagen("icono_vacio")
         pantalla.blit(icono, (icono_x, 34))
+
+
+_iconos_vida = {}       # (color de la nave, "blanco"/"rojo") -> el icono de vida en ese color
+
+
+def _icono_vida(cual):
+    # Variantes del icono de vida (se generan solas: recursos.blanquear y tenir). Se guardan
+    # por el icono de la nave elegida (cambiar_color lo cambia)
+    original = nave.imagen("icono")
+    clave = (id(original), cual)
+    if clave not in _iconos_vida:
+        _iconos_vida[clave] = recursos.blanquear(original) if cual == "blanco" else recursos.tenir(original, ROJO)
+    return _iconos_vida[clave]
+
+
+def _icono_blanco():
+    return _icono_vida("blanco")
+
+
+def _icono_rojo():
+    return _icono_vida("rojo")
 
 
 COLOR_MULTIPLICADOR = {1: AMARILLO, 2: CIAN, 3: VERDE, 4: AMARILLO}    # x5, el maximo, va en arcoiris

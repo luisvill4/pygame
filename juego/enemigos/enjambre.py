@@ -79,12 +79,14 @@ class Bandada:
             self.vy += (dir_y / distancia * rapidez - self.vy) * 0.04
             if ahora >= self.proxima_picada:
                 self.fase, self.fase_hasta = "aviso", ahora + AVISO_PICADA
+                partida.sonidos.reproducir("enjambre_aviso", self.x)
         elif self.fase == "aviso":
             # Se frena y destella: va a lanzarse
             self.vx *= 0.85
             self.vy *= 0.85
             if ahora >= self.fase_hasta:
                 self.fase, self.fase_hasta = "picada", ahora + DURACION_PICADA
+                partida.sonidos.reproducir("enjambre_picada", self.x)
                 self.vx = dir_x / distancia * ENJAMBRE_PICADA * factor
                 self.vy = dir_y / distancia * ENJAMBRE_PICADA * factor
         elif ahora >= self.fase_hasta:      # termino la picada
@@ -177,6 +179,7 @@ class Dron(Enemigo):
             centro_x, centro_y = self.centro()
             partida.efectos.anillo(centro_x, centro_y, ARCOIRIS, 24, 5, 3)
             partida.efectos.texto_flotante("¡ENJAMBRE DESTRUIDO! +" + str(ganados), centro_x, centro_y - 30, AMARILLO)
+            partida.sonidos.reproducir_luego("bonus", 120, centro_x)
 
     def al_quitar(self, partida):
         # Ya no es parte de la bandada (los demas se reparten su lugar)

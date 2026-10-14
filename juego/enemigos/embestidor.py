@@ -49,6 +49,7 @@ class Embestidor(Enemigo):
             if ahora > self.fase_hasta and 0 < distancia < RANGO_EMBESTIDOR:
                 self.fase = "apuntar"
                 self.fase_hasta = ahora + 600
+                partida.sonidos.reproducir("embestidor_apunta", self.x)
                 self.mira = (dir_x / distancia, dir_y / distancia, distancia)
                 self.mira_fija = False
 
@@ -57,12 +58,15 @@ class Embestidor(Enemigo):
             self.vx, self.vy = 0, 0
             fijo = partida.reglas["apunte_fijo"]
             if fijo and ahora >= self.fase_hasta - fijo:
+                if not self.mira_fija:
+                    partida.sonidos.reproducir("mira_fija", self.x)
                 self.mira_fija = True           # ya no te sigue: embiste hacia donde estabas
             elif distancia > 0:
                 self.mira = (dir_x / distancia, dir_y / distancia, distancia)
             if ahora > self.fase_hasta:
                 self.fase = "cargar"
                 self.fase_hasta = ahora + 500
+                partida.sonidos.reproducir("embestida", self.x)
                 mira_x, mira_y, _ = self.mira
                 self.vx = mira_x * 9 * factor
                 self.vy = mira_y * 9 * factor

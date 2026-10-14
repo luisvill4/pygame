@@ -94,6 +94,7 @@ class Divisor(DivisorBase):
     tamano = 48
     radio = 18
     hijo = "divisor_mediano"
+    sonido_roto = "divisor_parte_1"
     puntos_dash = DIVISOR_PUNTOS["divisor"]
 
 
@@ -103,6 +104,7 @@ class DivisorMediano(DivisorBase):
     tamano = 32
     radio = 12
     hijo = "divisor_chico"
+    sonido_roto = "divisor_parte_2"
     giro = 0.05
     puntos_dash = DIVISOR_PUNTOS["divisor_mediano"]
 
@@ -110,6 +112,7 @@ class DivisorMediano(DivisorBase):
 @registrar_enemigo
 class DivisorChico(DivisorBase):
     tipo = "divisor_chico"
+    sonido_roto = "divisor_parte_3"
     tamano = 20
     radio = 7
     giro = 0.07

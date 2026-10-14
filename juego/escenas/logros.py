@@ -11,6 +11,7 @@ from juego.dibujo import texto, MINI, CHICA, MEDIA
 from juego.config import ANCHO, AMARILLO, BLANCO, GRIS, CIAN, MAGENTA, VERDE, NAVES, TEXTO_SUAVE
 from juego.entrada import VOLVER, ACEPTAR, IZQUIERDA, DERECHA
 from juego.escenas.base import Escena
+from juego.sonido import SILENCIO
 from juego.logros import LOGROS
 
 HANGAR = pygame.Rect(48, 122, ANCHO - 96, 92)
@@ -37,6 +38,7 @@ TILDE = [
 
 
 class Logros(Escena):
+    ambiente = SILENCIO
     musica = "menu"
 
     def __init__(self, app, volver_a):
@@ -50,7 +52,7 @@ class Logros(Escena):
         elif entrada.pulso(DERECHA):
             self._cambiar_nave(1)
         elif entrada.pulso(VOLVER) or entrada.pulso(ACEPTAR):
-            self.app.sonidos.reproducir("seleccion")
+            self.app.sonidos.reproducir("ui_volver")
             self.app.cambiar_escena(self.volver_a)
 
     def _cambiar_nave(self, direccion):
@@ -62,7 +64,7 @@ class Logros(Escena):
         progreso.nave = nombres[(nombres.index(progreso.nave) + direccion) % len(nombres)]
         progreso.guardar()
         nave.cambiar_color(progreso.color_nave())
-        self.app.sonidos.reproducir("seleccion")
+        self.app.sonidos.reproducir("hangar_nave")
 
     # ---------- Dibujo ----------
 

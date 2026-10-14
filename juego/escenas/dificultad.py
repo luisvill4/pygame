@@ -13,6 +13,7 @@ from juego.dibujo import texto, CHICA, GRANDE
 from juego.config import (CENTRO_X, FONDO, BLANCO, CIAN, AMARILLO, ROJO, ORDEN_DIFICULTADES, DIFICULTADES)
 from juego.entrada import ACEPTAR, VOLVER, IZQUIERDA, DERECHA
 from juego.escenas.base import Escena
+from juego.sonido import SILENCIO
 
 PASOS_ANIMACION = 14        # pasos (1/60 s) que dura la entrada del nombre
 DESLIZAMIENTO = 160         # px desde donde entra el nombre
@@ -42,6 +43,7 @@ def dibujar_calavera(pantalla, centro_x, centro_y, color, tamano_pixel=4):
 
 
 class Dificultad(Escena):
+    ambiente = SILENCIO
     musica = "menu"
 
     def __init__(self, app, volver_a):
@@ -72,7 +74,7 @@ class Dificultad(Escena):
             self.app.opciones.guardar()
             self.app.nueva_partida(self.nombre())
         elif entrada.pulso(VOLVER):
-            self.app.sonidos.reproducir("seleccion")
+            self.app.sonidos.reproducir("ui_volver")
             self.app.cambiar_escena(self.volver_a)
 
     def _cambiar(self, direccion):
@@ -81,13 +83,14 @@ class Dificultad(Escena):
         self.animacion = PASOS_ANIMACION
         self.empujon_flecha = 6
         reglas = DIFICULTADES[self.nombre()]
-        self.app.sonidos.reproducir("seleccion")
+        self.app.sonidos.reproducir("dificultad_%d" % (self.elegida + 1))
         # Chispas del color de la dificultad (en coordenadas de la zona central)
         self.app.efectos.explosion(CENTRO_X, TARJETA.top + 116, reglas["paleta"], 30, 6, 4)
         self.app.efectos.anillo(CENTRO_X, TARJETA.top + 116, reglas["paleta"], 20, 5, 3)
         if self.nombre() == "PESADILLA":
             self.app.efectos.sacudir(10, ROJO)
             self.app.entrada.vibrar("pesadilla")
+            self.app.sonidos.reproducir("pesadilla")
 
     # ---------- Dibujo ----------
 

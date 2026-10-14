@@ -22,6 +22,9 @@ class Escena:
     # El tema que suena en esta escena ("menu", "juego", "jefe", "gasolinera", ver sonido.py).
     # None = no la cambia: sigue la que venia (Pausa, Opciones) o el silencio (Game Over)
     musica = None
+    # El ambiente del bioma (sonido.AMBIENTES), igual que la musica: None = no lo cambio.
+    # Fuera de la partida, SILENCIO
+    ambiente = None
 
     def __init__(self, app):
         self.app = app
@@ -43,11 +46,14 @@ class Escena:
     def mover_fondo(self, partida=None):
         # Un paso del fondo (va en actualizar). Con una partida, el fondo ademas se corre
         # al reves de la nave (paralaje)
+        relampago_antes = self.app.fondo.relampago
         if partida is not None:
             self.app.fondo.ir_a_sector(partida.director.sector)
             self.app.fondo.mover(-partida.nave.vx * REACCION_PARALAJE, -partida.nave.vy * REACCION_PARALAJE)
         else:
             self.app.fondo.mover()
+        if self.app.fondo.relampago > relampago_antes:
+            self.app.sonidos.reproducir_luego("trueno", 450)   # el trueno llega despues del destello
 
     def dibujar_fondo(self, pantalla):
         self.app.fondo.dibujar(pantalla, self.app.fraccion)
@@ -58,6 +64,7 @@ class Escena:
         self.dibujar_fondo(pantalla)
         partida.dibujar(pantalla, con_nave, self.app.fraccion)
         self.app.efectos.dibujar_temblor_y_destello(pantalla)
+        partida.dibujar_impactos(pantalla)
         partida.dibujar_hud(pantalla)
 
     def captura_del_mundo(self, partida):

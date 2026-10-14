@@ -22,6 +22,7 @@ from juego.config import (ANCHO, ROJO, BLANCO, AMARILLO, MAGENTA, CIAN, GRIS, NA
                           TEXTO_APAGADO, LINEA_APAGADA)
 from juego.entrada import ACEPTAR, IZQUIERDA, DERECHA, ARRIBA, ABAJO, PESTANA_ANTERIOR, PESTANA_SIGUIENTE
 from juego.escenas.base import Escena
+from juego.sonido import SILENCIO
 from juego.escenas.opciones import Opciones
 from juego.escenas.dificultad import Dificultad
 from juego.escenas.logros import Logros
@@ -62,6 +63,7 @@ def altura_nave():
 
 
 class Inicio(Escena):
+    ambiente = SILENCIO
     musica = "menu"
 
     def __init__(self, app):
@@ -70,6 +72,7 @@ class Inicio(Escena):
         self.cursor = interfaz.Cursor(0)    # donde se dibuja el cursor (se desliza)
         self.pagina = 0                     # pestaña del panel
         self.pagina_desde = app.ahora()     # cuando se mostro (para cambiarla sola)
+        self.cerrar_en = None               # SALIR: se cierra cuando termina de sonar el apagado
 
     def actualizar(self, entrada):
         self.mover_fondo()
@@ -90,9 +93,13 @@ class Inicio(Escena):
             self._elegir((self.opcion - 1) % len(MENU))
         elif entrada.pulso(ABAJO):
             self._elegir((self.opcion + 1) % len(MENU))
+        if self.cerrar_en is not None:
+            if self.app.ahora() >= self.cerrar_en:
+                self.app.ejecutando = False         # (despues de que se oye el apagado)
+            return
         if entrada.pulso(ACEPTAR):
-            self.app.sonidos.reproducir("seleccion")
             elegida = MENU[self.opcion]
+            self.app.sonidos.reproducir("ui_apagar" if elegida == "SALIR" else "ui_aceptar")
             if elegida == "JUGAR":
                 self.app.cambiar_escena(Dificultad(self.app, volver_a=self))
             elif elegida == "LOGROS":
@@ -100,18 +107,18 @@ class Inicio(Escena):
             elif elegida == "OPCIONES":
                 self.app.cambiar_escena(Opciones(self.app, volver_a=self))
             else:
-                self.app.ejecutando = False
+                self.cerrar_en = self.app.ahora() + 450
 
     def _elegir(self, opcion):
         self.opcion = opcion
         self.cursor.ir_a(opcion)
-        self.app.sonidos.reproducir("seleccion")
+        self.app.sonidos.reproducir("ui_mover")
 
     def cambiar_pagina(self, direccion, con_sonido=True):
         self.pagina = (self.pagina + direccion) % len(PESTANAS)
         self.pagina_desde = self.app.ahora()
         if con_sonido:
-            self.app.sonidos.reproducir("seleccion")
+            self.app.sonidos.reproducir("ui_pestana")
 
     # ---------- Dibujo ----------
 

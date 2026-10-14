@@ -7,6 +7,7 @@ from juego.config import (CENTRO_X, FONDO, MAGENTA, AMARILLO, CIAN, BLANCO, ALFA
                           TEXTO_SUAVE, FILA_ELEGIDA, LINEA_APAGADA)
 from juego.entrada import ARRIBA, ABAJO, IZQUIERDA, DERECHA, ACEPTAR
 from juego.escenas.base import Escena
+from juego.sonido import SILENCIO
 from juego.escenas.fin import Fin
 
 
@@ -14,6 +15,8 @@ PANEL = pygame.Rect(CENTRO_X - 280, 132, 560, 336)
 
 
 class Iniciales(Escena):
+    ambiente = SILENCIO
+    musica = "iniciales"
     def __init__(self, app, partida):
         super().__init__(app)
         self.partida = partida
@@ -27,15 +30,16 @@ class Iniciales(Escena):
             if self.app.escena is not self:
                 break
             posicion = ALFABETO.index(self.letras[self.actual])
-            if accion == ARRIBA:
-                self.letras[self.actual] = ALFABETO[(posicion + 1) % len(ALFABETO)]
-            elif accion == ABAJO:
-                self.letras[self.actual] = ALFABETO[(posicion - 1) % len(ALFABETO)]
+            if accion in (ARRIBA, ABAJO):
+                posicion = (posicion + (1 if accion == ARRIBA else -1)) % len(ALFABETO)
+                self.letras[self.actual] = ALFABETO[posicion]
+                self.app.sonidos.reproducir("ui_tecla_%d" % (posicion % 5 + 1))   # cada letra, su nota
             elif accion == IZQUIERDA and self.actual > 0:
                 self.actual -= 1
+                self.app.sonidos.reproducir("ui_volver")
             elif accion in (ACEPTAR, DERECHA):
-                self.app.sonidos.reproducir("seleccion")
                 self.actual += 1
+                self.app.sonidos.reproducir("record_guardado" if self.actual == 3 else "ui_aceptar")
                 if self.actual == 3:
                     fila = self.app.records.agregar("".join(self.letras), self.partida.puntaje,
                                                     self.partida.dificultad)

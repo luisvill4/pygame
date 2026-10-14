@@ -9,6 +9,8 @@ pip install -r requirements.txt
 python main.py
 ```
 
+Al abrir, primero sale una advertencia de fotosensibilidad (con cómo reducir los destellos), después "HECHO CON PYGAME" y la pantalla de título: la nave llega del hiperespacio, el logo cae y empieza la música. Cualquier tecla o botón saltea directo al título, y desde ahí **ENTER** (o **A** en el mando) abre el menú.
+
 | Acción | Teclado | Mando de Xbox |
 |---|---|---|
 | Mover | Flechas | Stick izquierdo (cualquier ángulo) o cruceta |
@@ -145,10 +147,10 @@ Las peleas son un **baile**: cada jefe avisa antes de atacar, ataca al ritmo de 
 **Opciones** tiene tres secciones, a la izquierda: se cambia con **LB/RB** (o **Q/E**). Debajo de cada opción hay una explicación de lo que hace:
 
 - **VIDEO:** RESOLUCION, FPS, CRT (las líneas de pantalla antigua: NO, SUAVE o NORMAL), ESCALADO (NITIDO, o SUAVE para que en pantallas grandes todos los píxeles se vean del mismo tamaño; es un poco más lento) y NEON (el brillo de las balas, la moneda, las cápsulas y las explosiones: NO, SUAVE o NORMAL).
-- **SONIDO:** VOLUMEN, MUSICA y EFECTOS (la tecla **M** apaga y prende todo el sonido).
+- **SONIDO:** tres barras: VOLUMEN (el de todo), MUSICA y EFECTOS (en 0 no suenan). La tecla **M** calla todo y lo vuelve a prender sin tocar las barras. Y LATIDO: un latido suave cuando te queda una sola vida.
 
-**Música:** cada pantalla tiene su tema y al cambiar se cruzan con un fundido: uno tranquilo en los menús, el de siempre al jugar, uno rápido contra los jefes y uno con swing en la gasolinera. Los temas de menú, jefe y gasolinera están hechos con código: `python herramientas/componer_musica.py` los vuelve a generar (las melodías están escritas como una grilla de notas, fáciles de cambiar; con ffmpeg instalado salen en OGG). El mismo compositor sirve para hacer efectos de sonido; CLAUDE.md (sección "Sonido y música") explica la notación, los instrumentos y cómo agregar un tema o un efecto al juego.
-- **ACCESIBILIDAD:** TEMBLOR (cuánto se sacude la pantalla con los golpes: NO, SUAVE o NORMAL; el marcador nunca tiembla), DESTELLOS (REDUCIDOS: sin destellos de pantalla completa y nada parpadea más de 3 veces por segundo, para personas con fotosensibilidad), AVISO JEFE y VIBRACION.
+**Música:** cada pantalla tiene su tema y al cambiar se cruzan con un fundido: uno tranquilo en los menús, el de siempre al jugar, uno rápido contra los jefes y uno con swing en la gasolinera. Toda la música y los efectos están hechos con código, en el estudio: `python herramientas/componer.py` los vuelve a generar (las melodías están escritas como una grilla de notas, fáciles de cambiar). Los premios, los power-ups y la interfaz **siguen al acorde** de la música (cada uno está compuesto en 11 versiones, una por color de acorde), y el mezclador cuida que la suma de todo nunca sature. CLAUDE.md (sección "Sonido y música") explica la notación, los instrumentos y cómo agregar un tema o un efecto al juego.
+- **ACCESIBILIDAD:** TEMBLOR (cuánto se sacude la pantalla con los golpes: NO, SUAVE o NORMAL; el marcador nunca tiembla), DESTELLOS (REDUCIDOS: sin destellos de pantalla completa y nada parpadea más de 3 veces por segundo, para personas con fotosensibilidad), AVISO JEFE, VIBRACION y AUDIO MONO (todo suena igual por los dos lados, para quien usa un solo auricular u oye de un solo oído; sin esto, los sonidos salen del lado donde pasan las cosas).
 
 El juego es panorámico (16:9): se dibuja en 1066x600 y se agranda a la ventana sin perder los píxeles. En **Opciones → VIDEO → RESOLUCION** se elige el tamaño de la ventana o la pantalla completa (también con **F11**).
 
@@ -193,7 +195,8 @@ juego/
   dibujo.py  efectos.py  fondo.py  hud.py
   accesibilidad.py      # temblor, destellos y CRT: todos los efectos le preguntan a este modulo
 tests/                  # pytest
-herramientas/componer_musica.py   # compone la musica chiptune (menu, jefe, gasolinera)
+herramientas/componer.py          # el estudio: compone toda la musica y los efectos (y efectos/fichas.json)
+herramientas/componer_musica.py   # el compositor viejo (chiptune): ya no se usa; guarda en herramientas/chiptune/
 ```
 
 ### Las ideas de diseño (y por qué)

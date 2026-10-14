@@ -3,3 +3,8 @@ pygame>=2.1.4,<3
 
 # Para los tests
 pytest>=8
+
+# Para componer la musica y los efectos (herramientas/componer.py). El juego no los necesita
+numpy>=1.26
+numba>=0.59         # los filtros, rapido (sin numba anda igual, pero mucho mas lento)
+soundfile>=0.12     # guarda los temas en OGG

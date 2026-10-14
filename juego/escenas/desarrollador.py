@@ -95,10 +95,13 @@ class Desarrollador(Escena):
         for accion in entrada.acciones:
             if accion == ARRIBA:
                 self.fila = (self.fila - 1) % len(FILAS)
+                self.app.sonidos.reproducir("ui_mover")
             elif accion == ABAJO:
                 self.fila = (self.fila + 1) % len(FILAS)
+                self.app.sonidos.reproducir("ui_mover")
             elif accion in (IZQUIERDA, DERECHA):
                 self._cambiar_valor(1 if accion == DERECHA else -1)
+                self.app.sonidos.reproducir("ui_valor_sube" if accion == DERECHA else "ui_valor_baja")
             elif accion == ACEPTAR:
                 # Primero se vuelve (asi el sonido de lo que pasa ya no esta en pausa)
                 self._volver_al_juego()

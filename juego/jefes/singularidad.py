@@ -231,6 +231,10 @@ class Singularidad(Jefe):
         if self.escala >= 1:
             self.al_terminar_de_entrar(partida)
 
+    SONIDO_ENTRADA = "nacer"            # nace de un punto y crece
+    SONIDOS_FASE = {"inhalar": "inhalar", "colapsar": "colapso", "estallido": "estallido", "expuesta": "inestable"}
+    FASES_VENTANA = ("expuesta",)
+
     def al_terminar_de_entrar(self, partida):
         self.cambiar_fase_pulsos("girar", 6, partida.tiempo)
 
@@ -244,6 +248,8 @@ class Singularidad(Jefe):
             elif self.nuevo_pulso:
                 self.tic(partida)
                 self.soltar_brazos(partida)
+                self.sonar(partida, "anillo_tic")
+                self.sonar(partida, "brazos")
 
         elif fase == "inhalar":
             # Tira fuerte (va subiendo en el primer pulso, asi se siente venir)
@@ -351,7 +357,7 @@ class Singularidad(Jefe):
             nave.vy += (nave_y - centro_y) / distancia * 5
         partida.efectos.anillo(centro_x, centro_y, DISCO, 40, 8, 4)
         partida.efectos.sacudir(10, HIELO)
-        partida.sonidos.reproducir("golpe")
+        self.sonar(partida, "exhalar", centro_x)
         partida.entrada.vibrar("exhalar")
         self.cambiar_fase_pulsos("exhalar", 1, partida.tiempo)
 
@@ -387,6 +393,7 @@ class Singularidad(Jefe):
             moneda.y += (centro_y - moneda_y) / distancia * 0.4
         if distancia < 36:
             partida.efectos.explosion(moneda_x, moneda_y, ORO, 16, 4, 3)
+            self.sonar(partida, "moneda_tragada", moneda_x)
             moneda.mover_a_lugar_nuevo(partida)
 
     # ---------- Dibujo ----------

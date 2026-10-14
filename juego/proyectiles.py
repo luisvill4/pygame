@@ -158,7 +158,11 @@ class Mina(Bala):
         self.y += self.vy
         self.vx *= 0.95         # se va frenando: recorre 20 veces su velocidad inicial
         self.vy *= 0.95
+        antes = self.espera
         self.espera -= MS_POR_FRAME
+        # El ultimo medio segundo (cuando parpadea): bips cada vez mas seguidos
+        if any(antes > umbral >= self.espera for umbral in (500, 300, 160, 60)):
+            partida.sonidos.reproducir("mina_tic", self.x)
         if self.espera <= 0:
             self.estallar(partida)
             return False
@@ -171,7 +175,7 @@ class Mina(Bala):
             partida.balas.append(Bala(self.x, self.y, math.cos(direccion) * self.rapidez_balas,
                                       math.sin(direccion) * self.rapidez_balas))
         partida.efectos.explosion(self.x, self.y, FUEGO, 16, 4, 3)
-        partida.sonidos.reproducir("golpe")
+        partida.sonidos.reproducir("mina_estalla", self.x)
 
     def dibujar(self, pantalla, encendido):
         # Un cuadrado con pinches en su forma; en el ultimo medio segundo parpadea rapido (aviso)

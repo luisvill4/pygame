@@ -86,6 +86,8 @@ class Entrada:
         self.cerrar = False                 # se cerro la ventana
         self.foco_perdido = False           # la ventana perdio el foco (Alt+Tab...)
         self.mando_desconectado = False     # se desconecto un mando que se estaba usando
+        self.mando_conectado = False        # se conecto un mando (tambien los que ya estaban al abrir)
+        self.algo_apretado = False          # cualquier tecla o boton (para saltear la presentacion)
         self.con_mando = False              # lo ultimo que se toco fue el mando (para las ayudas)
         self.haptica = Haptica(self.mandos)  # la vibracion (usa el mismo diccionario de mandos)
         # Funcion que dice que teclas estan mantenidas (se puede reemplazar en los tests)
@@ -101,6 +103,7 @@ class Entrada:
             elif evento.type == pygame.KEYDOWN:
                 self.acciones.extend(TECLAS.get(evento.key, []))
                 self.con_mando = False
+                self.algo_apretado = True
             elif evento.type == pygame.WINDOWFOCUSLOST:
                 self.foco_perdido = True
             else:
@@ -113,6 +116,7 @@ class Entrada:
                 mando = pygame.joystick.Joystick(evento.device_index)
                 self.mandos[mando.get_instance_id()] = mando
                 self.con_mando = True
+                self.mando_conectado = True
         elif evento.type == pygame.JOYDEVICEREMOVED:
             if evento.instance_id in self.mandos:
                 self.mando_desconectado = True
@@ -120,6 +124,7 @@ class Entrada:
                 self.con_mando = bool(self.mandos)
         elif evento.type == pygame.JOYBUTTONDOWN:
             self.con_mando = True
+            self.algo_apretado = True
             if evento.button in BOTONES:
                 self.acciones.append(BOTONES[evento.button])
         elif evento.type == pygame.JOYHATMOTION:
@@ -155,6 +160,8 @@ class Entrada:
         self.acciones = []
         self.foco_perdido = False
         self.mando_desconectado = False
+        self.mando_conectado = False
+        self.algo_apretado = False
 
     def pulso(self, accion):
         # ¿Se apreto esta accion (desde el ultimo paso de logica)?

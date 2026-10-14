@@ -31,18 +31,24 @@ class Taller(Escena):
         self.ofertas = list(self.partida.director.ofertas)
         self.elegida = len(self.ofertas) // 2       # empieza en la del medio
         self.pasos = 0                              # pasos desde que se abrio (animacion)
-        app.sonidos.reproducir("nuevo_record")
+        app.sonidos.reproducir("taller")
 
     def actualizar(self, entrada):
         self.pasos += 1
+        # Cada carta que cae suena (una nota mas arriba cada una; la RARA brilla)
+        for i, mejora in enumerate(self.ofertas):
+            if self.pasos == i * PASOS_ENTRE_CARTAS + 1:
+                self.app.sonidos.reproducir("carta_%d" % min(i + 1, 6))
+                if mejora.peso < 1:
+                    self.app.sonidos.reproducir_luego("carta_rara", 80)
         if self.pasos < PASOS_SIN_ELEGIR:
             return
         if entrada.pulso(IZQUIERDA):
             self.elegida = (self.elegida - 1) % len(self.ofertas)
-            self.app.sonidos.reproducir("seleccion")
+            self.app.sonidos.reproducir("ui_mover")
         elif entrada.pulso(DERECHA):
             self.elegida = (self.elegida + 1) % len(self.ofertas)
-            self.app.sonidos.reproducir("seleccion")
+            self.app.sonidos.reproducir("ui_mover")
         elif entrada.pulso(ACEPTAR):
             self.partida.elegir_mejora(self.ofertas[self.elegida].tipo)
             self.app.cambiar_escena(self.escena_juego)

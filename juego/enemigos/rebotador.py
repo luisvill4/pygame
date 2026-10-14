@@ -91,6 +91,8 @@ class Rebotador(Enemigo):
         pared = self.pared_tocada(antes_vx, antes_vy)
         if pared:
             # Choco (tambien si ya estaba en un choque, ej: en una esquina): empieza de nuevo
+            numero = ["abajo", "arriba", "izquierda", "derecha"].index(pared) + 1
+            partida.sonidos.reproducir("rebote_%d" % numero, self.x)
             self.estado = "choque"
             self.pared = pared
             self.inicio_choque = partida.tiempo

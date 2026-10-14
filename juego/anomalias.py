@@ -96,6 +96,7 @@ class LluviaDeAsteroides(Anomalia):
         if ahora >= self.proximo and ahora < self.hasta - ASTEROIDES_AVISO:
             self.proximo = ahora + ASTEROIDES_ESPERA
             self.avisos.append([self.elegir_x(partida), ahora + ASTEROIDES_AVISO])
+            partida.sonidos.reproducir("meteoro_aviso", self.avisos[-1][0])
         for aviso in self.avisos[:]:
             if ahora >= aviso[1]:
                 self.avisos.remove(aviso)
@@ -150,10 +151,11 @@ class TormentaSolar(Anomalia):
                 return              # ya no alcanza para otra llamarada entera
             self.franja = self.elegir_franja(partida)
             self.fase, self.fase_hasta = "aviso", ahora + TORMENTA_AVISO
+            partida.sonidos.reproducir("tormenta_aviso", self.franja.centerx)
         elif self.fase == "aviso":
             self.fase, self.fase_hasta = "llamarada", ahora + TORMENTA_LLAMARADA
             partida.efectos.sacudir(8, self.color)
-            partida.sonidos.reproducir("golpe")
+            partida.sonidos.reproducir("llamarada", self.franja.centerx)
             for _ in range(24):
                 partida.efectos.particula(random.uniform(self.franja.left, self.franja.right),
                                           random.uniform(self.franja.top, self.franja.bottom),

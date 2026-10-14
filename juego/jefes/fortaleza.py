@@ -292,6 +292,11 @@ class Fortaleza(Jefe):
 
     # ---------- La marcha (con coraza) ----------
 
+    SONIDOS_FASE = {"recalentado": "recalentado", "fijar": "fijar", "caer": "caida", "reubicarse": "motor_pesado",
+                    "apuntar": "servo", "subir": "hidraulica"}
+    FASES_VENTANA = ("recalentado", "aturdida")
+    FASES_COMPAS = ("reubicarse", "cargar", "disparar", "recalentado")
+
     def al_terminar_de_entrar(self, partida):
         self.empezar_compas(partida)
 
@@ -329,10 +334,14 @@ class Fortaleza(Jefe):
             canon.objetivos = [(max(60, min(nave_x, ANCHO - 60)), max(230, min(nave_y, 480))),
                                (random.randint(60, ANCHO - 60), random.randint(230, 480))]
         self.cambiar_fase_pulsos("cargar", pulsos, partida.tiempo)
+        self.sonar(partida, "laser_carga" if canon.ataque == "laser" else "carga_canon", boca_x)
 
     def actualizar_fase(self, partida):
         ahora = partida.tiempo
         fase = self.fase
+        if self.nuevo_pulso and fase in self.FASES_COMPAS:
+            # La marcha: las lamparitas del casco marcan el pulso (el primero, mas fuerte)
+            self.sonar(partida, "compas_acento" if self.pulso == 0 else "compas")
         if fase == "reubicarse":
             self.x += (self.destino_x - self.x) * 0.08
             self.y += (self.y_final - self.y) * 0.1
@@ -350,6 +359,8 @@ class Fortaleza(Jefe):
             # comienzo de un pulso nuevo, y no tiene que disparar de mas
             canon = self.canon_actual()
             if self.fin_de_fase(ahora):
+                if self.laser_prendido:
+                    partida.sonidos.parar_loop("laser", fundido=120)
                 self.laser_prendido = False
                 self.turno += 1
                 if self.turno < len(self.compas):
@@ -418,20 +429,23 @@ class Fortaleza(Jefe):
             direccion = math.atan2(nave_y - boca_y, nave_x - boca_x)
             partida.balas.append(Obus(boca_x, boca_y, math.cos(direccion) * rapidez, math.sin(direccion) * rapidez))
             partida.efectos.sacudir(3)
+            self.sonar(partida, "obus", boca_x)
         elif canon.ataque == "misiles" and pulso < 2:
             lado = -1 if pulso == 0 else 1
             escala = partida.reglas["velocidad"]
             partida.balas.append(Misil(boca_x, boca_y, lado * 1.6 * escala, 1.2 * escala, FORTALEZA_MISIL_GUIADO))
+            self.sonar(partida, "misil", boca_x)
         elif canon.ataque == "minas" and pulso < len(canon.objetivos):
             # Viaja frenando hasta su X (con friccion 0.95 recorre 20 veces su velocidad)
             # y estalla 3 pulsos despues de salir: la primera en "+", la segunda en "x"
             objetivo_x, objetivo_y = canon.objetivos[pulso]
             partida.balas.append(Mina(boca_x, boca_y, (objetivo_x - boca_x) / 20, (objetivo_y - boca_y) / 20,
                                       rapidez * 0.8, 3 * self.ms_pulso, "+" if pulso == 0 else "x"))
+            self.sonar(partida, "mina_lanza", boca_x)
         elif canon.ataque == "laser" and pulso == 0:
             self.laser_prendido = True
             partida.efectos.sacudir(6, CIAN)
-            partida.sonidos.reproducir("golpe")
+            partida.sonidos.tocar_loop("laser")
         else:
             return
         partida.efectos.anillo(boca_x, boca_y, [(40, 40, 60), canon.color, BLANCO], 8, 3, 2)
@@ -476,6 +490,8 @@ class Fortaleza(Jefe):
                 self.cambiar_fase_pulsos("apuntar", 2, ahora)
             elif self.nuevo_pulso and self.pulso in (1, 3):
                 self.soltar_cortina(partida, self.huecos[self.pulso // 2])
+            elif self.nuevo_pulso and self.pulso in (0, 2):
+                self.sonar(partida, "cortina_aviso")         # el aviso: retumba el techo
 
         elif fase == "apuntar":
             # Se pone encima tuyo (el aviso marca la columna donde va a caer)
@@ -525,7 +541,7 @@ class Fortaleza(Jefe):
         partida.efectos.texto_flotante("¡SIN CORAZA!", nucleo_x, nucleo_y + px(45), MAGENTA)
         partida.entrada.vibrar("coraza")
         partida.congelar_frames = 6
-        partida.sonidos.reproducir("golpe")
+        self.sonar(partida, "coraza", nucleo_x)
         self.empezar_cortinas(partida)
 
     def empezar_cortinas(self, partida):
@@ -542,7 +558,7 @@ class Fortaleza(Jefe):
             if abs(x - hueco) > 90:
                 partida.balas.append(Escombro(x, self.y + px(48), 0, rapidez))
         partida.efectos.sacudir(4)
-        partida.sonidos.reproducir("golpe")
+        self.sonar(partida, "escombros", hueco)
 
     def estrellarse(self, partida):
         # Golpe contra el piso: temblor, pedazos y dos ondas de choque a los costados
@@ -555,7 +571,8 @@ class Fortaleza(Jefe):
         partida.efectos.sacudir(22, BLANCO)
         partida.entrada.vibrar("impacto_grande")
         partida.congelar_frames = 5
-        partida.sonidos.reproducir("golpe")
+        self.sonar(partida, "estrellarse", centro_x)
+        partida.sonidos.reproducir_luego("onda_suelo", 120)
         self.cambiar_fase_pulsos("aturdida", FORTALEZA_ATURDIDA, partida.tiempo)
 
     def al_recibir_golpe(self, partida):

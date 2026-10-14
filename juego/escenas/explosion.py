@@ -6,19 +6,20 @@ velocidad, una vineta roja se va cerrando y aparece "NAVE DESTRUIDA".
 """
 import pygame
 
-from juego import dibujo
+from juego import dibujo, impactos
 from juego.dibujo import GRANDE
 from juego.config import ROJO, CONTORNO
 from juego.escenas.base import Escena
+from juego.sonido import SILENCIO
 from juego.escenas.iniciales import Iniciales
 from juego.escenas.fin import Fin
 
 
 CAMARA_LENTA = 600          # ms en que las particulas van a la mitad de velocidad
-_vinetas = {}               # tamaño -> la vineta roja (se arma una vez)
 
 
 class Explosion(Escena):
+    ambiente = SILENCIO
     def __init__(self, app, partida):
         super().__init__(app)
         self.partida = partida
@@ -38,6 +39,9 @@ class Explosion(Escena):
         if self.tiempo_en_escena() > CAMARA_LENTA or self.pasos % 2 == 0:
             self.app.efectos.actualizar()      # (en camara lenta, un paso si y uno no)
         self.mover_fondo()
+        if self.tiempo_en_escena() > 450 and not getattr(self, "cartel_sonado", False):
+            self.cartel_sonado = True
+            self.app.sonidos.reproducir("destruida")      # cuando aparece "NAVE DESTRUIDA"
         if self.tiempo_en_escena() > 1500:
             self.app.efectos.reiniciar()
             self.app.sonidos.reproducir("game_over")
@@ -54,21 +58,10 @@ class Explosion(Escena):
         self.dibujar_partida(pantalla, self.partida, con_nave=False)
         # La vineta roja se va cerrando y despues aparece el cartel
         avance = min(1, self.tiempo_en_escena() / 1500)
-        vineta = _vineta(pantalla.get_size())
+        vineta = impactos.vineta(pantalla.get_size(), (60, 0, 12))
         vineta.set_alpha(round(220 * avance))
         pantalla.blit(vineta, (0, 0))
         if self.tiempo_en_escena() > 450:
             dibujo.texto_3d(pantalla, "NAVE DESTRUIDA", GRANDE, ROJO, (90, 0, 20), pantalla.get_height() // 2,
                             4, CONTORNO)
 
-
-def _vineta(tamano):
-    # Bordes rojo oscuro que se van apagando hacia el centro, en escalones (sin degradado)
-    if tamano not in _vinetas:
-        ancho, alto = tamano
-        vineta = pygame.Surface(tamano, pygame.SRCALPHA)
-        for i, alfa in enumerate((200, 150, 100, 60, 30)):
-            borde = 24 * i
-            pygame.draw.rect(vineta, (60, 0, 12, alfa), (borde, borde, ancho - 2 * borde, alto - 2 * borde), 24)
-        _vinetas[tamano] = vineta
-    return _vinetas[tamano]

@@ -53,9 +53,11 @@ class Pausa(Escena):
             if accion == ARRIBA:
                 self.fila = (self.fila - 1) % len(FILAS_PAUSA)
                 self.cursor.ir_a(self.fila)
+                self.app.sonidos.reproducir("ui_mover")
             elif accion == ABAJO:
                 self.fila = (self.fila + 1) % len(FILAS_PAUSA)
                 self.cursor.ir_a(self.fila)
+                self.app.sonidos.reproducir("ui_mover")
             elif accion == ACEPTAR:
                 self._elegir(FILAS_PAUSA[self.fila])
                 return
@@ -67,7 +69,7 @@ class Pausa(Escena):
             self._abrir_opciones()
         else:
             # Antes de salir se pregunta: se pierde la partida
-            self.app.sonidos.reproducir("seleccion")
+            self.app.sonidos.reproducir("ui_alerta")
             self.confirmando = True
             self.confirmar_si = False
 
@@ -75,31 +77,37 @@ class Pausa(Escena):
         for accion in entrada.acciones:
             if accion in (IZQUIERDA, DERECHA):
                 self.confirmar_si = not self.confirmar_si
+                self.app.sonidos.reproducir("ui_mover")
             elif accion == ACEPTAR:
                 if self.confirmar_si:
                     self._volver_al_menu()
                 else:
                     self.confirmando = False
+                    self.app.sonidos.reproducir("ui_volver")
                 return
             elif accion == VOLVER:          # ESC o B: es lo mismo que NO
                 self.confirmando = False
+                self.app.sonidos.reproducir("ui_volver")
                 return
 
     def _seguir(self):
+        self.app.sonidos.reproducir("seguir")
         self.app.sonidos.reanudar_todo()
         self.app.cambiar_escena(self.escena_juego, transicion=False)
 
     def _abrir_opciones(self):
-        self.app.sonidos.reproducir("seleccion")
+        self.app.sonidos.reproducir("ui_aceptar")
         self.app.cambiar_escena(Opciones(self.app, volver_a=self))
 
     def _volver_al_menu(self):
         # Se abandona la partida (sin guardar el puntaje) y se vuelve a la pantalla de inicio
         self.app.sonidos.reanudar_todo()
         self.app.sonidos.parar_musica()
+        self.app.sonidos.parar_loops()
+        self.app.sonidos.cancelar_pendientes()
         self.app.efectos.reiniciar()
         self.app.fondo.ir_a_sector(SECTORES[0], instantaneo=True)
-        self.app.sonidos.reproducir("seleccion")
+        self.app.sonidos.reproducir("ui_volver")
         self.app.cambiar_escena(Inicio(self.app))
 
     # ---------- Dibujo ----------

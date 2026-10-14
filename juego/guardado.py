@@ -20,6 +20,11 @@ def _escribir_json(archivo, datos):
         pass    # no se pudo guardar: el juego sigue igual
 
 
+def _volumen(valor):
+    # Un volumen guardado, entre 0 y VOLUMEN_MAX (lanza error si no es un numero)
+    return min(max(int(valor), 0), VOLUMEN_MAX)
+
+
 def _limpiar_tabla(datos):
     # Lista de {"nombre": "ABC", "puntos": 123}, de mayor a menor (lanza error si esta dañada)
     tabla = [{"nombre": str(fila["nombre"])[:3], "puntos": int(fila["puntos"])} for fila in datos]
@@ -137,9 +142,12 @@ class Opciones:
         # Valores de fabrica
         self.resolucion = None      # None = la primera de la lista
         self.fps = 60               # cuadros por segundo al dibujar (0 = sin limite)
-        self.volumen = VOLUMEN_MAX
-        self.musica = True
-        self.efectos = True
+        self.volumen = VOLUMEN_MAX              # el general (multiplica a los otros dos)
+        self.volumen_musica = VOLUMEN_MAX
+        self.volumen_efectos = VOLUMEN_MAX      # efectos, interfaz y ambiente
+        self.silencio = False       # la tecla M: todo callado sin tocar los volumenes
+        self.audio_mono = False     # todo igual por los dos lados (sin paneo: para un solo oido)
+        self.latido = True          # un latido suave cuando queda una sola vida
         self.aviso_jefe = True      # el jefe muestra hacia donde van a salir sus balas
         self.vibracion = "NORMAL"   # intensidad de la vibracion del mando (ORDEN_VIBRACION)
         self.crt = "NORMAL"         # lineas de pantalla vieja (ORDEN_CRT)
@@ -159,9 +167,15 @@ class Opciones:
                 self.resolucion = datos["resolucion"]
             if type(datos.get("fps")) is int and datos["fps"] in FRECUENCIAS:
                 self.fps = datos["fps"]
-            self.volumen = min(max(int(datos.get("volumen", VOLUMEN_MAX)), 0), VOLUMEN_MAX)
-            self.musica = bool(datos.get("musica", True))
-            self.efectos = bool(datos.get("efectos", True))
+            self.volumen = _volumen(datos.get("volumen", VOLUMEN_MAX))
+            # Un config.json viejo tenia "musica" y "efectos" en SI/NO: NO pasa a volumen 0
+            musica_vieja = VOLUMEN_MAX if datos.get("musica", True) else 0
+            efectos_viejos = VOLUMEN_MAX if datos.get("efectos", True) else 0
+            self.volumen_musica = _volumen(datos.get("volumen_musica", musica_vieja))
+            self.volumen_efectos = _volumen(datos.get("volumen_efectos", efectos_viejos))
+            self.silencio = bool(datos.get("silencio", False))
+            self.audio_mono = bool(datos.get("audio_mono", False))
+            self.latido = bool(datos.get("latido", True))
             self.aviso_jefe = bool(datos.get("aviso_jefe", True))
             if datos.get("vibracion") in ORDEN_VIBRACION:
                 self.vibracion = datos["vibracion"]
@@ -187,8 +201,11 @@ class Opciones:
             "resolucion": self.resolucion,
             "fps": self.fps,
             "volumen": self.volumen,
-            "musica": self.musica,
-            "efectos": self.efectos,
+            "volumen_musica": self.volumen_musica,
+            "volumen_efectos": self.volumen_efectos,
+            "silencio": self.silencio,
+            "audio_mono": self.audio_mono,
+            "latido": self.latido,
             "aviso_jefe": self.aviso_jefe,
             "vibracion": self.vibracion,
             "crt": self.crt,

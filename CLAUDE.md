@@ -1,11 +1,11 @@
 # Caza Monedas (Pygame)
 
-Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge monedas, esquiva enemigos y pelea contra jefes. El código está en el paquete `juego/`; `main.py` solo lo arranca. README.md tiene la guía para el usuario y explica cómo agregar enemigos, jefes y power-ups.
+Juego arcade 2D hecho con Pygame. El jugador controla una nave que recoge monedas, esquiva enemigos y pelea contra jefes. El código está en el paquete `juego/`; `main.py` solo lo arranca. README.md tiene la guía para el usuario y explica cómo agregar enemigos, jefes y power-ups. `MAPA_DE_AUDIO.md` es el plan de sonido (ver "Sonido y música").
 
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~364 tests, unos 80 s, sin ventana
+python -m pytest        # ~460 tests, unos 45-90 s, sin ventana
 ```
 - Requisitos: Python 3.12, pygame 2.6.1 y pytest (están en `requirements.txt`). Se necesita pygame ≥ 2.1.4 por `pygame.transform.grayscale`.
 - **Git:** `main` tiene la versión de un solo archivo de antes del refactor (commit `9805b13`). El refactor modular se hizo en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json`, `progreso.json` y `__pycache__`.
@@ -33,7 +33,7 @@ juego/
   enemigos/  base.py (Enemigo + registro) · perseguidor · rebotador · embestidor · divisor · enjambre · abeja
   jefes/     base.py (Jefe + registro + pulso) · partes.py (Parte) · ojo · fortaleza · serpiente · colmena · singularidad
   powerups/  base.py (PowerUp, Capsula, registro) · tipos.py (los 7 power-ups, en orden)
-  escenas/   base.py · inicio · dificultad · logros · opciones · listo · juego · taller · gasolinera · pausa · desarrollador · explosion · iniciales · fin
+  escenas/   base.py · presentacion · inicio · dificultad · logros · opciones · listo · juego · taller · gasolinera · pausa · desarrollador · explosion · iniciales · fin
   entrada.py  haptica.py  sonido.py  ventana.py (escala y pone el CRT)  guardado.py  recursos.py
   dibujo.py   efectos.py  fondo.py   hud.py
   accesibilidad.py      # lo que el jugador puede suavizar (temblor, destellos, CRT): los efectos preguntan aca
@@ -41,12 +41,17 @@ juego/
   transicion.py         # Transicion: el barrido de rombos entre pantallas
   avisos.py             # Aviso + ColaDeAvisos: los carteles de arriba salen de a uno (solo logica)
   carteles.py           # el dibujo de los carteles: pancarta, fichas, logro, momentos (franjas) y rango
+  impactos.py           # el dibujo de los momentos de impacto: cuadro de impacto del golpe final, vineta de herida y de ultima vida
+herramientas/
+  componer.py           # compone musica y efectos con el estudio (python herramientas/componer.py [nombres] [--escuchar])
+  estudio/              # el estudio: base, sintesis, bateria, procesos, instrumentos, obra, obras/ (ver "El estudio")
+  componer_musica.py    # el compositor VIEJO (chiptune): ya no hace sonidos del juego; sus temas van a herramientas/chiptune/
 tests/                  # conftest.py (fixtures app/partida), ayudas.py, test_*.py
-herramientas/componer_musica.py  # compositor chiptune: temas (menu, jefe, gasolinera) y efectos -> efectos/ (ver "Sonido y música")
 sprites/ efectos/ fuentes/   # recursos (ver "Sprites"); efectos/ son los sonidos y la musica
 records.json            # top 5 POR DIFICULTAD: {"FACIL": [{"nombre", "puntos"}...], "NORMAL": [...], ...}
                         # (un archivo viejo con una sola lista pasa a ser la tabla de NORMAL)
-config.json             # {"resolucion", "fps", "volumen" (0-10), "musica", "efectos", "aviso_jefe", "vibracion",
+config.json             # {"resolucion", "fps", "volumen", "volumen_musica", "volumen_efectos" (0-10), "silencio",
+                        #  "audio_mono", "latido", "aviso_jefe", "vibracion",
                         #  "crt", "neon", "escalado", "temblor", "destellos", "dificultad"}
 progreso.json           # {"logros": [ids], "nave": "CIAN", "partidas": n}  (guardado.Progreso)
 ```
@@ -175,7 +180,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 
 ### App y escenas (patrón State)
 - `App` crea una sola vez los servicios: `ventana`, `opciones`, `sonidos`, `records`, `progreso`, `entrada`, `fondo`, `efectos`, más `pantalla` (el lienzo de 1066x600). Al arrancar aplica el color de la nave elegida (`nave.cambiar_color`).
-- **Atajos globales** (`App._atajos()`, antes de cada paso de la escena): M (`SILENCIO`) apaga o prende música y efectos juntos; F11 (`PANTALLA_COMPLETA`) pasa a "COMPLETA" y vuelve a la ventana de antes (`ventana_antes`). Los dos guardan las opciones y muestran un aviso chico (`App.avisar()`, dibujado encima de todo por `_dibujar_aviso`).
+- **Atajos globales** (`App._atajos()`, antes de cada paso de la escena): M (`SILENCIO`) da vuelta `opciones.silencio` (calla todo sin tocar los volúmenes); F11 (`PANTALLA_COMPLETA`) pasa a "COMPLETA" y vuelve a la ventana de antes (`ventana_antes`). Los dos guardan las opciones y muestran un aviso chico (`App.avisar()`, dibujado encima de todo por `_dibujar_aviso`).
 - Un paso de lógica es `escena.actualizar(entrada)` + `entrada.consumir()`. Un cuadro es `escena.dibujar(pantalla)` + `ventana.mostrar(pantalla)`. `cuadro(ms)` corre los pasos que tocan y un cuadro; `ejecutar()` lo repite con `LimitadorFPS` (ver "Frecuencia").
 - `App.ahora()` es el reloj real; los tests lo reemplazan. `App(carpeta_datos=..., usar_mandos=...)` también se usa en los tests.
 - Cada escena hereda de `escenas/base.Escena`:
@@ -183,7 +188,21 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - `al_cerrar()` se llama si se cierra la ventana; Iniciales guarda el récord ahí.
   - `tiempo_en_escena()` cuenta con el reloj real y sirve para READY (1.6 s), la explosión (1.5 s) y el Game Over (ENTER se ignora 0.8 s).
   - `dibujar_partida(pantalla, partida, con_nave)` dibuja la partida por capas (ver "Capas de dibujo").
-- Flujo: `Inicio → (Dificultad | Logros | Opciones)`, `Dificultad → Listo → Juego ⇄ Pausa ⇄ Opciones`, `Juego ⇄ Taller`, `Juego ⇄ Gasolinera`, `Juego ⇄ Desarrollador` (F1), y `Juego → Explosion → Iniciales (si entra al top 5 de esa dificultad) → Fin → Listo` (ENTER repite con la misma dificultad) o `Fin → Inicio` (ESC).
+- **Presentación** (`escenas/presentacion.py`, pedido del usuario: "una pequeña pantalla que haga aparecer el menú, que parezca un juego profesional"; eligió **sin tarjeta de estudio** y **con advertencia de fotosensibilidad**). Es lo primero al abrir: `App(presentacion=True)` arranca en ella (los tests usan `presentacion=False` y van directo al Inicio; volver al menú desde una partida también va directo). Tres fases:
+  1. `advertencia`: la de fotosensibilidad sobre negro, con la señal `TRIANGULO`. Avisa que los destellos se reducen en Opciones o, si ya están reducidos, lo dice en verde. Dura `MS_ADVERTENCIA`.
+  2. `pygame`: "HECHO CON PYGAME"; las letras se escriben de a una (`MS_POR_LETRA`, cada una con `teclear` y naciendo blanca) y crece una línea. Dura `MS_PYGAME`.
+  3. `titulo`:
+     - salto al hiperespacio (con su sonido) y la nave que sube con su estela (`NAVE_SUBE`);
+     - el logo CAZA MONEDAS cae acelerando, las dos palabras juntas (`LOGO_CAE`), y golpea con temblor, chispas, onda de choque y el sonido `logo`;
+     - entra la música del menú (`musica` es `SILENCIO` hasta ahí), el lema, "PRESIONA" + el botón de aceptar del control que se usa (`_presiona`, con `interfaz.boton`) titilando, y `VERSION` (config) abajo.
+  - Cada pantalla aparece y se va en 4 escalones de negro (`_fundido`).
+  - **Saltear:** con `entrada.algo_apretado` (cualquier tecla o botón, no solo acciones; se ignora los primeros `MS_SIN_SALTEAR`):
+    - en la advertencia o en la tarjeta, va directo al título;
+    - en el título, si el logo no cayó, lo hace caer ya;
+    - 400 ms después del golpe, al Inicio (`ui_aceptar` + transición de rombos). Apretar de nuevo enseguida no se pasa de largo.
+  - Mientras dura, prepara los giros de la nave (`nave.preparar_giros(2)`).
+  - Tests: `tests/test_presentacion.py`, que detecta 5 errores inyectados.
+- Flujo: `Presentacion → Inicio`, `Inicio → (Dificultad | Logros | Opciones)`, `Dificultad → Listo → Juego ⇄ Pausa ⇄ Opciones`, `Juego ⇄ Taller`, `Juego ⇄ Gasolinera`, `Juego ⇄ Desarrollador` (F1), y `Juego → Explosion → Iniciales (si entra al top 5 de esa dificultad) → Fin → Listo` (ENTER repite con la misma dificultad) o `Fin → Inicio` (ESC).
 - **Inicio** (todo el ancho; rediseñado a pedido del usuario):
   - Franja de arriba: trofeo + LOGROS n/16 (izquierda), RECORD y DIFICULTAD (derecha).
   - Izquierda: el logo (con un brillo que lo cruza cada `BRILLO_CADA`: una franja blanca multiplicada sobre las letras), el lema y el **menú vertical** `MENU` = JUGAR, LOGROS, OPCIONES, SALIR (ARRIBA/ABAJO, da la vuelta; SALIR cierra) con la nave-cursor y la descripción de cada opción (`DESCRIPCION_MENU`, ≤ 25 letras: un renglón).
@@ -213,7 +232,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - Si se confirma, `_volver_al_menu()` reanuda el mixer, para la música, reinicia los efectos y el fondo y pasa a un `Inicio` nuevo, sin guardar récord.
   - La ayuda de abajo cambia según si está la pregunta.
 - Hay escenas que guardan otras escenas: `Opciones(volver_a=escena)` y `Pausa(escena_juego, captura)`, así al volver se retoma la misma instancia.
-- **Hit-stop:** mientras `partida.congelar_frames > 0`, Juego y Explosion no actualizan ni dibujan (`saltar_dibujo`). `Juego.actualizar` revisa primero `partida.termino`, después el hit-stop y después la pausa. **Trampa:** la App borra las acciones en cada paso, así que durante el hit-stop Juego guarda el dash (`dash_pendiente`) y la pausa (`pausa_pendiente`): si no, se perdían justo al encadenar perfectos.
+- **Hit-stop:** mientras `partida.congelar_frames > 0`, Juego y Explosion no actualizan ni dibujan (`saltar_dibujo`). Excepción: con `partida.impacto` (el golpe final al jefe) Juego sí dibuja, para mostrar el cuadro de impacto. Después del golpe final, `partida.camara_lenta` pasos a media velocidad (Juego salta un paso sí y uno no, guardando lo apretado con `_guardar_lo_apretado`). `Juego.actualizar` revisa primero `partida.termino`, después el hit-stop y después la pausa. **Trampa:** la App borra las acciones en cada paso, así que durante el hit-stop Juego guarda el dash (`dash_pendiente`) y la pausa (`pausa_pendiente`): si no, se perdían justo al encadenar perfectos.
 
 ### Partida (`partida.py`)
 - Contiene todo el estado de una partida: `nave`, `vidas`, `puntaje`, `combo`, `nivel`, `moneda`, `capsula`, `activos` (tipo → ms en que termina; `math.inf` para los que duran hasta perder una vida), `enemigos`, `enemigos_guardados`, `jefe` (`None` si no hay pelea), `balas`, `ecos`, `mejoras` (tipo → veces elegida), `estadisticas`, `tiempo`, `congelar_frames`, `pausa_pendiente` y `termino`.
@@ -391,7 +410,7 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
   - Los efectos se consultan con `partida.activo(tipo)`: escudo en `danar_jugador`, hielo congela, imán atrae la moneda, doble en `sumar_puntos`, turbo en `vel_max` y recarga en `recarga_dash`.
 
 ### Servicios
-- **Opciones** (`escenas/opciones.py` + `guardado.Opciones(archivo)`), en `PESTANAS` = VIDEO (RESOLUCION, FPS, CRT, ESCALADO, NEON; con 5 filas `ALTO_FILA` es 40), SONIDO (VOLUMEN, MUSICA, EFECTOS) y ACCESIBILIDAD (TEMBLOR, DESTELLOS, AVISO JEFE, VIBRACION):
+- **Opciones** (`escenas/opciones.py` + `guardado.Opciones(archivo)`), en `PESTANAS` = VIDEO (RESOLUCION, FPS, CRT, ESCALADO, NEON; con 5 filas `ALTO_FILA` es 40), SONIDO (VOLUMEN, MUSICA, EFECTOS: tres barras `Volumen`) y ACCESIBILIDAD (TEMBLOR, DESTELLOS, AVISO JEFE, VIBRACION, AUDIO MONO):
   - Cada fila es un `Ajuste` (Template Method) en la lista `AJUSTES`: `Lista(nombre, pestaña, atributo, valores, descripcion, vuelta, nombres, al_cambiar)` (`valores` puede ser una función(app); `vuelta=True` da la vuelta, sin vuelta se queda en la punta), `Interruptor` (SI/NO; ENTER también) y `Volumen` (barra). `al_cambiar(app)` aplica el cambio (resolución, vibración de prueba). Los valores "apagados" (NO, 0) se ven en gris.
   - **Para agregar una opción:** sumarla a `guardado.Opciones` (fábrica, cargar, guardar) y una línea en `AJUSTES`. Nada más.
   - Todo el ancho: a la izquierda `PANEL_SECCIONES` (las secciones con `ICONOS` y la nave-cursor, y los botones para cambiar), a la derecha `PANEL` con el nombre de la sección. **LB/RB (Q/E) cambian de sección** (`PESTANA_ANTERIOR`/`PESTANA_SIGUIENTE`); ARRIBA/ABAJO recorren los ajustes y VOLVER (dan la vuelta); IZQ/DER cambian el valor.
@@ -413,47 +432,295 @@ La llama del motor son partículas (`Efectos.estela()`), y el usuario prefiere q
 - **Logros** (`logros.py`): `Logro(id, nombre ≤16, descripcion ≤36, condicion)`; `revisar_logros(partida, progreso)` devuelve los nuevos y los desbloquea (`Progreso.desbloquear` guarda). `NAVES` en config: (nombre, color o None, id del logro o None); `Progreso.naves_disponibles()` y `color_nave()`. Las estadísticas (`estadisticas.py`) las suma la Partida: monedas, creditos (ganados), enemigos, dashes, perfectos, mejor_cadena, powerups, desafios, sectores_limpios, rangos, mejoras.
 
 ## Sonido y música
-Todo el audio pasa por `juego/sonido.py` (el servicio `app.sonidos`). Los temas de menú, jefe y gasolinera son chiptune **hecho con código** por `herramientas/componer_musica.py`; `musica.mp3` (la del juego) y los 6 efectos `.wav` vinieron hechos. Tests: `tests/test_musica.py` (se verificó que detecta tres errores inyectados: sin música del jefe, sin la de la gasolinera y la música que no se corta al morir).
+Todo el audio pasa por `juego/sonido.py` (el servicio `app.sonidos`).
+- **Todo el sonido sale del estudio** (`herramientas/estudio/`, ver "El estudio"):
+  - los efectos (los armónicos, en 11 colores: ver "Armonía en vivo");
+  - los 5 ambientes de los sectores;
+  - todos los temas: `musica_juego` (con sus 4 variantes por sector, `musica_juego_2..5`), `musica_tension`, `musica_iniciales`, `musica_fin`, `musica_menu`, `musica_gasolinera` y los de los jefes.
+- **Los temas chiptune se rehicieron en el estudio** (2026-10-14, pedido del usuario: "que todos los efectos sean armónicos, lo mismo con la música, que parezca profesional"; eligió rehacerlos en vez de solo nivelarlos). Eran mono, ~2 dB más fuertes y de otra estética. Conservan su melodía, sus acordes y su carácter: `musica_menu` y `musica_gasolinera` en `obras/musica.py`, los 5 de jefe en `obras/musica_jefes.py`.
+- **Cada jefe tiene su tema**, todos en Re menor (los efectos de los jefes están en Re menor): `musica_jefe` (el Ojo), `_fortaleza` (marcha), `_serpiente` (swing y adornos frigios), `_colmena` (las alas zumban en el grave) y `_singularidad` (medio tiempo). En `Juego.musica`, `"jefe_" + jefe.tipo` si está en `MUSICAS`, si no `"jefe"`.
+- **El compositor viejo** (`herramientas/componer_musica.py`) ya no hace sonidos del juego: sus temas chiptune se guardan en `herramientas/chiptune/` (para escucharlos o compararlos; en `efectos/` pisarían los nuevos).
+- **Los 6 efectos viejos y `musica.mp3` se borraron:** el usuario los eliminó y cada uso pasó a su sonido nuevo.
+- Mezclador hecho (fase A del mapa); P1, P2 y P3 compuestos y conectados: `LISTA_DE_SONIDOS.md` está completa.
 
-### Cómo suena en el juego (`sonido.py`)
-- **Dos diccionarios** (nombre → archivo en `efectos/`): `MUSICAS` ("juego" `musica.mp3`, "menu", "jefe", "gasolinera" `.ogg`) y `EFECTOS` ("game_over", "moneda", "golpe", "powerup" = `moneda_brillante.wav`, "seleccion", "nuevo_record"). `cargar(archivos)` los abre con `pygame.mixer.Sound` y saltea los que fallan (sin placa de audio o archivo que falta: ese sonido no suena y nada se rompe). Se guardan en `_cache` del módulo (archivo → Sound): abrir los 4 temas tarda ~0.3 s y los tests crean una App por test (sin caché eran ~100 s más). El caché comparte los objetos `Sound` entre Apps: su volumen es uno solo.
-- **Efectos:** `sonidos.reproducir(nombre)` → `Sound.play()` en cualquier canal libre. La Partida lo llama con `self.sonidos`, las escenas con `self.app.sonidos`.
+**Plan de sonido: `MAPA_DE_AUDIO.md`** (pedido del usuario: "una sensación de calidad sin precedentes, sin saturar"). Es el mapa de todo lo que puede sonar en el juego: cada evento con un código (`N01`, `FO07`...), dónde pasa en el código, qué suena hoy, el sonido propuesto y su prioridad (P1/P2/P3/NO). También tiene las reglas de mezcla (prioridad, voces, enfriamiento, paneo, ducking), el catálogo de sonidos, la música por momento, los silencios a propósito y el orden para hacerlo. **Antes de agregar un sonido, buscarlo ahí y seguir sus reglas; al hacerlo, actualizar la columna "Hoy".**
+
+**Lista de trabajo: `LISTA_DE_SONIDOS.md`** (pedido del usuario: componer "como un músico profesional"). Tiene cada sonido del catálogo con su estado (⬜ pendiente, 🟨 compuesto, ✅ en el juego), los eventos que lo usan, la prioridad y la **partitura** (notas, armonía, timbre, duración y volumen), más un **Registro** de avances al final. Su sección 0 es la base musical, que no hay que romper:
+- La tonalidad de cada tema: juego, menú, tensión y fin La menor; iniciales Do mayor; jefes Re menor; gasolinera Fa mayor.
+- **Los premios y la interfaz se escriben en la pentatónica de Do** (C D E G A) y **siguen al acorde** que suena (ver "Armonía en vivo"): el estudio los re-armoniza a la pentatónica de cada acorde.
+- **La tensión sale de la propia escala del tema** (2026-10-14): en La menor el tritono Si–Fa y la sexta menor Fa; en Re menor la sexta menor Si♭, el tritono Mi–Si♭ y la segunda menor La–Si♭. Antes los peligros usaban notas de afuera (Mi♭, La♭, Fa#) y, repetidos cada pocos segundos, sonaban desafinados. Solo quedan de afuera los raros y a propósito: la ¡ALERTA! (suena en silencio), PESADILLA, el "trombón triste" de `desafio_fallado` y la presentación del jefe (La mayor: el V de Re).
+- Los avisos de peligro terminan en tensión; `vulnerable` y los premios resuelven.
+- Los registros: la interfaz arriba (octavas 6-7), el peligro en el medio y los impactos con ruido grave.
+- El recorrido armónico de los momentos: jefe en Re menor → `jefe_vencido` en Re MAYOR → rango en Do (V de Fa) → gasolinera en Fa.
+- Las herramientas del compositor para efectos (`secuencia`, `barrido`, `ruido`, curvas, trémolo/vibrato, dinámicas) ya están (ver "El compositor").
+
+**Todo el sonido se hizo de cero** (decisión del usuario: "todos los efectos ya existentes hay que rehacerlos, desde cero con nueva temática").
+- Cada archivo de `efectos/` sale de una obra del estudio, salvo los tres temas que se quedan.
+- `test_sonidos_del_juego.py::test_todo_el_sonido_sale_del_estudio` lo comprueba, y `test_el_catalogo_y_los_archivos_coinciden` comprueba que no falte ni sobre ningún archivo.
+- Un sonido nuevo se compone en el estudio, nunca se trae hecho.
+
+Al terminar un sonido: cambiar su estado, anotar el avance en el Registro y actualizar la columna "Hoy" del mapa.
+
+### El mezclador (`sonido.py`, fase A del mapa: hecho)
+- **Catálogo de efectos (patrón Registry):** `CATALOGO` = nombre → `Efecto(archivos, categoria, prioridad, voces, enfriamiento, volumen, paneo)`, **214 nombres** (los armónicos, con un archivo por color). Se arma con `_armar(...)` y tres ayudas:
+  - `_uno(nombre, ...)`: un archivo;
+  - `{nombre: Efecto(_variantes(nombre, n), ...)}`: **variantes** que se turnan al azar (`nave_dash`, `ui_mover`, `enemigo_roto`, `hielo_roto`, `onda`, `agonia`, `teclear`);
+  - `_escala(nombre, n, ...)`: **escalas** que se piden por número (`moneda_1..5`, `perfecto_1..5`, `combo_sube_1..3`, `estrella_1..5`, `sector_nuevo_1..5`, `barra_jefe_1..12`, `rebote_1..4`, `divisor_parte_1..3`, `ui_tecla_1..5`, `dificultad_1..4`, `carta_1..6`, `roce_carga_1..6`).
+  - Criterios: la interfaz va en INTERFAZ, siempre al centro. Los avisos y los ataques son PELIGRO. Los grandes momentos son MOMENTO y bajan la música: `record`, `logro`, `fenix`, `nave_muerte`, `golpe_final`, `jefe_explota`, `jefe_vencido`, `sello_*`, `sector_nuevo_*`, `oleada_superada`, `desafio_cumplido`, `destruida`, `game_over`. Lo que suena todo el tiempo es DETALLE y lleva enfriamiento (`aparece` 120, `rebote` 200, `agonia` 150, `teclear` 45...).
+  - `laser` es un `.ogg` que da la vuelta (loop).
+  - `MUSICAS` (todos del estudio): "juego" (el Cinturón), "juego_2" a "juego_5" (el color de cada sector), "tension", "iniciales", "fin", "menu", "gasolinera", "jefe" y uno por jefe.
+  - `AMBIENTES`: el `"ambiente"` de `config.SECTORES` → `amb_<sector>.ogg` (asteroides, brasas, esporas, panal, abismo).
+  - **`SILENCIO`** ("silencio") es un nombre de música que no existe: una escena que lo pide deja todo callado, con fundido.
+- **Categorías** `MUSICA`, `EFECTOS`, `INTERFAZ`, `AMBIENTE`. Su volumen es `nivel(categoria)` = general × el suyo (`volumen_musica` para MUSICA, `volumen_efectos` para las otras tres) × `MEZCLA[categoria]` (config), y 0 con `opciones.silencio`.
+- **La mezcla deja margen (headroom)** (2026-10-14, pedido: "se siente mucho solapamiento y saturación"). `MEZCLA` = música 0.5, efectos 0.7, interfaz 0.6, ambiente 0.3: los temas (−14 LUFS) quedan en −20 dentro del juego y los efectos un poco por encima. Medido con un bot y una mezcla fuera de línea igual a la de SDL (suma y recorte): con todo en 1.0, **53 de 362 segundos sonaban recortados** (pico +3.5 dB); ahora 0, con el pico en −2.5 dB.
+- **El limitador** (`Sonidos.limitar()`, lo llaman `reproducir` y `actualizar`): SDL suma los canales y recorta lo que se pasa. El mezclador sabe cuánto suena cada efecto en cada momento por su **ficha** (`efectos/fichas.json`, que escribe el estudio: el pico de cada bloque de 50 ms de un efecto, el nivel típico de un tema) y lleva la cuenta en cada canal (`Sonando`: nombre, `sonido`, prioridad, inicio, ganancia, paneo, envolvente; `carga(ahora)`). Si la suma con la música, el ambiente y los loops (`carga_del_fondo`) pasaría de `TECHO_MEZCLA` (0.89 = −1 dB), `_cuanto_bajar` baja primero los DETALLE y ACCION (hasta `PISO_DETALLES`) y, si no alcanza, todo. Bajar es inmediato; volver, en `RECUPERACION_MEZCLA` ms. El canal recibe `paneo × lo que bajó su grupo`. Con la mezcla con margen trabaja ~3% del tiempo: es una red de seguridad.
+- **Armonía en vivo** (los efectos siguen al acorde, como en Rez o Tetris Effect): `ARMONICOS` (la misma lista que en `herramientas/estudio/obras`, un test lo comprueba) son los efectos con altura que suenan sobre la música: monedas, combo, perfectos, power-ups, premios e interfaz. Un `Efecto` cuyas variantes están en `ARMONICOS` tiene `armonico = True` y `por_color` = {color: [archivo de cada variante]} (`archivo_de_color("moneda_1.wav", "fa")` = `"moneda_1_fa.ogg"`). `COLORES` son 11 (la pentatónica de cada acorde, ver "El estudio"). `color_actual()`: la ficha de cada tema trae el color de cada compás y cuánto dura uno; el `Tocadiscos` anota `inicio` al empezar un tema (y `reanudar_todo` lo corre lo que duró la pausa); mirando `ADELANTO_ACORDE` ms adelante, da el color del compás. Sin música, o con su volumen en 0, `COLOR_SIN_MUSICA` ("do"). `_elegir_variante` toca el archivo de ese color. `aplicar_volumen(opciones)` lo pone en cada `Sound` (× `efecto.volumen`) y guarda las opciones; lo llaman la App al arrancar, Opciones y el atajo M. Apagado = volumen 0: sigue sonando callado, así la música retoma donde iba.
+- **`reproducir(nombre, x=None)`** devuelve el canal, o `None` si no sonó. En orden:
+  1. **Enfriamiento:** si sonó hace menos de `enfriamiento` ms (reloj real: `self.reloj`, que la App pone en `self.ahora`), no suena.
+  2. **Voces:** si ya suenan `voces` copias, corta la más vieja de ellas y usa su canal.
+  3. Si no, el primer canal de efectos libre.
+  4. Si están todos ocupados, **le roba el canal al menos importante** (prioridad `DETALLE` 1 < `ACCION` 2 < `PELIGRO` 3 < `MOMENTO` 4; entre iguales, al más viejo), solo si no es más importante que el nuevo.
+  5. **Variantes:** con varios archivos, elige al azar sin repetir la anterior (`_elegir_variante`).
+  6. **Paneo:** después de `play()` (que vuelve el canal a 1), `canal.set_volume(*paneo(x, mono))`. `paneo()`: al centro los dos lados enteros; hacia un costado el otro baja hasta `PANEO_MINIMO` (0.35), nunca a 0. Sin x, con `paneo=False` o con `opciones.audio_mono` (AUDIO MONO), al centro.
+  7. **Ducking:** un efecto `MOMENTO` llama a `atenuar_musica(su duración)`. La música baja a `ATENUAR_MUSICA` (0.4) y vuelve en `ATENUAR_VUELTA` ms (600); `actualizar()` (la App la llama en cada paso) la sube de a poco.
+  - `sonando(nombre)` dice cuántas copias suenan (los tests lo usan).
+- **`reproducir_luego(nombre, ms, x)`** programa un efecto (reloj real; lo dispara `actualizar()`). Ejemplos: la fanfarria 500 ms después de la explosión del jefe, el sello después de la caja, el logro cuando sale su ficha, el trueno 450 ms después del relámpago, la presentación del jefe a los `MS_ALERTA`. `cancelar_pendientes()` al morir y al volver al menú.
+- **Canales** (`CANALES_AUDIO` = 24, `set_reserved(6)`): 0-1 música, 2-3 ambiente, 4-5 loops, 6-23 efectos (`canales_efectos`, con lo que suena en `en_canal`).
+- **`Tocadiscos(canales, temas, fundido)`**: dos canales para cruzar temas; lo usan `self.musica` y `self.ambiente`.
+  - `tocar(nombre)`: si ya suena, nada. Si no, el viejo baja con `fadeout` y el nuevo empieza **desde el principio** en el canal libre, con `fade_ms`.
+  - `parar(fundido)`: con 0, corta en seco.
+  - `actual` es el nombre pedido **aunque no haya audio** (los tests lo miran).
+  - Sonidos ofrece `tocar_musica`, `parar_musica(fundido=FUNDIDO_MUSICA)`, `actual` (propiedad: la música), `tocar_ambiente` y `parar_ambiente` (`FUNDIDO_AMBIENTE` 1500).
+- **Loops** (`tocar_loop(nombre)`, `parar_loop(nombre, fundido=0)`, `parar_loops()`): un efecto del catálogo que se repite en los canales 4-5 (el láser de la Fortaleza, una sirena). Si ya suena, no se duplica; con los dos ocupados, no entra. **Quien lo prende lo tiene que parar** (y al morir o al salir de la partida, `parar_loops()`).
+- **Ducking sin pisar el fundido:** la música baja con el volumen del `Sound` del tema que suena (`_poner_volumen_musica`), no con el del canal, que es el que usa el fundido.
 - **Música por escena (patrón State):** cada escena tiene el atributo de clase `musica` (`Escena.musica = None` en `escenas/base.py`). `App._paso_de_logica` hace, antes de cada `escena.actualizar`, `if self.escena.musica is not None: self.sonidos.tocar_musica(self.escena.musica)`. `None` significa "no la cambio": sigue la que venía (o el silencio).
 
   | Escena | `musica` |
   |---|---|
   | Inicio, Dificultad, Logros | `"menu"` |
-  | Listo | `"juego"` (`App.nueva_partida` ya no arranca la música: lo hace Listo) |
-  | Juego | **propiedad**: `None` si `partida.termino`; `"jefe"` si `partida.jefe is not None` (desde que llega, con la ALERTA, hasta que termina de explotar); si no, `"juego"` |
+  | Listo | **propiedad**: `SILENCIO` en el READY? y `musica_del_sector(partida)` desde el GO! (1 s): la música entra en el GO |
+  | Juego | **propiedad**: `None` si `partida.termino`. Con jefe: `SILENCIO` durante la ¡ALERTA! (`hud.MS_ALERTA` desde `jefe.creado_en`: suena la sirena), `"jefe"` desde su nombre, y `SILENCIO` cuando `jefe.muriendo()` (el golpe final la corta: `empezar_a_morir` hace `parar_musica(150)`). `SILENCIO` en el cierre del sector (`director.cerrando_sector()`: la fanfarria y el sello suenan solos). `"tension"` en el nivel antes del jefe (`nivel % JEFE_CADA_NIVELES == JEFE_CADA_NIVELES - 1`). Si no, `musica_del_sector(partida)`: `"juego"` en el sector 1 y `"juego_N"` en los otros |
   | Gasolinera | `"gasolinera"` (al salir vuelve al mismo Juego, que pide la suya) |
-  | Pausa, Opciones, Taller, Desarrollador, Explosion, Iniciales, Fin | `None` |
+  | Iniciales | `"iniciales"` |
+  | Fin | `"fin"` |
+  | Pausa, Opciones, Taller, Desarrollador, Explosion | `None` |
 
-- `tocar_musica(nombre)`: si `nombre == self.actual` no hace nada (por eso se puede llamar en cada paso). Si no, `parar_musica()` (el tema viejo baja en `FUNDIDO_MUSICA` ms, `config.py`, 700) y el nuevo arranca **desde el principio** con `Channel.play(sonido, loops=-1, fade_ms=FUNDIDO_MUSICA)`: un fundido cruzado. Un nombre que no está en `MUSICAS` (o cuyo archivo falló) deja `actual = nombre` en silencio.
-- **Los dos "tocadiscos":** `pygame.mixer.set_reserved(2)` reserva los canales 0 y 1 solo para la música (`self.tocadiscos`); `Sound.play()` de los efectos no puede robárselos. El tema nuevo va al que no está sonando (el otro puede estar apagando el viejo). Quedan 6 canales para efectos (pygame trae 8; si se agregan muchos efectos simultáneos, subirlos con `pygame.mixer.set_num_channels`).
-- `parar_musica(fundido=FUNDIDO_MUSICA)`: apaga el tocadiscos actual (`fadeout`; con `fundido=0`, `stop` en seco) y deja `actual = None`. Al perder la última vida (`Partida.danar_jugador`) se usa `fundido=0`: la música se corta en seco y suena `game_over`; Explosion, Iniciales y Fin tienen `None`, así que sigue el silencio hasta que Listo (ENTER) o Inicio (ESC) pidan la suya. `Pausa._volver_al_menu()` llama a `parar_musica()` y el Inicio nuevo pide "menu".
-- **Pausa:** `pausar_todo()`/`reanudar_todo()` = `pygame.mixer.pause()/unpause()`, que congela TODOS los canales (música incluida) y retoma donde iban. Lo usan Juego (al abrir Pausa y Desarrollador) y Pausa.
-- **Volumen:** `aplicar_volumen(opciones)`: `Sound.set_volume(volumen / VOLUMEN_MAX)` a cada tema si `opciones.musica` y a cada efecto si `opciones.efectos`; apagado = volumen 0 (siguen sonando en silencio, así la música retoma donde iba). El fundido usa el volumen del canal, que es aparte: no se pisan. Lo llaman la App al arrancar, Opciones y el atajo M.
-- `sonidos.actual` es el nombre del tema que se pidió, **aunque no haya audio**: los tests lo usan (con el driver dummy pygame sí abre el mezclador, pero no hace falta).
+- **Ambiente por escena (como la música):** `Escena.ambiente` (`None` = no lo cambio) → `sonidos.tocar_ambiente` en cada paso.
+  - Juego: propiedad, el `"ambiente"` del sector, y `SILENCIO` en la pelea, en el cierre y al morir.
+  - Listo: el del sector.
+  - Inicio, Dificultad, Logros, Explosion, Iniciales, Fin y Gasolinera: `SILENCIO`.
+  - Pausa, Opciones, Taller y Desarrollador: `None` (la pausa ya congela todo).
+  - Al cambiar de sector, el tocadiscos del ambiente cruza en `FUNDIDO_AMBIENTE` (1.5 s).
+- Al perder la última vida (`Partida.danar_jugador`), `parar_musica(fundido=0)` corta la música en seco, se paran los loops, se cancelan los pendientes y suena `nave_muerte`. En la Explosion suena `destruida` (con el cartel, a los 450 ms) y al final `game_over`. Después, Iniciales y Fin tienen su música. `Pausa._volver_al_menu()` llama a `parar_musica()` y el Inicio nuevo pide "menu".
+- **Pausa:** `pausar_todo()`/`reanudar_todo()` = `pygame.mixer.pause()/unpause()`: congela TODOS los canales (música, ambiente y loops) y retoma donde iban. Un efecto pedido **después** de pausar sí suena (play saca la pausa de ese canal): la pausa puede tener su sonido. Lo usan Juego (al abrir Pausa y Desarrollador) y Pausa.
+- **El audio se abre en la App** con `pygame.mixer.pre_init(44100, -16, 2, 512)` antes de `pygame.init()`: estéreo (para el paneo) y un buffer chico (~12 ms de retraso; el de fábrica se nota).
+- **Opciones de sonido** (`guardado.Opciones`):
+  - `volumen` (el general), `volumen_musica` y `volumen_efectos` (0-10, tres barras `Volumen` en SONIDO);
+  - `silencio` (la tecla M; tocar cualquier barra lo saca, y con él las barras se ven grises);
+  - `latido` (SONIDO, SI/NO: un latido suave cada 1.6 s con una sola vida, `Partida._latir`);
+  - `audio_mono` (ACCESIBILIDAD).
+  - Un `config.json` viejo con `"musica": false` o `"efectos": false` (eran SI/NO) pasa a ese volumen en 0.
+- `_cache` del módulo (archivo → Sound): abrir los 4 temas tarda ~0.3 s y los tests crean una App por test (sin caché eran ~100 s más). El caché comparte los objetos `Sound` entre Apps: su volumen es uno solo.
+- **Tests:**
+  - `tests/test_sonido.py`: catálogo, paneo, enfriamiento, voces, prioridades, variantes, ducking, loops, ambiente, volúmenes, mono, pausa y Opciones, y el limitador (nada pasa del techo, primero bajan los detalles, vuelve de a poco, cada efecto tiene su envolvente). Se verificó que detecta 15 errores inyectados, contando los del compositor y del guardado, y 2 más del limitador.
+  - `tests/test_armonia.py`: los colores de cada acorde (y que no choquen con él), la re-armonización (la escalera de la moneda sigue subiendo), que el estudio y el juego tengan la misma lista, el color de cada compás de cada tema, que la moneda suene en el color del acorde, la pausa, sin música en Do y los colores que se abren tarde con su volumen. Detecta 5 errores inyectados.
+  - **Medir la mezcla jugando** (scratchpad, se reescriben si faltan): `grabar_partida.py` (un bot juega N minutos, invencible y con ayuda para pegarle a los jefes, y anota cada efecto que sonó con su archivo, canal, paneo y acorde, más la música y el limitador en cada paso), `mezclar_sesion.py` (lo mezcla como SDL: suma y recorte; da segundos recortados, pico, niveles y voces a la vez) y `choques.py` (cuánto de cada efecto cae a un semitono del acorde que sonaba, y cuánto habría chocado fijo en Do). Ojo: el ruido da ~45 % de "choque" al azar.
+  - `tests/test_musica.py`: la música de cada escena, incluidos el silencio de la ALERTA, el golpe final, el cierre del sector, el READY y la música de Iniciales y Fin.
+  - `tests/test_sonidos_del_juego.py`:
+    - todo sale del estudio (los colores, de su obra); el catálogo y los archivos coinciden; cada archivo tiene su ficha;
+    - la moneda sube de tono con el combo; el dash suena; los golpes suenan distinto (y la última vida avisa); la cadena de perfectos;
+    - el jefe con alerta y sus fases; la oleada, los menús, la pausa y la gasolinera.
+    - Usa el fixture `pedidos`, que anota cada `reproducir`/`reproducir_luego`; los programados aparecen dos veces, al programarse y al sonar.
+    - Se verificó que detecta 10 errores inyectados en el cableado.
+  - `tests/test_compositor.py`: las herramientas de efectos.
 - **Trampas:**
   - No usar `pygame.mixer.music`: es una sola pista (no hay fundido cruzado) y `mixer.pause()` no la pausa.
-  - `musica.mp3` es MP3: el formato agrega un silencio al principio, así que su vuelta tiene un hueco chiquito. Los temas nuevos son OGG y dan la vuelta perfecto.
+  - `canal.set_volume(izq, der)` va **después** de `play()`: play lo vuelve a 1.
   - Volver a un tema (Gasolinera → Juego) lo empieza de cero. Si alguna vez se quiere retomar donde iba, hay que guardar el canal en vez de pararlo.
 
-### Para agregar un efecto o un tema al juego
-1. Poner el archivo en `efectos/` (o componerlo, ver abajo).
-2. Efecto: sumarlo a `EFECTOS` y llamar a `sonidos.reproducir("nombre")` donde pase la cosa (en la lógica, nunca en `dibujar`). Tema: sumarlo a `MUSICAS` y ponerlo en el `musica` de la escena (o en la propiedad de Juego, si depende de la partida).
-3. Si cambia qué suena en una escena, sumar un caso a `tests/test_musica.py` (se mira `app.sonidos.actual`) y actualizar la tabla de arriba.
+### Dónde suena cada cosa (el cableado)
+- **Partida:**
+  - Nave: `_al_empezar_dash` (`nave_dash` / `nave_dash_extra`), `dash_listo` (cuando `nave.dash_avisado` pasa a True).
+  - Golpes (`danar_jugador`): `escudo_roto`, `nave_golpe`, `ultima_vida` programada, `fenix`, `nave_muerte`.
+  - Monedas y combo: `moneda_<multiplicador>` (+ `oro_brillo` en la fiebre), `combo_sube_N` / `combo_max` (en `_vibrar_moneda`), `combo_cortado` (al cortarse con x2 o más).
+  - Puntos: `perfecto_<cadena>`, `interceptado` + `aturdido`, `enemigo.sonido_roto` al destruir (`"enemigo_roto"`; los divisores, `divisor_parte_1..3`), `bala_rota`, `hielo_roto`, `record`, `nivel` (no en el nivel del jefe), `logro` + `nave_nueva`.
+  - Power-ups y mejoras: `capsula` (al caer), `pw_<tipo>` al recoger, `_avisar_powerups` (`pw_acaba` a 1.5/1/0.5 s y `pw_fin`), `nova`, `onda`, `eco`, `roce_carga_N`, `mejora_elegida`.
+  - Jefe: `iniciar_jefe` (`alerta`, `franjas`, presentación programada, `SONIDO_ENTRADA`), `_llenar_barra_del_jefe` (`barra_jefe_N` por segmento) y `jefe_vencido` (para los loops y programa la fanfarria).
+- **Director:** `oleada`, `oleada_superada`, `retirada`, `<tipo>_llega` y `anomalia_fin`, `desafio_nuevo` / `_cumplido` / `_fallado`, `ficha_enemigo`, `sello_<letra>` y `_sonidos_del_rango` (`estrella_N` en el momento exacto en que sale cada estrella, con los tiempos de `carteles.rango`; `teclear` en una fila sin estrellas).
+- **Jefes:** cada clase completa `SONIDOS_FASE` (fase → efecto al entrar en ella), `FASES_VENTANA` (fases en que se le puede pegar: suena `vulnerable`) y `SONIDO_ENTRADA`. `Jefe.actualizar` compara la fase antes y después de `_actualizar` (la lógica de siempre) y `sonar(partida, nombre, x)` panea desde el jefe. Además, en el código de cada uno:
+  - Ojo: los disparos y su voz.
+  - Fortaleza: la marcha del compás en cada pulso, las cargas, los cuatro ataques, el láser (`tocar_loop` / `parar_loop` con fundido) y las cortinas.
+  - Serpiente: veneno, choque y corte.
+  - Colmena: las abejas, "¡A CASA, HIJAS!" y los choques.
+  - Singularidad: el tic del anillo, los brazos, exhalar y la moneda tragada.
+  - En la base: `golpe_final` / `jefe_golpe`, `jefe_parte` / `parte_rota`, `agonia` y `jefe_explota`.
+- **Enemigos y proyectiles:**
+  - `aparece` (en `Enemigo.actualizar`, al terminar la X) y `rebote_<pared>`.
+  - Embestidor: `embestidor_apunta`, `mira_fija`, `embestida`. Enjambre (`Bandada`): `enjambre_aviso`, `enjambre_picada`, `bonus`. `abeja_aviso`.
+  - `mina_tic` (a 500, 300, 160 y 60 ms de estallar) y `mina_estalla`.
+  - Anomalías: `meteoro_aviso` y `tormenta_aviso` / `llamarada`.
+- **Escenas:**
+  - Inicio: SALIR toca `ui_apagar` y cierra 450 ms después.
+  - Dificultad: `dificultad_N` y `pesadilla`.
+  - Listo: `listo_ready` y `listo_go`.
+  - Juego: `pausa` después de `pausar_todo()`.
+  - Pausa: `ui_mover`, `ui_alerta`, `seguir`.
+  - Opciones: `ui_mover`, `ui_pestana`, y `ui_llave_si/no` o `ui_valor_sube/baja`, que sirven de muestra del volumen nuevo.
+  - Logros: `hangar_nave`.
+  - Taller: `taller` y `carta_N` al caer cada carta (+ `carta_rara`).
+  - Gasolinera: `tienda`, `carta_N` al caer, `caja` + lo comprado (y `sello`), `ui_error` + `vendedor_no`, y al salir `hiperespacio` + `sector_nuevo_N`.
+  - Explosion: `destruida`, `game_over`.
+  - Iniciales: `ui_tecla_N` por letra, `record_guardado`.
+  - Fin: `ui_volver`.
+  - `App.nueva_partida`: `ui_empezar` + `hiperespacio`.
+  - App: `logo` al arrancar (programado), `ui_transicion` en cada `cambiar_escena` con transición, `mando_fuera` / `mando_dentro` (con `entrada.mando_conectado`; no los que ya estaban al abrir, los primeros 2 s).
+  - Gasolinera: `surtidor` al llegar y `neon` cuando el cartel GAS vuelve a prender (`_sonar_neon`, con el mismo reloj que su dibujo).
+  - Fin: `_sonidos` (`contador_1..8` mientras cuenta, `contador_fin`, `teclear` por fila de estadísticas) y `fuego_artificial` con los fuegos del récord.
+  - Partida: `dash_vacio` (pidió el dash y falta más que `BUFFER_DASH`) y `_latir`.
+  - `Escena.mover_fondo`: `trueno` después de cada relámpago del Carmesí.
 
-### El compositor (`herramientas/componer_musica.py`)
+### Para agregar un efecto o un tema al juego
+1. Buscarlo en `LISTA_DE_SONIDOS.md` (su partitura) y componerlo en el estudio (ver abajo). Nunca traer un archivo hecho.
+2. Efecto: una línea en `CATALOGO` con su categoría, prioridad, voces y enfriamiento (los del mapa). Variantes: una lista de archivos. Una escala (`moneda_1` ... `moneda_5`) son entradas separadas.
+3. Llamar a `sonidos.reproducir("nombre", x)` donde pase la cosa (en la lógica, nunca en `dibujar`; la x si viene de un lugar de la pantalla). Un loop: `tocar_loop` / `parar_loop`.
+4. Tema: sumarlo a `MUSICAS` (o `AMBIENTES`) y ponerlo en el `musica` de la escena (o en la propiedad de Juego, si depende de la partida). Si cambia qué suena en una escena, sumar un caso a `tests/test_musica.py` (se mira `app.sonidos.actual`) y actualizar la tabla de arriba.
+5. Marcarlo en `LISTA_DE_SONIDOS.md` (estado y Registro) y en la columna "Hoy" de `MAPA_DE_AUDIO.md`.
+
+### El estudio (`herramientas/estudio/` + `herramientas/componer.py`)
+**Pedido del usuario:** "algo diferente, que inspire calidad, profesionalismo en el desarrollo de la música; que no suene chillón, que tenga cuerpo". Se dejó el chiptune por **synthwave retro-futurista** (va con el neón y el CRT).
+
+**La evidencia medida:** los efectos viejos tenían su brillo (centroide) entre 4100 y 6900 Hz y la música vieja era mono, a -11 LUFS y con el brillo en ~5200 Hz. `musica_juego` quedó a -14 LUFS, con 2200 Hz de brillo, estéreo 0.81 y pico -3.3 dB (dinámica: los golpes respiran; era -8 con la cinta sin calibrar, que los aplastaba).
+
+El juego NO usa el estudio: solo los archivos que escribe en `efectos/`. Necesita `numpy`, `numba` (los filtros; sin numba anda pero lento) y `soundfile` (OGG), en `requirements.txt` aparte de lo del juego.
+```
+python herramientas/componer.py                         # todo
+python herramientas/componer.py musica_juego moneda     # esos (y los que empiezan con "moneda")
+python herramientas/componer.py ui_ --escuchar          # los compone y los hace sonar
+python herramientas/componer.py --lista
+python herramientas/componer.py --fichas                # rehace efectos/fichas.json sin componer (~2 s)
+```
+- **Fichas** (`efectos/fichas.json`): cada archivo que se compone anota cuánto suena (`envolvente` de un efecto: el pico de cada 50 ms; `nivel` de un tema: el percentil 95 de esos picos) y un tema también `acordes`, `colores` (uno por compás) y `compas_ms`. Las usa el mezclador del juego (limitador y armonía). `--fichas` las rehace leyendo los archivos (conserva los acordes y calcula los colores).
+- **Efectos armónicos** (`ARMONICOS` en `obras/__init__.py`): se componen una vez por color con `armonia.en_color` y se guardan en **OGG** (`moneda_1_fa.ogg`: son ~900, y en OGG pesan 6 veces menos; cargar uno tarda ~1.5 ms). Al componerlos se borra el WAV viejo sin color. Los demás efectos siguen en WAV.
+Por cada uno imprime la duración, el volumen (LUFS: el integrado en un tema, el bloque de 400 ms más fuerte en un efecto), el pico, el **brillo** (centroide; arriba de ~2500 Hz en música o ~4000 Hz en efectos empieza a sonar chillón) y el **estéreo** (correlación: 1 = mono). Temas en OGG Vorbis (`compression_level` 0.4, ~1 MB por 49 s), efectos en WAV de 16 bits. Todo es determinista: la semilla sale del nombre de la obra.
+
+**Módulos:**
+- `base.py`: `FS`, `njit` (el de numba, o uno que no hace nada sin numba), `midi`/`hertz`/`a_hertz`, `leer_acorde` (`TIPOS_ACORDE` con sus4, add9, m9, 6/9, dim...; barra "C/E"), `db`, `curva(puntos, cuantas, exponencial)` (automatización vectorizada) y `muestras(segundos)`.
+- `sintesis.py`:
+  - `onda(forma, frecuencias)`: sierra/cuadrada con **PolyBLEP** (sin aliasing), triángulo y seno; `frecuencias` es un arreglo, así un glissando es solo una curva.
+  - `adsr(...)`: exponencial, con 5 constantes de cola y que termina en 0.
+  - `filtrar(senal, corte, resonancia, modo, polos)`: **SVF TPT** (Zavalishin) en numba; el corte puede cambiar en cada muestra; `polos=4` = 24 dB/oct.
+  - `Sinte`: sustractivo. Varias voces desafinadas y paneadas (unísono), sub, ruido, filtro con su ADSR (más fuerza = más brillo), seguimiento de teclado, vibrato que entra tarde, deriva analógica (dos senos lentos de unos centésimos) y saturación.
+  - `FM`: moduladores `(relación, índice, caída del índice)`: piano eléctrico, campanas, metales, marimba.
+  - `ruido(...)`: filtro con curva, forma, chasquidos y trémolo.
+  - Todo devuelve **estéreo (2, muestras)**.
+- `bateria.py`: `bombo` (seno que cae ×3 en 35 ms + clic), `caja` (parche de dos senos + bordona de ruido), `palmas` (tres palmadas + cola), `hat` (seis cuadradas "808" + ruido, pasa altos 7 kHz), `tom`, `platillo` y `platillo_al_reves`. `GOLPES` mapea las letras de la grilla: K S C h H T t X R.
+- `procesos.py`:
+  - `reverb`: convolución por FFT con una respuesta generada (ruido L/R que se apaga y se oscurece), cacheada.
+  - `delay`: ping-pong en numba, que se oscurece en cada vuelta.
+  - `chorus`, `saturar` (tanh), `ensanchar` (medio/costado).
+  - `ecualizar(senal, bandas, vuelta)`: FFT, fase cero; bandas `corte_graves`, `corte_agudos`, `graves`, `agudos`, `campana`.
+  - `comprimir` (rodilla suave, numba), `limitar` (mira 3 ms adelante, techo exacto), `bombeo` (la ganancia del sidechain).
+  - Para medir: `loudness` (LUFS ~BS.1770: ponderación K, bloques de 400 ms, compuertas), `loudness_maximo`, `centroide`, `correlacion`, `a_db_pico`.
+- `armonia.py`: los efectos que siguen al acorde.
+  - `COLORES`: 11 (do, reb, re7, mi, mi7, misus, fa, sol, la, sib, do7) = (fundamental, forma); `FORMAS`: "mayor" [0 2 4 7 9], "dominante" [0 2 4 7 10] (acordes con séptima), "suspendida" [-2 0 2 5 7] (sus4: Mi sus4 = Re Mi Fa# La Si, la pentatónica MAYOR de Re. Contada desde Mi, la tercera Mi-Sol de un efecto se volvía un tono).
+  - `color_de_acorde(nombre)`: mayor → su pentatónica mayor; menor → la de su relativo mayor (Am → do); con séptima → dominante; sus4 → suspendida; con barra manda el acorde. Si un acorde no tiene color, `KeyError`: sumarlo a `COLORES` y a `juego/sonido.py`.
+  - `armonizar(nota, color)`: cada nota de la pentatónica de Do pasa al mismo **grado** del color, en la misma octava, corrida como mucho media octava (la escalera de la moneda sigue siendo una escalera). Una nota de afuera tira `FueraDeLaPentatonica`: un efecto armónico solo se escribe con Do Re Mi Sol La.
+  - `with en_color(color):` compone en ese color.
+- `instrumentos.py`: los presets.
+  - **`CAMPANA` y `METAL` tienen relaciones FM enteras** (2026-10-14). Antes eran inarmónicos a propósito: `CAMPANA` (3.5) sumaba a −5 dB una tercera mayor arriba de cada nota (sobre un La, un Do# que chocaba con la música en La menor) y `METAL` (1.41, 3.73) sonaba más fuerte en un La3 desafinado un cuarto de tono que en su nota. Ahora `CAMPANA` usa 3 y 7, y `METAL` 1.002 y 3.997: los parciales caen sobre los armónicos pero "baten" (el brillo inquieto del metal) sin desafinar. **Un instrumento nuevo: relaciones enteras** (medirlo con un análisis de parciales).
+  - Pads: `PAD_CALIDO`, `PAD_OSCURO`, `PAD_SUAVE`.
+  - Bajos: `BAJO_ANALOGICO`, `BAJO_SUB`, `BAJO_RUGIDO`.
+  - Melódicos: `PLUCK`, `LEAD_CALIDO`, `LEAD_HUECO`.
+  - FM: `EPIANO`, `CAMPANA`, `CRISTAL`, `MARIMBA`, `METAL`.
+  - La idea de todos: nada sin filtro, el brillo en el ataque, el cuerpo en voces y sub.
+- `obra.py`:
+  - **`Obra(nombre, bpm, acordes, ..., sala, eco, objetivo=-14 LUFS)`**: un tema que da la vuelta. Lo que se pasa del final entra por el principio, y la reverb (circular), el delay y el compresor pasan dos veces: **loop sin costura**.
+  - **`Efecto(nombre, segundos, dinamica)`**: suena una vez. `DINAMICAS` en LUFS del bloque más fuerte, calibradas contra la música a -14: pp -24, p -19, mf -15, f -12, ff -9. Sin compresión ni cinta en el master (`cinta=0`): suena limpio. Se recorta lo que queda 50 dB debajo del pico y nunca pasa de `segundos + cola`, con un fundido: un efecto ocupa un canal mientras suena.
+  - **Un efecto es más seco que un tema** (2026-10-14): `cola` por defecto 0.3 × la sala (era 0.6) y `retorno_sala` 0.3 (en un tema, 0.5). Con las colas largas, una moneda duraba 1.1 s y tres seguidas eran un solo ruido que no terminaba.
+  - `Obra.color`: el color en que se compone (lo toma de `armonia.color_actual`); `Pista.nota` y `Pista.barrido` llevan cada nota a ese color con `armonia.armonizar` (las alturas en Hz, como los `cuerpo`, quedan igual).
+  - **`Pista`**: el instrumento y su tira de consola: `volumen` (dB), `paneo`, `eq`, `saturacion`, `chorus`, `ancho`, envíos `reverb`/`delay` y `bombeo` (sidechain con los bombos).
+  - Notas: `grilla(texto, desde)` (tracker de semicorcheas: nota, "." sigue, "-" silencio, "C5+E5" acorde, "!" acento, "?" fantasma), `acordes(patron)` con **conducción de voces** (`voces_del_acorde`: la posición más cercana a la anterior, voz por voz), `bajo(patron)` (R 3 5 6 7 8 B), `arpegio(orden)`, `secuencia("G5:40 C6:90")` (ms), `barrido(puntos)`, `ruido(...)` y `golpe(letra)`. `Bateria.grilla` usa letras y anota los bombos para el bombeo.
+  - Un poco de "humano" (±3 ms y ±4 % de fuerza; nunca en efectos).
+  - El master: EQ (graves y presencia suaves, +1.5 dB de aire arriba de 11 kHz), compresión de "pegamento" 2:1, saturación de cinta (`cinta`, 0.08), volumen al objetivo y limitador a -1 dB.
+  - **La cinta trabaja siempre al mismo nivel** (2026-10-14): antes recibía la mezcla tal como salía de las pistas, y un acorde (varias notas sumadas) llegaba tan fuerte que la curva lo aplastaba y mezclaba sus notas entre ellas (intermodulación de −8 a −15 dB en ~70 efectos: lo "saturado" de las monedas, los menús y los premios; en la música, −18 a −20). Ahora la mezcla entra con el pico en `NIVEL_CINTA` (−6 dB). `test_el_master_no_ensucia_un_acorde_fuerte` comprueba que el master no depende del nivel de las pistas.
+- `obras/` (patrón Registry, `@obra("nombre_del_archivo")`; `cargar_todas()` importa los módulos):
+  - `musica.py`:
+    - `neon_en_ruta(nombre, color)`: "Neón en ruta" con un color de `COLORES` (bpm, swing, sala, pad, bajo, arpegio, lead, contracanto, medio tiempo, hats), registrado como `musica_juego` (color 1) y `musica_juego_2..5`;
+    - `musica_tension`, `musica_iniciales`, `musica_fin`, `musica_menu` ("Hangar") y `musica_gasolinera` ("Parada técnica": vibráfono, piano eléctrico a contratiempo, bajo caminante R 3 5 6).
+  - `musica_jefes.py`: un tema por jefe, en Re menor (con `bateria()`, una ayuda que arma las 5 piezas con sus cortes): `musica_jefe` ("Mirada fija", el Ojo, con el riff de semicorcheas), `_fortaleza` ("Marcha imperial": redoblante, oom-pah, golpes de metal y el lead doblado por `METAL`), `_serpiente` ("Danza de escamas": swing, flauta hueca con adornos frigios, campanas), `_colmena` ("Enjambre de cristal": las alas son un `ZUMBIDO` en semicorcheas) y `_singularidad` ("Horizonte de sucesos": medio tiempo, sala de 4 s).
+  - `ambiente.py`: `amb_*`. Son `Obra` de 24 s que dan la vuelta, a -26 LUFS. Las curvas terminan donde empiezan y los trémolos tienen períodos que entran justo en 24 s: el loop no tiene costura.
+  - `capas.py`: las capas con que se arma cada efecto.
+    - `tono` (secuencia en ms), `deslizar` (barrido) y `cuerpo` (grave corto que baja);
+    - `aire` (ruido, siempre con techo a 7.5 kHz: lo de arriba es lo chillón);
+    - `explosion`, `golpe` (batería) y `clic`.
+  - Los efectos, por familia:
+    - `efectos_interfaz.py`: la interfaz, la dificultad, el Taller, la gasolinera y el hangar;
+    - `efectos_juego.py`: la nave, las monedas, el combo, los power-ups y las mejoras;
+    - `efectos_enemigos.py`: los enemigos y los proyectiles;
+    - `efectos_director.py`: oleadas, anomalías, desafíos, carteles, rango, READY/GO, Game Over y trueno;
+    - `efectos_jefes.py`: los comunes y los 5 jefes, en Re menor.
+  - **Familias** (variantes y escalas): `registrar_familia(prefijo, valores, fabrica)` registra `prefijo_1`, `prefijo_2`... `abrir_acorde(...)` arma un acorde que se abre nota por nota.
+  - `laser` es una `Obra` de 1 s que da la vuelta, no un `Efecto` (un efecto se recorta y se apaga: el loop haría clic).
+  - `componer.py --efectos` compone todos los efectos sin los temas (~10 min: los armónicos van en 11 colores). Todos los temas (`componer.py musica`): ~10 min.
+  - **Brillo:** la meta es menos de ~3900 Hz por efecto, y el promedio quedó en 2031 Hz. Los siseos (serpiente, vapor, cascabel) usan filtros de banda en el medio-agudo, no pasa altos: con pasa altos llegaban a 11-13 kHz.
+
+**Sonidos limpios** (2026-10-14, pedido: "otros muy saturados que rompen la experiencia"; `LISTA_DE_SONIDOS.md` sección 0.12). Seis patrones que saturaban, con su regla:
+1. El master no puede depender del nivel de las pistas (ver la cinta, arriba).
+2. En el medio y el grave, nada a menos de una tercera: voces abiertas (quintas, cuartas, octavas), nunca un pad una octava abajo de un acorde cerrado.
+3. Lo que suena junto a un efecto armónico también es armónico (el Taller estaba en Fa y las cartas encima seguían al acorde). Por eso `taller` y `dificultad_1..4` son ARMÓNICOS.
+4. Las sierras (`PLUCK`, `LEAD_CALIDO`) para melodías y bajos, no para acordes de efectos: piano eléctrico y cristal.
+5. En los armónicos, **los acordes con Do, Re y Sol** (no cambian en ningún color) y el Mi o el La en la melodía: sobre un acorde con séptima el La pasa a ser la séptima y La+Mi se vuelve tritono.
+6. En un instrumento con cola (cristal, campana), arpegios con saltos, no escalas rápidas: cada nota sigue sonando debajo de la siguiente y se apilan segundas.
+- `test_los_efectos_armonicos_no_apilan_notas_que_raspan` (en `test_estudio.py`) anota las notas de cada armónico en los 11 colores, sin sintetizarlas, y falla si dos que suenan juntas están a 1, 2 o 6 semitonos.
+- Para medir: la **aspereza** (Plomp-Levelt, parciales a menos de una banda crítica; una nota de cristal ~0.003, en ruido no sirve) y la prueba nula (con y sin una etapa). Los scripts del scratchpad: `sonda.py` (distorsión del master), `aspereza.py`, `colores.py` (viejo contra nuevo en 4 colores), `barrido.py` (todos) y `choques_notas.py`.
+- **La moneda y el combo:** cada multiplicador sube la nota principal y suma una capa (x2 segunda voz, x3 brillo de la octava, x4 una nota más en la subida, x5 un destello): `test_la_moneda_suma_capas_con_el_combo`.
+
+**Para un sonido nuevo:**
+1. Tomar su partitura de `LISTA_DE_SONIDOS.md` y traducir el timbre (sección 0.5 de la lista).
+2. Escribir la función en el módulo de su familia, con `@obra`, armado en capas: tono, cuerpo y aire.
+3. **Revisar la lista de "Sonidos limpios" antes de componer** (abajo), sobre todo si lleva acordes, notas rápidas o suena junto con otro efecto.
+4. `python herramientas/componer.py nombre --escuchar` y mirar los números. Si lleva acordes, medir también la aspereza en varios colores (`colores.py` del scratchpad; si no está, reescribirlo: ver "Sonidos limpios").
+5. Si es un módulo nuevo, sumarlo a `cargar_todas()`.
+6. `python -m pytest tests/test_estudio.py`: el test de notas que raspan revisa todos los armónicos en los 11 colores.
+
+**Lista de verificación de "Sonidos limpios"** (los errores que ya se cometieron; el usuario los oyó como "saturado"):
+- [ ] ¿Algún acorde con dos notas a un tono o un semitono en el medio o el grave? → abrir las voces.
+- [ ] ¿Un pad o un bajo una octava abajo de un acorde cerrado? → solo la fundamental (o fundamental y quinta).
+- [ ] ¿Es armónico? Los acordes, con Do, Re y Sol; el Mi y el La, solo en la melodía.
+- [ ] ¿Suena junto a un efecto armónico (en el mismo momento o pisándolo)? → también armónico.
+- [ ] ¿Escala rápida en un instrumento con cola (cristal, campana, piano)? → arpegio con saltos.
+- [ ] ¿Sierras (`PLUCK`, `LEAD_CALIDO`, `LASER`) tocando acordes? → piano eléctrico o cristal.
+- [ ] ¿Un instrumento nuevo? Relaciones FM enteras y una sola nota con aspereza ~0.003.
+- [ ] ¿Se tocó el master o se agregó una saturación? Tiene que trabajar a un nivel fijo, no al que llegan las pistas (`test_el_master_no_ensucia_un_acorde_fuerte`).
+- [ ] ¿La dinámica es la justa? ff solo para los grandes momentos; un aviso o un GO, f.
+- [ ] En la música vale lo mismo, salvo que las sierras sí pueden tocar acordes (pads y leads) porque pasan por su filtro y la cinta calibrada.
+
+**Mezclar con números, no a ciegas:**
+- Además del brillo, mirar el reparto de energía por franjas (sub <60 Hz, graves, medios, presencia 2-6 kHz, aire >6 kHz).
+- La primera mezcla de `musica_juego` tenía 32 % de sub y 0 % de aire: se oía "tapada". Se corrigió con menos sub en el bajo y el bombo, hats más fuertes desde la fuente, el pad y los plucks más abiertos y aire en el master.
+- **Al final, que el usuario escuche:** los números no reemplazan al oído.
+
+**Tests:** `tests/test_estudio.py`: notas y acordes, curvas, sin aliasing, ADSR, filtro, ningún instrumento chillón, ruido, limitador, ecualizador sin basura al final, reverb que da la vuelta, bombeo, LUFS de un seno conocido, notación, conducción de voces, tema que da la vuelta a su volumen, efecto recortado, y que todos los efectos registrados se compongan (los temas no: tardan ~80 s cada uno). Se verificó que detectan 11 errores inyectados.
+
+**Trampas:**
+- **libvorbis se queda sin pila en Windows** (se cae sin mensaje, exit 127) si recibe un tema entero de una vez: `guardar` escribe de a bloques de 32768.
+- La FFT es circular: en un efecto, el ecualizador rellena 1 s de silencio a cada lado (si no, su "adelanto" aparecía al final y el recorte no cortaba nada).
+- `canal.set_volume` del juego y el volumen de los archivos son aparte: el volumen relativo entre efectos sale de la dinámica de cada uno, y la `MEZCLA` de `config.py` ajusta por categoría.
+- Un tema tarda ~80 s en componerse (casi todo es sintetizar las notas de los pads de 6 voces).
+
+### El compositor viejo (`herramientas/componer_musica.py`, chiptune: ya no hace sonidos del juego)
+Tiene los temas chiptune de antes (`musica_menu`, `musica_jefe`, `musica_gasolinera` y los cuatro de jefe), que el 2026-10-14 se rehicieron en el estudio. Los guarda en `herramientas/chiptune/` (nunca en `efectos/`), para escucharlos o compararlos. Sin ffmpeg guarda el OGG con soundfile (`_guardar_ogg`, de a bloques). Sus herramientas siguen con tests (`test_compositor.py`). Lo que sigue es su documentación.
+
 ```
 python herramientas/componer_musica.py                  # compone todo lo de COMPOSICIONES
 python herramientas/componer_musica.py musica_jefe      # solo esos nombres
+python herramientas/componer_musica.py --escuchar x     # lo compone y lo hace sonar (componer de oido)
 ```
 - Solo biblioteca de Python (`wave`, `array`, `math`, `random`); tarda ~10 s por tema. Escribe en `efectos/<nombre>.wav` y, si hay `ffmpeg` y es música, lo pasa a OGG Vorbis (`-q:a 5`, ~500 KB por 40 s) y borra el WAV. Sin ffmpeg deja el WAV y avisa (hay que poner `.wav` en `MUSICAS`). Es determinista: el ruido de la batería sale de `random.Random(nombre)`, así que volver a componer da el mismo archivo.
 - **Registro:** `COMPOSICIONES` = nombre del archivo (sin extensión) → función que arma y devuelve un `Tema`. Para un tema o efecto nuevo: escribir la función y sumarla ahí.
-- **Mono, 44100 Hz, 16 bits.** `mezclar()` suma las voces (cada una con su volumen), normaliza al pico y redondea con `tanh` (sin recortes duros) a un pico de 0.6 → **volumen medio ~-13 a -14 dB, igual que `musica.mp3`**. Como se normaliza, los volúmenes de las voces solo importan **entre ellas**. Para medir: `ffmpeg -i efectos/x.ogg -af volumedetect -f null -` (mirar `mean_volume`).
+- **Mono, 44100 Hz, 16 bits.** `mezclar()` suma las voces (cada una con su volumen), normaliza al pico y redondea con `tanh` (sin recortes duros) al pico de su **dinámica** (`DINAMICAS`: pp 0.1, p 0.18, mf 0.3, f 0.45, ff 0.6; la música va en ff = 0.6) → **volumen medio ~-13 a -14 dB, igual que `musica.mp3`**. Como se normaliza, los volúmenes de las voces solo importan **entre ellas**. Al guardar imprime cuánto dura y su pico y RMS en dB (`medir()`; el RMS es el volumen "que se siente": sirve para emparejar efectos).
 
-#### `Tema(nombre, bpm, acordes, swing=0.0, vuelta=True)`
+#### `Tema(nombre, bpm, acordes, swing=0.0, vuelta=True, dinamica="ff")`
 - `acordes`: **un acorde por compás**; la cantidad de compases del tema es `len(acordes)`. Compás de 4/4 = **16 pasos de semicorchea** (`PASOS_POR_COMPAS`); `paso` = 60 / bpm / 4 segundos.
 - Acordes: fundamental (`C D E F G A B`, con `#` o `b`) + tipo de `TIPOS_ACORDE`: `""` mayor [0, 4, 7], `"m"` menor [0, 3, 7], `"7"` [0, 4, 7, 10], `"m7"` [0, 3, 7, 10], `"maj7"` [0, 4, 7, 11]. Ej.: `"Am"`, `"Bb"`, `"F#m7"`, `"Bbmaj7"`. Para otro tipo (sus4, dim...), sumarlo a `TIPOS_ACORDE`.
 - `swing`: atrasa la segunda corchea de cada tiempo (los pasos con `paso % 4 == 2`) `swing × 2` pasos. 0 = recto, 0.3 = jazz suave.
@@ -495,18 +762,36 @@ python herramientas/componer_musica.py musica_jefe      # solo esos nombres
 - El último compás de cada tema prepara la vuelta (en el menú, Mi mayor → La; en el jefe, el arpegio de La sube a Re). Al cambiar el final, que siga resolviendo en el primer acorde.
 - **Para una canción nueva:** elegir tonalidad y tempo según la escena (menús 100-115, acción 140-160, descanso 90-100 con swing), escribir los acordes (progresiones que funcionan: `vi-IV-I-V` como el menú, `i-VI-VII-V` como el jefe, `I-vi-ii-V` como la gasolinera), la melodía con notas del acorde de cada compás en los tiempos fuertes, y después bajo, arpegio/acompañamiento y batería. Variar cada 8 compases (sección B más aguda o más densa) para que la vuelta no canse. 16-24 compases dan 30-40 s.
 
-#### Ejemplo de efecto (vuelta=False)
-```python
-def efecto_jefe_vencido():
-    # Un arpegio que sube y un golpe: dura ~1.2 s y sale como WAV
-    tema = Tema("jefe_vencido", 180, ["C"], vuelta=False)
-    tema.melodia("C5 E5 G5 C6 . . . - - - - - - - - -", PULSO_MEDIO, 0.5, eco=0.3)
-    tema.bateria("K - - - - - - - - - - - - - - -", 0.4)
-    return tema
+#### Herramientas de efectos (en segundos, no en la grilla)
+Para efectos, `nuevo_efecto(nombre, segundos, dinamica="mf")` da un `Tema` con lugar para esos segundos (más la cola, que se recorta al guardar). Sus voces se ubican en segundos (`inicio`):
 
-COMPOSICIONES = {..., "jefe_vencido": efecto_jefe_vencido}
+| Método | Qué hace |
+|---|---|
+| `secuencia("G5:40 C6:90 -:20 C5+E5+G5:300", instrumento, volumen, inicio, eco, retraso_eco=0.12, legato=0.9, tremolo, vibrato)` | notas seguidas con su duración en **ms**; `-` silencio, `+` notas juntas (un acorde) |
+| `barrido([(0, "A3"), (0.6, "Eb4")], instrumento, volumen, inicio, eco, retraso_eco, tremolo, vibrato)` | una nota que cambia de altura siguiendo la **curva** (puntos de segundo y nota o Hz) |
+| `ruido(segundos, volumen, inicio, filtro=[(0, 8000)], pasa_altos=None, forma=None, tremolo=None, chasquidos=0)` | ruido (sin altura: no desafina). `filtro` es la curva de cuánto agudo deja pasar (dos filtros de un polo seguidos); `pasa_altos` saca graves (vapor, platillos); `forma` es la curva del volumen (por defecto empieza de golpe y se apaga parejo); `chasquidos` = "crac" por segundo en vez de un soplido (brasas, cascabel) |
+
+- **Curvas** (`curva(puntos, t, exponencial)`): listas de `(segundo, valor)` unidas con rectas, como la automatización de un programa de música. Alturas y filtros usan la exponencial: el oído la oye pareja.
+- `tremolo=(desde_hz, hasta_hz, profundidad 0-1)` hace temblar el volumen y `vibrato=(desde_hz, hasta_hz, semitonos)` la afinación. Un `Oscilador` que se acelera si `hasta > desde`: alarmas, zumbidos, cargas que se apuran. Funcionan también en `Instrumento.tocar` (que ahora acepta la frecuencia como función del segundo).
+- Tests: `tests/test_compositor.py` (curvas, barrido, tiempos de la secuencia, filtro y su curva, chasquidos, trémolo, dinámica, recorte y `medir`). Se comprobó que los temas de siempre salen **idénticos** después de agregar esto (misma huella md5).
+
+#### Ejemplo de efecto
+```python
+def efecto_embestidor_apunta():
+    # 600 ms: sube cromaticamente de La3 a Mib4 (tritono: no resuelve) y el temblor se acelera
+    efecto = nuevo_efecto("embestidor_apunta", 0.6, "mf")
+    efecto.barrido([(0, "A3"), (0.6, "Eb4")], PULSO_FINO, 1.0, tremolo=(6, 16, 0.6))
+    return efecto
+
+def efecto_dash():
+    # Sin altura: el filtro del ruido sube en 60 ms y baja hasta los 180 (DASH_DURACION)
+    efecto = nuevo_efecto("nave_dash", 0.18, "mf")
+    efecto.ruido(0.18, 1.0, filtro=[(0, 800), (0.06, 6000), (0.18, 1000)], forma=[(0, 0), (0.01, 1), (0.18, 0)])
+    return efecto
+
+COMPOSICIONES = {..., "embestidor_apunta": efecto_embestidor_apunta, "nave_dash": efecto_dash}
 ```
-Después: `python herramientas/componer_musica.py jefe_vencido` → `efectos/jefe_vencido.wav`, sumarlo a `EFECTOS` y llamar a `reproducir("jefe_vencido")` donde corresponda (por ejemplo en `Partida.jefe_vencido()`). Para sonidos que no son notas (un láser que baja, una explosión), escribir una función como `bombo` (un seno o ruido con la frecuencia y el volumen cambiando en el tiempo) y usarla en una voz de batería de un efecto. Se probó que un efecto así sale de ~1.2 s, sin el silencio del final.
+Después: `python herramientas/componer_musica.py --escuchar nave_dash` → `herramientas/chiptune/nave_dash.wav` (y lo hace sonar). Sumarlo al `CATALOGO` y llamar a `reproducir("nave_dash")` donde corresponda. Variantes: la misma función con otros valores, registrada con otro nombre (`nave_dash_1`, `nave_dash_2`...).
 
 ## Tests (`tests/`)
 - `conftest.py`:
@@ -518,6 +803,7 @@ Después: `python herramientas/componer_musica.py jefe_vencido` → `efectos/jef
 - `test_inicio.py`: menú vertical, páginas con LB/RB/Q/E/IZQ/DER, SALIR y que todo entre. `test_hud.py`: además, el marcador que cuenta y la barra del jefe (aparece al terminar de entrar, se llena de a uno y destella).
 - `test_opciones.py`: secciones con LB/RB y Q/E, que todo entre en el panel, cada opción de accesibilidad (temblor, destellos, CRT parejo en 1080p), que el HUD no tiemble y que los textos flotantes no se pisen.
 - `test_efectos_visuales.py`: halos y la opción NEON, estelas (el metal no brilla), ondas de choque, fogonazos del jefe, giros de la nave y su preparación de a poco, hiperespacio y el escalado suave.
+- **Trampa al inyectar errores a propósito** (para probar los tests): si el cambio deja el archivo con el mismo tamaño (intercambiar dos líneas) y se restaura en el mismo segundo, Python sigue usando el `.pyc` de la versión rota (valida su caché por tamaño y segundo). Después de restaurar, borrar los `__pycache__` (o tocar la fecha del archivo).
 - Se verificó que los tests detectan bugs inyectados a propósito (combo, hitbox, rango del embestidor, dash perfecto, dashes extra, aturdido, fénix, Taller, peso de la vida, guardado de logros, combo en el perfecto, la oferta del nivel 3, la barra de energía, el perfecto solo con destruibles, la intercepción, la chance del ECO, DOBLE DASH desde el sector 3, y en la gasolinera: comprar una vez, créditos con el combo, reparar solo si falta y salir apaga `gasolinera`).
 - Bots del scratchpad (se borran entre sesiones: si no están, se reescriben): `medir_creditos.py` (créditos por sector; los jefes se vencen al instante), `bot_sector.py` (partida entera eligiendo mejoras al azar), `medir_anomalias.py` (golpes/min; con `CAZA_RAIZ` apunta a otra carpeta, por ejemplo un `git worktree` de un commit viejo, para comparar), `app_completa.py` (la App entera a 144 FPS apretando teclas: pasa por Taller, jefes y Game Over).
 - Para inspeccionar algo visual, sacar una captura de `app.pantalla` con `pygame.image.save` desde un script en el scratchpad que use `App(carpeta_datos=<scratchpad>)`. Filtrar la salida con `grep -a`, porque "¡" hace que grep la trate como binaria.
@@ -529,7 +815,25 @@ Por fases, mostrando capturas antes/después:
 - **Hecho — Fase 3 (rediseño visible, después de que el usuario pidió "algo que parezca un triple A"):** el kit `interfaz.py`, LB/RB y Q/E en todos los menús con pestañas, ayudas con los botones del control que se usa, transiciones de rombos, cinemática de ALERTA para cada jefe, y rehechas a todo el ancho: Inicio, Opciones, Pausa, Taller, Gasolinera, Dificultad, Logros, Iniciales, Game Over, READY/GO y la muerte de la nave.
 - **Hecho — Fase 4 (impacto y mundo):** neón opcional (halos), ondas de choque, estelas y fogonazos de las balas, destello de la moneda, giro RotSprite de la nave, estrellas que titilan, salto al hiperespacio, niebla con borde en bandas y la opción ESCALADO SUAVE.
 - **Hecho — Fase 5 (carteles del juego):** cola de avisos, pancarta de arriba, fichas que esquivan el aviso, logro abajo, momentos en franjas y el panel del rango (ver "Carteles del juego").
-- **Lo que queda para el triple A** (lista que se le dio al usuario, en su orden): sonido (6 efectos para todo: `seleccion` suena en 24 lugares; la música de menú, jefe y gasolinera ya está), impacto en el golpe final al jefe y al perder una vida (aviso de última vida), lo que quedó fuera de la grilla (íconos de vidas, MINI), presentación con logo/modo demostración/tutorial, accesibilidad (remapear controles, daltonismo, HUD más grande, modo asistido) y variantes de planetas por código.
+- **Hecho — Sonido:** el mezclador, el estudio, 252 efectos, ambientes, temas nuevos y uno por jefe (ver "Sonido y música"; `LISTA_DE_SONIDOS.md` completa).
+- **Hecho — Sonidos limpios** (2026-10-14): los 6 patrones que saturaban (ver "Sonidos limpios" en El estudio) y todo recompuesto. **El usuario lo escuchó y lo aprobó** ("ahora sí se escucha bien").
+- **Hecho — Mezcla y armonía** (2026-10-14): margen y limitador (0 recortes), efectos secos, `CAMPANA`/`METAL` armónicos, peligros con la tensión de la escala, efectos que siguen al acorde (11 colores) y los temas chiptune rehechos en el estudio. **Falta que el usuario lo escuche** jugando (los números no reemplazan al oído).
+- **Hecho — Impacto de los momentos clave** (`impactos.py`, valores en config: `IMPACTO_*`, `CAMARA_LENTA_JEFE`, `HERIDA_MS`, `LATIDO_MS`, `VINETA_*`):
+  - **Golpe final al jefe** (`Partida.golpe_final`, lo llama `Jefe.recibir_golpe` con vida 0): el cuadro de impacto, como en los juegos de pelea.
+    - Hit-stop de `IMPACTO_PASOS` (24): los primeros `IMPACTO_DESTELLO` pasos, un destello blanco (no con DESTELLOS REDUCIDOS).
+    - Después, el mundo oscuro (`NEGRO_VELO`) con el jefe y la nave redibujados encima (los protagonistas, iluminados), y rayos de bloques en el color del jefe que se recogen (`nuevo_impacto` los sortea una vez).
+    - Después, `CAMARA_LENTA_JEFE` pasos de cámara lenta.
+  - **Herida:** una viñeta roja que se apaga en `HERIDA_MS`; en el HUD, la vida perdida destella blanca (`_icono_blanco`) en vez de parpadear toda la fila.
+  - **Última vida:**
+    - el aviso urgente "¡ULTIMA VIDA!" (`AVISO_ULTIMA_VIDA`) con cinta de peligro;
+    - la viñeta late con el corazón (`fuerza_de_la_vineta`, sincronizada con el sonido `latido`, ambos con `LATIDO_MS`);
+    - la vida que queda se pinta de rojo en el golpe del latido (`impactos.latiendo`, `_icono_rojo`);
+    - con DESTELLOS REDUCIDOS la viñeta queda quieta y la vida no late.
+  - **Capas:** `Escena.dibujar_partida` dibuja `partida.dibujar_impactos` después del temblor y **antes del HUD** (el marcador siempre se lee).
+  - `impactos.vineta(tamaño, color)` la usa también la Explosion.
+  - Tests: `tests/test_impactos.py`, que detecta 7 errores inyectados.
+- **Hecho — Presentación con logo:** advertencia, "HECHO CON PYGAME" y pantalla de título (ver "Presentación").
+- **Lo que queda para el triple A** (lista que se le dio al usuario, en su orden): lo que quedó fuera de la grilla (íconos de vidas, MINI), modo demostración/tutorial, accesibilidad (remapear controles, daltonismo, HUD más grande, modo asistido) y variantes de planetas por código.
 
 ## Ideas pendientes (propuestas, aún sin hacer)
 - Propuestas no elegidas: Torreta + Mina, Ladrón + Escudero, Fantasma + Barrera + Élites, Los Gemelos, fase 2 del Ojo.

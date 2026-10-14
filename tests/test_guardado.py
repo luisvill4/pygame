@@ -59,7 +59,22 @@ def test_opciones_de_fabrica_y_claves_que_faltan(tmp_path):
     archivo.write_text(json.dumps({"volumen": 4, "resolucion": "COMPLETA"}))
     opciones = Opciones(str(archivo))
     assert opciones.volumen == 4 and opciones.resolucion == "COMPLETA"
-    assert opciones.musica and opciones.efectos and opciones.aviso_jefe
+    assert opciones.volumen_musica == 10 and opciones.volumen_efectos == 10 and opciones.aviso_jefe
+    assert not opciones.silencio and not opciones.audio_mono
+
+
+def test_la_musica_y_los_efectos_viejos_en_no_pasan_a_volumen_0(tmp_path):
+    # Antes eran SI/NO; ahora cada uno tiene su volumen
+    archivo = tmp_path / "config.json"
+    archivo.write_text(json.dumps({"volumen": 7, "musica": False, "efectos": True}))
+    opciones = Opciones(str(archivo))
+    assert opciones.volumen == 7 and opciones.volumen_musica == 0 and opciones.volumen_efectos == 10
+    opciones.volumen_efectos, opciones.audio_mono = 4, True
+    opciones.guardar()
+    otra = Opciones(str(archivo))
+    assert otra.volumen_musica == 0 and otra.volumen_efectos == 4 and otra.audio_mono
+    archivo.write_text(json.dumps({"efectos": False}))
+    assert Opciones(str(archivo)).volumen_efectos == 0
 
 
 def test_opciones_dañadas_usan_las_de_fabrica(tmp_path):

@@ -236,10 +236,11 @@ def test_m_silencia_y_vuelve_a_prender(app):
     avanzar(app)
     tecla(pygame.K_m)
     avanzar(app)
-    assert not app.opciones.musica and not app.opciones.efectos
+    assert app.opciones.silencio and app.sonidos.nivel("EFECTOS") == 0
+    assert app.opciones.volumen_musica == 10        # los volumenes no se tocan
     tecla(pygame.K_m)
     avanzar(app)
-    assert app.opciones.musica and app.opciones.efectos
+    assert not app.opciones.silencio and app.sonidos.nivel("EFECTOS") > 0
 
 
 def test_f11_pantalla_completa_y_vuelve(app):
