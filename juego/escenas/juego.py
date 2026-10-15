@@ -51,7 +51,7 @@ class Juego(Escena):
             return propia if propia in MUSICAS else "jefe"
         if partida.director.cerrando_sector():
             return SILENCIO
-        if partida.nivel % JEFE_CADA_NIVELES == JEFE_CADA_NIVELES - 1:
+        if partida.nivel % JEFE_CADA_NIVELES == JEFE_CADA_NIVELES - 1 and partida.modo.hay_jefe():
             return "tension"            # el nivel antes del jefe: algo se acerca
         return musica_del_sector(partida)
 

@@ -103,6 +103,12 @@ class Jefe:
                                   for nombre, cuadros in normales.items()}
         return _animaciones[cls.tipo]
 
+    @classmethod
+    def retrato(cls):
+        # Un cuadro que lo representa (lo usa el Archivo del modo historia). Por defecto el
+        # primero de sus animaciones; el que esta hecho de partes elige el suyo
+        return next(iter(cls.animaciones().values()))[0]
+
     # ---------- Consultas ----------
 
     def centro(self):

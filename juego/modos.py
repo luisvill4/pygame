@@ -20,6 +20,7 @@ from juego.config import JEFE_CADA_NIVELES
 class Modo:
     nombre = None               # "arcade", "historia": con esto se buscan sus pasajes (escenas/pasajes.py)
     guarda_records = True       # ¿la partida entra a la tabla de records?
+    cuenta_logros = True        # ¿se desbloquean logros? (miden el avance del arcade: sectores, niveles...)
 
     def empezar(self, partida):
         # Al crear la partida, antes que el Director: el modo se guarda la partida y la prepara
@@ -52,6 +53,11 @@ class Modo:
         # El renglon de arriba en READY: [(texto, color), ...]
         raise NotImplementedError
 
+    def hay_jefe(self):
+        # False: despues del ultimo tramo no viene el jefe y la partida se cumple ahi
+        # (una mision tranquila de la historia). Casi siempre hay jefe
+        return True
+
     # ---------- Avisos (el Director y la Partida le cuentan lo que pasa) ----------
 
     def al_empezar_tramo(self, numero):
@@ -64,6 +70,22 @@ class Modo:
         pass
 
     def al_recoger_moneda(self):
+        pass
+
+    def al_romper(self, enemigo):
+        # Rompiste un enemigo (con el dash, una onda o congelado)
+        pass
+
+    def al_romper_parte(self, jefe, parte):
+        # Rompiste una pieza del jefe (un cañon, una compuerta)
+        pass
+
+    def al_golpear_jefe(self, jefe):
+        # Le pegaste en el nucleo (se avisa antes del rebote: la nave sigue donde pego)
+        pass
+
+    def al_escapar_moneda(self, ladron):
+        # Un ladron salio de la pantalla con la moneda
         pass
 
     # ---------- Cada paso y el dibujo (lo propio del modo) ----------

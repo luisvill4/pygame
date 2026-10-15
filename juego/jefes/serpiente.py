@@ -144,6 +144,11 @@ class Serpiente(Jefe):
     ms_pulso = SERPIENTE_PULSOS[0]
     fases_congelables = ("nadar", "acechar", "morder", "aturdida", "enroscarse", "mareada")
 
+    @classmethod
+    def retrato(cls):
+        # Esta hecha de partes: la cabeza la representa
+        return cuadros("cabeza", "normal")[0]
+
     def __init__(self, partida):
         super().__init__(partida)
         self.vida_max = self.vida = self.vida_max + SERPIENTE_CORTES_EXTRA

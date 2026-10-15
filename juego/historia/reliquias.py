@@ -9,14 +9,16 @@ Para una nueva: una clase con fragmento, x, y, caja(), tocada(), termino(), move
 
     MonedaGrabada   una moneda distinta: gira lento, tiene un glifo y se apaga si no la agarras
     Restos          los restos de una nave, apagados como el fondo: solo el dash los abre
+    Baliza          una baliza de emergencia que titila un glifo a ritmo: tambien con el dash
 """
 import math
 
 import pygame
 
 from juego import dibujo, recursos
-from juego.config import ANCHO, MONEDA_GRABADA_DURA, RESTOS_VELOCIDAD, MS_CUADRO_MONEDA
+from juego.config import ANCHO, MONEDA_GRABADA_DURA, RESTOS_VELOCIDAD, MS_CUADRO_MONEDA, BALIZA_VELOCIDAD, BALIZA_UNIDAD
 from juego.moneda import imagen_moneda, TAMANO as TAMANO_MONEDA
+from juego.historia.glifos import sonando
 
 
 class MonedaGrabada:
@@ -109,6 +111,57 @@ class Restos:
                    "v": (110, 90, 40) if pygame.time.get_ticks() % 2600 < 160 else (40, 38, 50)}
         izquierda, arriba = dibujo.en_grilla(self.x), dibujo.en_grilla(self.y)
         for fila, renglon in enumerate(CASCO):
+            for columna, letra in enumerate(renglon):
+                if letra in colores:
+                    pantalla.fill(colores[letra], (izquierda + columna * 2, arriba + fila * 2, 2, 2))
+
+
+# La baliza: un cilindro con antena, de 9x12 pixeles de arte. 'L' es la luz que titila
+BALIZA = [
+    "....X....",
+    "....X....",
+    "...XLX...",
+    "..XXXXX..",
+    ".XoooooX.",
+    ".XoXXXoX.",
+    ".XoooooX.",
+    ".XoXXXoX.",
+    ".XoooooX.",
+    "..XXXXX..",
+    "...X.X...",
+    "..X...X..",
+]
+
+
+class Baliza:
+    def __init__(self, fragmento, glifo):
+        # Cruza de derecha a izquierda por la mitad de abajo, mas despacio que los restos
+        self.fragmento = fragmento
+        self.glifo = glifo              # lo que titila (el mensaje, en el ritmo de los Cantores)
+        self.x = ANCHO
+        self.y = 380
+
+    def caja(self):
+        # (un poco mas grande que el dibujo: es chiquita y hay que acertarle con el dash)
+        return pygame.Rect(int(self.x) - 8, int(self.y) - 8, len(BALIZA[0]) * 2 + 16, len(BALIZA) * 2 + 16)
+
+    def tocada(self, partida):
+        nave = partida.nave
+        return nave.en_dash(partida.tiempo) and nave.caja_recoger().colliderect(self.caja())
+
+    def termino(self, partida):
+        return self.x < -len(BALIZA[0]) * 2
+
+    def mover(self, partida):
+        self.x -= BALIZA_VELOCIDAD
+        self.y += math.sin(partida.tiempo / 700) * 0.15
+
+    def dibujar(self, pantalla, partida):
+        # Apagada como el fondo; solo la luz titila el glifo (con el reloj real: es dibujo)
+        prendida = sonando(self.glifo, BALIZA_UNIDAD, pygame.time.get_ticks())
+        colores = {"X": (70, 74, 96), "o": (34, 36, 56), "L": (110, 90, 40) if prendida else (40, 38, 50)}
+        izquierda, arriba = dibujo.en_grilla(self.x), dibujo.en_grilla(self.y)
+        for fila, renglon in enumerate(BALIZA):
             for columna, letra in enumerate(renglon):
                 if letra in colores:
                     pantalla.fill(colores[letra], (izquierda + columna * 2, arriba + fila * 2, 2, 2))

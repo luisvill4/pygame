@@ -93,7 +93,8 @@ class TablaRecords:
 class Progreso:
     # Lo que se gana jugando y queda entre partidas. En el archivo:
     #   {"logros": ["primer_jefe", ...], "nave": "CIAN", "partidas": 12,
-    #    "misiones": [1, 2], "fragmentos": ["F01", ...]}      (las dos ultimas: el modo historia)
+    #    "misiones": [1, 2], "fragmentos": ["F01", ...], "fichas": ["enemigo:perseguidor", ...]}
+    #   (las tres ultimas: el modo historia)
 
     def __init__(self, archivo):
         self.archivo = archivo
@@ -102,6 +103,7 @@ class Progreso:
         self.partidas = 0               # partidas terminadas
         self.misiones = set()           # modo historia: las misiones cumplidas (1 a 5)
         self.fragmentos = set()         # modo historia: los fragmentos del Archivo encontrados
+        self.fichas = set()             # modo historia: las fichas del Archivo (lo que ya viste)
         self._cargar()
 
     def _cargar(self):
@@ -112,6 +114,7 @@ class Progreso:
             self.partidas = max(0, int(datos.get("partidas", 0)))
             self.misiones = {int(numero) for numero in datos.get("misiones", [])}
             self.fragmentos = {str(fragmento) for fragmento in datos.get("fragmentos", [])}
+            self.fichas = {str(ficha) for ficha in datos.get("fichas", [])}
             if datos.get("nave") in [nombre for nombre, _, _ in self.naves_disponibles()]:
                 self.nave = datos["nave"]
         except FileNotFoundError:
@@ -122,7 +125,7 @@ class Progreso:
     def guardar(self):
         _escribir_json(self.archivo, {"logros": sorted(self.logros), "nave": self.nave,
                                       "partidas": self.partidas, "misiones": sorted(self.misiones),
-                                      "fragmentos": sorted(self.fragmentos)})
+                                      "fragmentos": sorted(self.fragmentos), "fichas": sorted(self.fichas)})
 
     def cumplir_mision(self, numero):
         self.misiones.add(numero)
@@ -133,6 +136,14 @@ class Progreso:
         if id_fragmento in self.fragmentos:
             return False
         self.fragmentos.add(id_fragmento)
+        self.guardar()
+        return True
+
+    def anotar_ficha(self, id_ficha):
+        # Devuelve True si es nueva
+        if id_ficha in self.fichas:
+            return False
+        self.fichas.add(id_ficha)
         self.guardar()
         return True
 

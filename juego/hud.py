@@ -294,6 +294,14 @@ CALAVERA = [            # el jefe, al final de la ruta (cada X es un pixel de ar
     ".XX.XX.",
     ".X.X.X.",
 ]
+BANDERA = [             # el final de una ruta sin jefe (del mismo tamaño que la calavera)
+    "XXXXXX.",
+    "XXXXXX.",
+    "XXXX...",
+    "X......",
+    "X......",
+    "X......",
+]
 RUTA_PASO = 56          # px entre un punto de la ruta y el siguiente
 RUTA_Y = 584            # la altura de la ruta (el renglon "2-3  DIVISORES 2/3" va arriba)
 RENGLON_RUTA = 560
@@ -326,7 +334,12 @@ def _ruta(pantalla, partida):
         else:
             pygame.draw.rect(pantalla, TEXTO_APAGADO, punto, 2)
             pantalla.fill(LINEA_APAGADA, camino)
-    # La calavera: roja con el jefe; en el asedio (el jefe viene), late
+    # La calavera: roja con el jefe; en el asedio (el jefe viene), late. Sin jefe (una mision
+    # tranquila de la historia), una bandera: el final de la ruta
+    if not partida.modo.hay_jefe():
+        color_fin = color_sector if director.tramo is None else TEXTO_APAGADO
+        dibujo.pixel_art(pantalla, BANDERA, izquierda + 4 * RUTA_PASO + 6, RUTA_Y, color_fin, 2)
+        return
     if tramo == 0:
         color_jefe = ROJO
     elif tramo == 4:

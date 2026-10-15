@@ -259,7 +259,21 @@ class Director:
             self._festejar_objetivo()
             self.despedir_escuadrones()
         if not self.escuadrones:
-            partida.subir_nivel()
+            if self.numero_tramo == TRAMOS and not partida.modo.hay_jefe():
+                self._terminar_sin_jefe()
+            else:
+                partida.subir_nivel()
+
+    def _terminar_sin_jefe(self):
+        # Una ruta sin jefe (una mision tranquila de la historia): con el ultimo tramo despejado,
+        # el cartel de la zona despejada y la partida se cumple cuando se va
+        partida = self.partida
+        self.tramo = None
+        self.objetivo = None
+        self.terminar_anomalia()
+        self.fin_de_la_partida = partida.tiempo + AVISO_TRAMO
+        partida.avisar(Aviso("FIN DE LA RUTA", "ZONA DESPEJADA", "", VERDE, AVISO_TRAMO))
+        partida.sonidos.reproducir("oleada_superada")
 
     def _festejar_objetivo(self):
         # El asedio tiene su propio festejo (terminar_asedio); los demas: puntos y un anillo verde
@@ -485,7 +499,8 @@ class Director:
             self.revisar_desafio()
 
     def al_romper(self, enemigo):
-        # Lo rompiste (con el dash, una onda o congelado): para el objetivo del tramo
+        # Lo rompiste (con el dash, una onda o congelado): para el objetivo del tramo y el modo
+        self.partida.modo.al_romper(enemigo)
         if self._objetivo_en_curso():
             antes = self.objetivo.progreso
             self.objetivo.al_romper(enemigo)
@@ -546,8 +561,11 @@ class Director:
     # ---------- Anomalias ----------
 
     def elegir_anomalia(self):
-        # La del sector la mitad de las veces (ANOMALIA_PROPIA); si no, una de las otras.
-        # Asi cada bioma tiene su personalidad, pero las cuatro se ven desde el principio
+        # Si el tramo dice cual ("anomalia" en su ruta: una mision de la historia la necesita),
+        # esa. Si no, la del sector la mitad de las veces (ANOMALIA_PROPIA) y si no, una de las
+        # otras: asi cada bioma tiene su personalidad, pero las cuatro se ven desde el principio
+        if self.tramo is not None and self.tramo.get("anomalia"):
+            return self.tramo["anomalia"]
         propia = self.sector["anomalia"]
         if propia is not None and random.random() < ANOMALIA_PROPIA:
             return propia

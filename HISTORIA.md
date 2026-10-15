@@ -1,10 +1,10 @@
 # La Marea — la biblia del modo historia
 
-> **Borrador beta.** Todo se puede cambiar. Este documento es la referencia para escribir
-> diálogos, secretos y misiones sin contradecirse. **Spoilers totales**: acá está la verdad.
+> **Beta.** Todo se puede cambiar. Este documento es la referencia para escribir diálogos,
+> secretos y misiones sin contradecirse. **Spoilers totales**: acá está la verdad.
 
-El juego tiene dos modos: **ARCADE** (la ruta infinita de siempre, con récords) y **HISTORIA**
-(las misiones de este documento, con diálogos, radio y secretos).
+El juego tiene dos modos: **ARCADE** (la ruta infinita de siempre, con récords y logros) e
+**HISTORIA** (las misiones de este documento, con diálogos, radio, secretos y el Archivo).
 
 ---
 
@@ -14,29 +14,28 @@ Una galaxia enana, que los astrónomos llaman **la Marea**, viene en curso de ch
 frente: sus fuerzas de marea van a desgarrar las órbitas de todo el vecindario estelar. Faltan
 seis años. No hay a dónde escapar y no hay forma de detenerla.
 
-Hace tres meses, la **Estación Umbral** detectó algo en las ondas gravitacionales: un **compás**.
-Pulsos con ritmo, cortos y largos, que se repiten. No es ruido: alguien lo puso ahí. La
-astrofísica **Inés Coria** siguió el compás hasta el Cinturón Exterior, donde aparecieron unos
-objetos metálicos con un símbolo grabado. Por la forma les dicen **monedas**.
+En las ondas gravitacionales hay un **compás**: pulsos cortos y largos que se repiten. No es
+ruido: alguien lo puso ahí. Lleva al Cinturón Exterior, donde flotan unos objetos de metal con un
+símbolo grabado. Por la forma les dicen **monedas**.
 
-**Alba**, piloto de la nave **Alondra**, sale a seguir el compás.
+**Alba**, piloto de la nave **Alondra**, sale a seguir el compás. **Inés Coria** la guía por
+radio desde la **Estación Umbral**.
 
-## 2. La verdad (lo que revela el secreto más profundo)
+## 2. La verdad (lo que revela el final verdadero)
 
 **Los Cantores somos nosotros.** Es un bucle en el tiempo:
 
-1. Al final del viaje, Alba atraviesa **la Singularidad** del Abismo (*El Fin de la Luz*). No es un
-   arma ni un monstruo: es una **puerta en el tiempo**. Cerca de un agujero negro el tiempo se
-   dobla; esta puerta lo dobla hacia atrás.
-2. Del otro lado, millones de años antes de la Marea, Alba y los que la siguen se vuelven **los
-   Cantores**. Saben que la Marea va a venir, así que preparan el camino para que alguien
-   lo encuentre: graban las monedas, construyen a los guardianes, emiten el compás.
-3. Ese camino es exactamente el que Alba sigue en el juego. **Las monedas las dejó ella.**
+1. La Singularidad del Abismo (*El Fin de la Luz*) no es un arma ni un monstruo: es una **puerta
+   en el tiempo**. Cerca de un agujero negro el tiempo se dobla; esta puerta lo dobla hacia atrás.
+2. Del otro lado, millones de años antes de la Marea, los que cruzan se vuelven **los Cantores**.
+   Saben que la Marea va a venir, así que preparan el camino para que alguien lo encuentre:
+   graban las monedas, despiertan a los guardianes, emiten el compás.
+3. Ese camino es exactamente el que Alba sigue en el juego. **Las monedas las dejaron ellos**:
+   Alba, Mateo, la tripulación de la Errante... y, al final, todos los que cruzan.
+4. La Marea no se puede frenar, **pero se puede cruzar**. La puerta es la salida. Por eso el
+   compás termina diciendo **VENGAN**.
 
-Nadie lo dice en la historia principal. El final visible es ambiguo: la puerta se abre, Alba
-entra y su última frase por radio es la misma que el mensaje del compás. El jugador que juntó
-todos los secretos escucha la **Bitácora sin fecha**: la voz de Alba, grabada hace millones de
-años.
+El compás, en el código de los Cantores, dice **ALBA**. Lo dice desde hace millones de años.
 
 **Regla de oro:** ningún secreto contradice esto, y cada uno, mirado después, apunta hacia acá.
 
@@ -44,129 +43,214 @@ años.
 
 | Quién | Quién es | Cómo habla |
 |---|---|---|
-| **ALBA** | Piloto de la Alondra. Terca, con humor seco. No cree en señales del destino. | Frases cortas. Se ríe del peligro. |
-| **INES CORIA** | Astrofísica de la Estación Umbral. Decodificó el compás. Es la voz de la radio. | Precisa, cálida, cansada. Dice "compás" y no "señal". |
-| **LA ERRANTE** | La expedición que fue antes, hace tres años, y no volvió. Su capitán: **Mateo Saavedra**. | Sus bitácoras son todo lo que queda. |
+| **ALBA** | Piloto de la Alondra. Terca, con humor seco. No cree en señales del destino. No tiene a nadie que la espere: por eso se ofreció. | Frases cortas. Se ríe del peligro. |
+| **INÉS CORIA** | Astrofísica de la Estación Umbral. Es la voz de la radio. Vivió siete años con Mateo. | Precisa, cálida, cansada. Dice "compás" y no "señal". |
+| **MATEO SAAVEDRA** | Capitán de la Errante. Oyó el compás tres años antes que nadie y salió a seguirlo. | Tranquilo, un poco poeta. Solo queda su voz grabada. |
+| **ROCÍO VEGA** | Ingeniera de la Errante. Fue la primera en notar que las monedas "cantan". | Entusiasta, desconfía de las explicaciones fáciles. |
+| **TOMÁS ILIC** | Navegante de la Errante. Cuenta todo: los disparos, los días, los pulsos. | Metódico. |
 | **LOS CANTORES** | Los que dejaron el camino. Nunca aparecen: solo glifos, ritmos y máquinas. | En glifos. Traducidos, suenan humanos (porque lo son). |
+| **LA VOZ SIN FECHA** | Alba, grabada del otro lado de la puerta, millones de años antes. Su retrato es el de Alba en los colores de los Cantores. | Como Alba, pero en paz. |
 
-La nave se llama **Alondra** porque la alondra es el pájaro que canta al amanecer: Alba y los
-Cantores, el amanecer contra *El Fin de la Luz*.
+La nave se llama **Alondra** porque la alondra es el pájaro que canta al amanecer, y *alba*
+también quiere decir amanecer: Alba y los Cantores, el amanecer contra *El Fin de la Luz*.
 
-## 4. El porqué de cada cosa del juego
+## 4. Cronología
 
-Todo lo que ya existe en el juego tiene su lugar en la historia. Los textos del Archivo lo
-cuentan de a poco.
+| Cuándo | Qué pasa |
+|---|---|
+| Hace millones de años | Los que cruzaron la puerta (los Cantores) graban las monedas, despiertan a los guardianes y emiten el compás. Alba graba la Bitácora sin fecha. |
+| Hace tres años | Mateo oye el compás, muy débil. Nadie le cree. Sale con la **Errante** (Rocío y Tomás) a seguir las monedas: Cinturón, Nebulosa, Esmeralda, Ámbar. En la niebla aprende a leer los glifos; lee la firma: ALBA. |
+| Hace tres años, día 377 | La Marea alcanza a la Errante al borde del Abismo y la parte en tres. Mateo transmite su último mensaje ("...ALBA. DECILE A ALBA...") y entra a la puerta con la tripulación, en la cápsula de escape. Deja la baliza prendida. |
+| Hace tres meses | La Estación Umbral capta el compás. Inés lo decodifica en parte. |
+| El juego | Alba sigue el compás, misión por misión. |
+| Tres días después de la misión 5 | El compás suma una palabra: VENGAN. Si se encontró todo, llega la Bitácora sin fecha e Inés da la orden: "Nos vamos". |
+
+## 5. El porqué de cada cosa del juego
+
+Todo lo que existe en el juego tiene su lugar en la historia. Lo cuentan las **fichas del
+Archivo** (`juego/historia/fichas.py`), que se anotan solas la primera vez que se ve cada cosa
+en una misión. Algunas esconden pistas (marcadas con ➜).
 
 | Qué | Qué es en la historia |
 |---|---|
-| **Monedas** | Sellos de memoria de los Cantores. Cada una guarda un pedazo del compás. Por eso "cantan" (la moneda suena más rica con el combo): juntas en ritmo resuenan. |
-| **El combo** | Monedas seguidas resuenan juntas: el compás se escucha mejor. La tripulación de la Errante lo notó primero. |
+| **Monedas** | Sellos de memoria de los Cantores: cada una guarda un pedazo del compás. Juntas y rápido "cantan" (la moneda suena más rica con el combo). |
 | **El dash** | El salto de la Alondra sobre la marea gravitatoria. Inés lo inventó mirando cómo se mueven los guardianes. |
-| **Perseguidores** | Centinelas. No buscan matarte: alejan a cualquiera que se acerque a las monedas. |
-| **Rebotadores** | Cápsulas de memoria dañadas que rebotan sin rumbo, repitiendo un mismo segundo del pasado. |
+| **Perseguidores** | Centinelas. No buscan matar: alejan a cualquiera de las monedas. "¿Y si no las cuidan *de* nosotros, sino *para* nosotros?" |
+| **Rebotadores** | Cápsulas de memoria dañadas: repiten un mismo segundo del pasado. En los restos de la Errante repiten su último segundo. |
 | **Embestidores** | Arietes de construcción. Abrieron los túneles del Cinturón. |
 | **Divisores** | Esporas de terraformación: se reparten al romperse, para sembrar. |
-| **Enjambre y abejas** | Las obreras de la Colmena, que es una biblioteca. |
-| **Ladrones** | Carteros. No roban: **llevan** monedas hacia el Abismo, de vuelta a la puerta. Así las monedas viajan al pasado y vuelven a aparecer. (Pista central del bucle.) |
-| **Escuderos** | Guardias de los archivos interiores. Solo dejan pasar a quien los rodea: a quien sabe bailar. |
-| **Power-ups** | Tecnología de los Cantores, encontrada flotando: el escudo, la estasis (hielo), el imán... |
-| **Anomalías** | Lo que la Marea ya está rompiendo: el espacio se pone raro a medida que se acerca. |
-| **Los jefes** | **Guardianes del compás.** Pelean a ritmo porque *son* el ritmo: cada uno toca una parte del mensaje. Ponen a prueba a quien sigue el camino: la puerta solo se abre para quien sabe bailar. |
+| **Enjambre y abejas** | Las obreras y las bibliotecarias de la Colmena, que es una biblioteca. ➜ "No son soldados" (F08). |
+| **Ladrones** | Carteros: no roban, **llevan** las monedas al Abismo, de vuelta a la puerta (pista central del bucle). ➜ "¿A dónde llevan las monedas?" (F05). |
+| **Escuderos** | Guardias de los archivos. Solo dejan pasar a quien los rodea: a quien sabe bailar. |
+| **Power-ups** | Tecnología de los Cantores. ➜ El repuesto viene "a la medida de la Alondra: ¿cómo sabían las medidas?"; el imán, "como si las monedas reconocieran a la Alondra". |
+| **Anomalías** | Lo que la Marea ya está rompiendo. ➜ En la niebla "se escucha mejor" (F06); en la fiebre del oro "cantan más fuerte que nunca" (F07). |
+| **Los jefes** | **Guardianes del compás.** Pelean a ritmo porque *son* el ritmo. Ponen a prueba a quien sigue el camino: la puerta solo se abre para quien sabe bailar. El Acorazado es un metrónomo; la Colmena, la bibliotecaria mayor. |
 | **La Singularidad** | La puerta. *El Fin de la Luz* no es un final: es por donde los Cantores volvieron al principio. |
 
-## 5. Las misiones
+## 6. Las misiones
 
-Una por sector, en orden. Cada misión es la ruta arcade de ese sector (4 tramos y su jefe) con
-diálogos antes y después, mensajes de radio y secretos. Las misiones ganadas se pueden rejugar
-para buscar lo que falta.
+Una por sector, en orden, más una oculta. Cada misión tiene **su propia ruta** (4 tramos con
+nombres de la historia y la anomalía que necesita su secreto), diálogos antes y después, la
+radio en cada tramo y secretos. Las misiones ganadas se rejuegan para buscar lo que falta.
 
-| # | Sector | Título | Lo que se descubre (historia principal) |
+| # | Lugar | Título | Lo que se descubre (la historia principal) |
 |---|---|---|---|
-| 1 | Cinturón Exterior | LA SEÑAL | Las monedas reaccionan al compás. El Ojo es una lente que mira siempre al mismo punto. Al vencerlo, el compás suma una nota y señala la Nebulosa. |
-| 2 | Nebulosa Carmesí | EL ACORAZADO | La Errante pasó por acá. Los cañones del Acorazado disparan en compás: son metrónomos. Inés traduce la primera palabra: **SEGUI**. |
-| 3 | Campo Esmeralda | LA DEVORADORA | Alguien más junta monedas: los ladrones, que se las llevan hacia el Abismo. |
-| 4 | Mar de Ámbar | LA COLMENA | La Colmena es una biblioteca. El mensaje ya se lee entero: **SEGUI LAS MONEDAS**, con una firma en glifos que nadie entiende. |
-| 5 | Abismo Azul | EL FIN DE LA LUZ | El compás sale de la Singularidad, no de la Marea. Es una puerta. Alba entra. Su última frase por radio: "SEGUI LAS MONEDAS". |
+| 1 | Cinturón Exterior | LA SEÑAL | Las monedas tienen un símbolo. El Ojo es una lente que mira más allá. El compás suma una nota y señala la Nebulosa, por donde pasó la Errante. |
+| 2 | Nebulosa Carmesí | EL ACORAZADO | Inés cuenta quién era Mateo; Alba, por qué se ofreció. Los cañones son metrónomos: Inés traduce la primera palabra, **SEGUÍ**. |
+| 3 | Campo Esmeralda | LA DEVORADORA | Alguien más junta monedas: los ladrones, que salen todos hacia el Abismo. En la niebla, la radio no pasa: Alba está sola. |
+| 4 | Mar de Ámbar | LA COLMENA | La Colmena es una biblioteca. El mensaje se lee entero: **SEGUÍ LAS MONEDAS**, con una firma. El compás sale del Abismo, de un agujero negro. |
+| 5 | Abismo Azul | EL FIN DE LA LUZ | La puerta se abre. Alba entra: "Seguí las monedas". Tres días después, el compás dice **VENGAN**. |
+| 6 | Al borde del Abismo (oculta) | LOS RESTOS | Aparece con las tres bitácoras (F02, F04, F07). Sin guardián: los restos de la Errante y el diario de Mateo por la radio. La tripulación no está: falta la cápsula. |
 
-## 6. Las capas del misterio
+**Los diálogos reaccionan a lo encontrado** (renglones con condición, ver `mision.py`): por
+ejemplo, con la clave del compás (F06) y la moneda grabada (F01), Inés lee la firma: "DICE...
+ALBA". Sin ellas, no la puede leer. Y la radio solo da una pista si todavía falta lo que señala.
 
-1. **La historia principal** (escenas y radio): cualquiera la entiende jugando.
-2. **El Archivo**: fragmentos que hay que buscar. Cuentan las mini historias de cada lugar (la
-   Errante, los Cantores, los guardianes).
-3. **Lo cruzado**: pistas que solo tienen sentido juntas. Un glifo de la misión 1 se traduce
-   con una clave de la misión 3.
-4. **La verdad**: la Bitácora sin fecha. Pide haber encontrado todo.
+## 7. Las capas del misterio
 
-## 7. El código de los glifos
+1. **La historia principal** (diálogos y radio): cualquiera la entiende jugando. Termina con
+   VENGAN, que se entiende como esperanza, sin saber quién llama.
+2. **El Archivo**: los fragmentos (las mini historias de la Errante, los Cantores y los
+   guardianes) y las fichas (el porqué de cada cosa).
+3. **Lo cruzado**: pistas que solo tienen sentido juntas. La mirada del Ojo (F03) dice desde
+   dónde pegarle a la puerta (F09); las monedas que "cantan" (F02) explican el eco de la
+   Errante (F07); la clave del compás (F06) traduce todos los glifos.
+4. **Lo muy hondo**: el compás *es* el nombre de Alba en Morse (la ficha EL COMPÁS lo muestra
+   en glifos; en la misión 5 los Cantores lo "dicen" por radio; el sonido de encontrar un
+   fragmento lo toca). La moneda de la estela (F13) está firmada MATEO: él también se volvió
+   Cantor. Quien sepa Morse puede leer todo esto antes de tener la clave.
+5. **La verdad**: la Bitácora sin fecha (F11). Pide haber encontrado todo lo demás.
+
+## 8. El código de los glifos
 
 Los Cantores escriben con **ritmos**: cada glifo es una letra hecha de pulsos cortos (◇) y largos
 (▬). Es Morse, pero el jugador no lo sabe: lo descubre al encontrar **la clave del compás**
-(misión 3). Con la clave, el Archivo traduce lo que ya encontró.
+(F06, misión 3). Con la clave, el Archivo traduce todo lo que ya encontró.
 
-El glifo de la moneda grabada (misión 1) es la firma de los Cantores. Traducido dice **ALBA**.
-(A ◇▬ · L ◇▬◇◇ · B ▬◇◇◇ · A ◇▬)
+| Dónde | Dice |
+|---|---|
+| F01 La moneda grabada (la firma) | ALBA |
+| F04 La Errante 2/3 (en los cañones) | ATRAS |
+| F05 El cartero (en la espalda del ladrón) | CASA |
+| F08 Las bibliotecarias | OTRA |
+| F09 La brújula | CUANDO |
+| F12 La baliza (la titila) | SEGUI |
+| F13 La otra firma | MATEO |
+| La ficha EL COMPÁS y el sonido `fragmento` | ALBA |
+| La pantalla final | SEGUI LAS MONEDAS |
 
-## 8. Catálogo de secretos
+En el código, los glifos se escriben con `glifos.escribir("ALBA")` y el ritmo en el tiempo sale
+de `glifos.ritmo` (lo usan la baliza, los pulsos de la niebla y el planeta del Abismo, que late
+en el mapa).
 
-Cada secreto: **dónde**, **cómo se encuentra** (nunca a simple vista), **qué cuenta** y **qué pista
-da** para el siguiente. Estado: ✅ hecho, 🟨 en el juego para probar, ⬜ diseñado.
+## 9. Catálogo de secretos
 
-| Id | Misión | Nombre | Cómo se encuentra | Qué cuenta | Pista que deja | Estado |
-|---|---|---|---|---|---|---|
-| F01 | 1 | La moneda grabada | Una vez por misión, después de juntar 15 monedas, aparece una moneda distinta (gira lento y tiene un glifo). Si no la agarrás en 6 s, se apaga. | Un glifo sin traducir. Inés: "El mismo símbolo está en todas, más chico. ¿Una firma?" | Hay glifos para traducir. | 🟨 |
-| F02 | 1 | Bitácora de la Errante 1/3 | En la zona inestable, unos restos cruzan el fondo, apagados como el fondo. Hay que tocarlos con el dash. | "Día 41. Las monedas cantan cuando las juntás rápido. Mateo dice que es el casco. No es el casco." | La Errante existió y llegó antes. Las monedas "cantan" (el combo). | 🟨 |
-| F03 | 1 | La mirada del Ojo | Vencer al Ojo sin recibir un golpe en todo el sector. | "La lente no apuntaba a la Alondra. Apuntaba al Abismo. Siempre al mismo punto. Como una brújula." | Algo importante está en el Abismo. | 🟨 |
-| F04 | 2 | Bitácora de la Errante 2/3 | Romper los cuatro cañones del Acorazado de izquierda a derecha. | "Los cañones disparan en compás. Mateo los contó: son relojes. Están marcando el tiempo hacia atrás." | El tiempo va hacia atrás. | ⬜ |
-| F05 | 3 | El cartero | Dejar que un ladrón se escape con la moneda. | "No la robó. La llevó. Rumbo al Abismo, en línea recta, como quien vuelve a casa." | Las monedas vuelven al Abismo. | ⬜ |
-| F06 | 3 | La clave del compás | Quedarse quieto 8 segundos dentro de la niebla. | "En el silencio se oye: corto, largo. Los glifos no son dibujos. Son ritmos." Desbloquea el **decodificador** del Archivo. | Con la clave, F01 se traduce: ALBA. | ⬜ |
-| F07 | 4 | Bitácora de la Errante 3/3 | Contra la Colmena, romper las cuatro compuertas antes de su primera embestida. | "Mateo no volvió. Lo último que dijo por radio fue un nombre: Alba. No conocemos a ninguna Alba." | Hace tres años alguien ya nombró a Alba. | ⬜ |
-| F08 | 4 | Las bibliotecarias | Juntar 25 monedas seguidas en el Mar de Ámbar. | Un poema de los Cantores sobre la Marea: "La vimos llegar una vez. La vamos a ver llegar otra." | Los Cantores ya vivieron esto. | ⬜ |
-| F09 | 5 | La brújula | Con F03 encontrado: atravesar el anillo de la Singularidad por el hueco que apunta al Cinturón. | "La puerta no lleva a otro lugar. Lleva a otro cuándo." | La puerta es en el tiempo. | ⬜ |
-| F10 | mapa | Los restos de la Errante | Con F02, F04 y F07: aparece un punto nuevo en el mapa estelar. Una misión tranquila, sin jefe, entre los restos. | La historia completa de la Errante y de Mateo. | — | ⬜ |
-| F11 | 5 | Bitácora sin fecha | Con todos los demás: vencer a la Singularidad. | La voz de Alba: "Si encontrás esto, ya lo hiciste. Seguí las monedas. Las dejé yo." | La verdad. | ⬜ |
+Cada secreto: **dónde**, **cómo se encuentra** (nunca a simple vista), **la pista que lo anuncia**,
+**qué cuenta** y **qué pista deja**. Estado: ✅ probado por el usuario, 🟨 en el juego para probar.
 
-## 9. Reglas para escribir un secreto
+| Id | Misión | Nombre | Cómo se encuentra | Pista antes | Qué cuenta | Pista que deja | Estado |
+|---|---|---|---|---|---|---|---|
+| F01 | 1 | La moneda grabada | Desde el tramo 2, después de 15 monedas aparece una moneda blanca que gira lento. Si no la agarrás en 6 s, se apaga. | Radio T2: "todas tienen un símbolo grabado". Al aparecer, Alba: "¿Y esa moneda blanca?" | Un glifo grande: una firma. | Hay glifos para traducir. | 🟨 |
+| F02 | 1 | La Errante 1/3 | En el tramo 3, unos restos cruzan el fondo, apagados como el fondo. Solo el dash los abre. | Radio T3: "hay algo en el fondo, entre las rocas... no, nada". | Rocío: las monedas cantan cuando las juntás rápido. | La Errante existió. Las monedas cantan (el combo). | 🟨 |
+| F03 | 1 | La mirada del Ojo | Vencer al Ojo sin recibir un golpe en todo el sector. | Radio jefe: "si salís sin un rasguño, puedo medir a dónde apunta". | La lente apuntaba al Abismo, como una brújula. | Algo importante está en el Abismo (y es la clave de F09). | 🟨 |
+| F04 | 2 | La Errante 2/3 | Romper los cuatro cañones del Acorazado **de izquierda a derecha** (se puede: el que no toca, no se le pega). | Radio jefe: "Mateo decía que un reloj se lee como un libro. En orden". | Tomás: los cañones son relojes y cuentan hacia atrás. Glifo ATRAS. | El tiempo va hacia atrás. | 🟨 |
+| F12 | 2 | La baliza | En la tormenta solar (tramo 3) cruza una baliza apagada que titila un glifo. Dash. | Radio T3: "entre la estática me llega una baliza. ¿La ves?" | La grabación de Mateo: "Estamos bien. Seguimos. No nos esperen". Titila SEGUI. | Mateo leyó la primera palabra hace tres años. | 🟨 |
+| F05 | 3 | El cartero | Dejar que un ladrón se lleve la moneda y **seguirlo de cerca** sin alcanzarlo hasta que salga (seguí las monedas, al pie de la letra). | Radio T2: "quiero saber a dónde llevan las monedas". Ficha del ladrón. | No la robó: la llevó al Abismo, como quien vuelve a casa. Glifo CASA. | Las monedas vuelven al Abismo. | 🟨 |
+| F06 | 3 | La clave del compás | En la niebla (tramo 3), quedarse **quieta** (sin tocar nada) hasta oír la palabra entera: 12 pulsos, ~8 s. Cada pulso suena y la nave lo siente. Moverse vuelve a empezar. | Antes: "Mateo decía que en el silencio se escucha mejor el compás". Ficha de la niebla. | Los glifos son ritmos. El Archivo los traduce desde ahora. | La firma dice ALBA. | 🟨 |
+| F07 | 4 | La Errante 3/3 | Juntar **20 monedas seguidas** (en la fiebre del oro es posible): cantan tan fuerte que la radio capta un eco de hace tres años. | Radio T3: "si las juntás sin parar, la radio se acopla". Ficha de la fiebre. | La última transmisión de Mateo: "...ALBA. DECILE A ALBA...". | Hace tres años alguien ya nombró a Alba. | 🟨 |
+| F08 | 4 | Las bibliotecarias | Vencer a la Colmena **sin romper ninguna abeja**. | Radio jefe: "las abejas son bibliotecarias. No son soldados". Ficha de la abeja. | Un poema: "La vimos llegar una vez. La vamos a ver llegar otra". Glifo OTRA. | Los Cantores ya vivieron esto. | 🟨 |
+| F09 | 5 | La brújula | Con F03: pegarle al núcleo de la puerta **desde la izquierda** (el lado de casa, hacia donde miraba el Ojo). | Radio jefe (solo con F03): "la lente del Ojo apuntaba acá. Desde el Cinturón... desde casa". | El reloj de la Alondra cuenta hacia atrás. "No lleva a otro lugar. Lleva a otro cuándo". | La puerta es en el tiempo. | 🟨 |
+| F10 | 6 | El último registro | En el tramo 3 de LOS RESTOS cruza un pedazo del casco: la caja negra. Dash. | Al aparecer, Alba: "la caja negra tiene que estar ahí". | Mateo: la nave no aguanta, entran a la puerta. "No es un final". | La tripulación cruzó. | 🟨 |
+| F13 | 6 | La otra firma | En el tramo 4 de LOS RESTOS (la estela de la cápsula), después de 6 monedas aparece otra moneda blanca. | Al aparecer, Alba: "¿Otra moneda blanca? ¿Acá?". Radio T4: "algo salió de la Errante hacia la puerta". | Una firma torpe, hecha a mano. Glifo MATEO. | Mateo también se volvió Cantor. | 🟨 |
+| F11 | 5 | Bitácora sin fecha | Con **todos** los demás encontrados: vencer a la Singularidad. Es *oculto*: no aparece en el Archivo hasta encontrarlo. | La pantalla final: "La puerta sigue abierta. ¿Volvés a cruzarla?" (si solo falta este). | La voz de Alba desde el otro lado: "Seguí las monedas. Las dejamos nosotros". | La verdad (el final verdadero). | 🟨 |
 
-- **Nunca a simple vista.** Se encuentra jugando distinto (quieto, lento, en orden, dejando escapar
-  algo), no por suerte pura.
+Los fragmentos de la misión oculta tampoco aparecen en el Archivo hasta que aparece la misión
+(la cuenta de arriba sí los suma: hay más de lo que se ve).
+
+## 10. Los finales
+
+Después del diálogo de la misión 5 viene la **pantalla final** (`escenas/historia/final.py`):
+
+- **El de siempre:** "LA MAREA — FIN" en rojo, con la música del Game Over. El mensaje del compás
+  en glifos (sin traducir), lo encontrado (misiones, fragmentos, fichas) y "Todavía hay cosas que
+  no encontraste" (o "La puerta sigue abierta. ¿Volvés a cruzarla?" si solo falta la Bitácora).
+- **El verdadero** (con F11): en el diálogo llega la Bitácora sin fecha (la voz de Alba en los
+  colores de los Cantores) e Inés da la orden: "Preparen todas las naves. Nos vamos". La pantalla
+  dice "**EL PRINCIPIO**" en amarillo, con la música en Do mayor, el mensaje traducido (SEGUI LAS
+  MONEDAS) y "LOS CANTORES SOMOS NOSOTROS".
+
+**El mapa también cuenta la historia:** arriba dice "LA MAREA LLEGA EN 6 AÑOS"; después de la
+misión 5, "EL COMPAS DICE: VENGAN"; con la verdad, "SEGUI LAS MONEDAS". El planeta del Abismo
+late en el ritmo del compás (salvo con DESTELLOS REDUCIDOS).
+
+## 11. Reglas para escribir un secreto
+
+- **Nunca a simple vista.** Se encuentra jugando distinto (quieto, en orden, sin romper algo,
+  siguiendo, dejando escapar), no por suerte pura.
 - **Todo tiene su porqué.** El secreto usa una mecánica que ya existe y le da sentido (el combo
-  "canta", el ladrón "lleva", el jefe "marca el tiempo").
-- **Cada uno abre otro.** Cuenta algo y deja una pregunta.
-- **Se puede rejugar.** Las misiones ganadas se vuelven a jugar para buscar lo que falta. El Archivo
-  dice cuántos fragmentos hay por misión, no dónde están.
-- **Sin texto obvio.** Ningún cartel dice "¡SECRETO!". El hallazgo se anuncia por la radio con una
-  reacción de Alba o de Inés, y queda en el Archivo.
-- **Texto en el juego:** en mayúsculas y sin tildes en las mayúsculas (la fuente las dibuja mal),
-  frases cortas, que entren en la caja de diálogo.
+  "canta", el ladrón "lleva", el jefe "marca el tiempo", las abejas "cuidan libros").
+- **Hay una pista antes** (por radio, en una ficha o en otro fragmento) y **cada uno abre otro.**
+  Las pistas de radio llevan condición ("!F05"): no se repiten después de encontrarlo.
+- **Se puede rejugar.** El Archivo dice cuántos fragmentos hay por misión, no dónde están.
+- **Sin texto obvio.** Ningún cartel dice "¡SECRETO!". El hallazgo suena (`fragmento`), se cuenta
+  por la radio con una reacción y queda en el Archivo.
+- **Que se pueda de verdad:** medirlo con un bot que juegue (con 25 monedas seguidas un bot que
+  no esquiva no llegaba nunca; con 20, 2 de cada 6 veces).
+- **Texto en el juego:** en mayúsculas y sin vocales mayúsculas con tilde (la fuente las dibuja
+  mal), frases cortas. Los tests comprueban que todo entre en su caja.
 
-## 10. Cómo está hecho (para seguir escribiendo)
+## 12. Cómo está hecho (para seguir escribiendo)
 
 Todo el modo historia vive en `juego/historia/` y sus pantallas en `juego/escenas/historia/`.
 No importa nada del arcade (y el arcade no importa nada de acá): `tests/test_modos.py` lo vigila.
+En la historia no hay récords ni logros (miden el avance del arcade).
 
 | Qué | Dónde |
 |---|---|
-| **Cada misión** (diálogos, radio, fragmentos y secretos) | `juego/historia/misiones/m1_la_senal.py`... (un archivo por misión) |
-| La clase base de las misiones y el registro | `juego/historia/mision.py` (`Mision`, `Fragmento`) |
+| **Cada misión** (ruta, diálogos, radio, fragmentos y secretos) | `juego/historia/misiones/m1_la_senal.py`... (un archivo por misión) |
+| La clase base de las misiones, los renglones con condición y el registro | `juego/historia/mision.py` (`Mision`, `Fragmento`, `filtrar`) |
 | Las reglas de una misión y la historia mientras jugás | `juego/historia/modo.py` (`ModoHistoria`) |
 | Los tipos de secreto (cómo se encuentra un fragmento) | `juego/historia/secretos.py` |
-| Los objetos secretos (la moneda grabada, los restos) | `juego/historia/reliquias.py` |
+| Los objetos secretos (moneda grabada, restos, baliza) | `juego/historia/reliquias.py` |
+| Las fichas del Archivo (el porqué de cada cosa) | `juego/historia/fichas.py` |
 | Quién habla (nombre, color y retrato) | `juego/historia/personajes.py` |
-| La escritura de los Cantores y su traducción | `juego/historia/glifos.py` |
+| La escritura de los Cantores: traducir, escribir, el ritmo en el tiempo | `juego/historia/glifos.py` |
 | La radio (la cola de mensajes) y su caja | `juego/radio.py` y `carteles.radio()` |
-| Mapa estelar, diálogos, Archivo y qué pantalla sigue | `juego/escenas/historia/` (`mapa`, `dialogo`, `archivo`, `pasajes`) |
-| Lo que se guarda (misiones cumplidas y fragmentos) | `progreso.json`, en `guardado.Progreso` |
+| Mapa estelar, diálogos, Archivo, final y qué pantalla sigue | `juego/escenas/historia/` (`mapa`, `dialogo`, `archivo`, `final`, `pasajes`) |
+| Lo que se guarda (misiones, fragmentos y fichas) | `progreso.json`, en `guardado.Progreso` |
+| Los sonidos (`fragmento`, `onda_corta`, `onda_larga`) | `herramientas/estudio/obras/efectos_director.py` |
 
 **Para escribir una misión:** copiar un archivo de `historia/misiones/`, cambiar el número, el
-título, el sector y los textos, e importarlo en `historia/misiones/__init__.py`. Aparece sola en
-el mapa y en el Archivo. `tests/test_historia.py` revisa el estándar: números seguidos, momentos
-de radio que existen (`tramo_1` a `tramo_4` y `jefe`), fragmentos sin repetir, cada secreto con un
-fragmento de su misión, y que cada texto entre en su caja y no tenga vocales mayúsculas con tilde.
+título, el sector, el `lugar` en el mapa y los textos, e importarlo en
+`historia/misiones/__init__.py`. Aparece sola en el mapa y en el Archivo. Una misión puede traer
+su ruta (`tramos`, con `"anomalia"` por tramo), no tener jefe (`jefe = False`: termina con el
+último tramo) o ser oculta (`oculta`, `requisitos`, `rama_de`). `tests/test_historia.py` revisa
+el estándar: números seguidos, rutas con las reglas del arcade, momentos de radio que existen,
+fragmentos sin repetir, cada fragmento con su secreto, condiciones con fragmentos que existen y
+que cada texto entre en su caja.
 
-**Para sumar un secreto:** el `Fragmento` (con su `reaccion` por radio) en la misión y una línea en
-sus `secretos`, por ejemplo `("moneda_grabada", "F12", {"monedas": 20})`. Si ningún tipo sirve, uno
-nuevo en `secretos.py`: una clase con `@registrar_secreto`, su `tipo`, `preparar(opciones)` y los
-avisos que escuche (`al_empezar_tramo`, `al_recoger_moneda`, `al_llegar_jefe`, `al_vencer_jefe`,
-`actualizar`). Si deja algo en pantalla, una reliquia en `reliquias.py` (con `fragmento`, `x`, `y`,
-`caja()`, `tocada()`, `termino()`, `mover()` y `dibujar()`) que suelta con `self.soltar(...)`. Y su
-test en `tests/test_historia.py`.
+**Para sumar un secreto:** el `Fragmento` (con su `reaccion`) en la misión y una línea en sus
+`secretos`. Los tipos que hay:
+
+| Tipo | Opciones | Cómo se encuentra |
+|---|---|---|
+| `moneda_grabada` | `monedas`, `desde_tramo` | una moneda blanca después de N monedas |
+| `restos` / `baliza` | `tramo`, `espera` (`baliza`: `mensaje`) | algo cruza el fondo; se abre con el dash |
+| `jefe_sin_golpes` | — | vencer al jefe sin recibir golpes en el sector |
+| `jefe_vencido` | (con `requiere`) | vencer al jefe |
+| `jefe_sin_romper` | `enemigo` | vencer al jefe sin romper ninguno de ese tipo |
+| `partes_en_orden` | — | romper las piezas del jefe de izquierda a derecha |
+| `racha` | `monedas` | juntar N monedas seguidas |
+| `seguir_al_ladron` | `distancia` | seguir de cerca a un ladrón con la moneda hasta que salga |
+| `quieto_en_anomalia` | `anomalia`, `mensaje` | quedarse quieta durante la anomalía hasta oír el mensaje |
+| `golpe_desde` | `angulo`, `margen` | pegarle al núcleo del jefe desde un lado |
+
+Cualquier tipo acepta `requiere` (fragmentos antes, o `"todos"`) y `pista` (lo que dice la radio
+cuando aparece algo). Si ningún tipo sirve, uno nuevo en `secretos.py`: una clase con
+`@registrar_secreto`, su `tipo`, `preparar(opciones)` y los avisos que escuche
+(`al_empezar_tramo`, `al_recoger_moneda`, `al_llegar_jefe`, `al_vencer_jefe`, `al_romper`,
+`al_romper_parte`, `al_golpear_jefe`, `al_escapar_moneda`, `actualizar`). Si el aviso no existe,
+se suma a `modos.Modo` (la Partida o el Director lo dan) y al `ModoHistoria`. Y su test.
+
+**Para sumar un enemigo, jefe, power-up o anomalía al juego:** también su ficha en `fichas.py`
+(un test lo exige: todo tiene su porqué).

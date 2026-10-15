@@ -27,7 +27,7 @@ ARMONICOS = set(
     + ["oro_brillo", "combo_max", "interceptado", "nivel", "dash_listo", "nave_dash_extra", "capsula",
        "pw_escudo", "pw_hielo", "pw_vida", "pw_iman", "pw_doble", "pw_turbo", "pw_recarga", "pw_nova",
        "mejora_elegida", "eco", "bonus", "aturdido", "vulnerable", "desafio_nuevo", "desafio_cumplido",
-       "oleada_superada", "logro", "nave_nueva", "bala_rota", "aparece", "retirada", "oro_llega",
+       "oleada_superada", "logro", "fragmento", "nave_nueva", "bala_rota", "aparece", "retirada", "oro_llega",
        "ui_aceptar", "ui_volver", "ui_pestana", "ui_valor_sube", "ui_valor_baja", "ui_llave_si", "ui_llave_no",
        "carta_rara", "hangar_nave", "contador_fin", "taller", "moneda_recuperada", "escudo_bloquea",
        # los que se repiten todo el tiempo (y su tension la da el ritmo, no las notas)

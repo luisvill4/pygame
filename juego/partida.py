@@ -506,7 +506,7 @@ class Partida:
     def revisar_logros(self):
         # Cada medio segundo: ¿se cumplio algun logro nuevo? Cada uno tiene su ficha en el
         # HUD, una detras de la otra
-        if self.progreso is None or self.modo_desarrollador:
+        if self.progreso is None or self.modo_desarrollador or not self.modo.cuenta_logros:
             return
         for logro in revisar_logros(self, self.progreso):
             desde = self.tiempo
@@ -863,6 +863,7 @@ class Partida:
         self.moneda.mover_a_lugar_nuevo(self)
         if ladron.escuadron is not None:
             ladron.escuadron.escaparon += 1
+        self.modo.al_escapar_moneda(ladron)
         self.quitar_enemigo(ladron)
 
     def soltar_moneda(self):
@@ -934,8 +935,11 @@ class Partida:
             if parte is not None:
                 self._rebotar_en(*parte.centro(jefe))
                 jefe.golpear_parte(self, parte)
+                if not parte.viva():
+                    self.modo.al_romper_parte(jefe, parte)
                 return
             if jefe.puede_recibir_golpe() and caja.colliderect(jefe.caja_nucleo()):
+                self.modo.al_golpear_jefe(jefe)         # (antes del rebote: la nave sigue donde pego)
                 self._rebotar_en(*jefe.centro_nucleo())
                 jefe.recibir_golpe(self)
                 return

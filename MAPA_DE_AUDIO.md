@@ -499,8 +499,10 @@ Más `trueno`, el trueno lejano del relámpago.
 | D21 | ¡OBJETIVO CUMPLIDO! (el del tramo) | `Director._festejar_objetivo` | — | `bonus` (provisorio: podría tener uno propio) | P2 |
 | D22 | El paso se abre (el objetivo no se cumplió en 90 s) | `Director._abrir_el_paso` | — | `anomalia_fin` | P3 |
 | H01 | (Historia) Sale un mensaje de radio | `Partida.actualizar` (cuando la radio empieza uno) | — | `teclear` (provisorio: un clic de radio propio) | P3 |
-| H02 | (Historia) Encontrás un fragmento del Archivo | `Relato.encontrar` | — | `logro` (provisorio: tendría que sonar a misterio, no a premio) | P2 |
+| H02 | (Historia) Encontrás un fragmento del Archivo | `ModoHistoria.encontrar` | — | `fragmento`: el compás mismo, A-L-B-A en pulsos cortos y largos (armónico) | P2 |
 | H03 | (Historia) El texto de un diálogo se escribe | `Dialogo.actualizar` | — | `teclear`, cada 3 letras | P3 |
+| H04 | (Historia) Quieta en la niebla, se oye el compás (secreto F06) | `QuietoEnLaAnomalia.actualizar` | — | `onda_corta` / `onda_larga`, uno por pulso de A-L-B-A, con paneo | P2 |
+| H05 | (Historia) La pantalla final | `Final.musica` | — | `"fin"` en el final de siempre; `"iniciales"` (Do mayor) en el verdadero | P2 |
 
 ### 4.9 Carteles y HUD
 | Código | Situación | Dónde | Hoy | Propuesta | Prio | Anti-saturación |

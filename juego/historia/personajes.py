@@ -9,6 +9,9 @@ Cada retrato es una lista de renglones: cada letra es un pixel y su color sale d
 paleta del retrato ("." = transparente). Un personaje sin retrato (la Errante) es
 estatica de radio. Para sumar un personaje: su nombre y color en PERSONAJES y, si tiene
 cara, su dibujo en RETRATOS.
+
+"voz" es Alba grabada hace millones de años (la Bitacora sin fecha, HISTORIA.md): su
+retrato es el de Alba en los colores de los Cantores. No se nombra en ningun lado: se ve.
 """
 import random
 
@@ -22,7 +25,9 @@ PERSONAJES = {
     "alba": ("ALBA", CIAN),
     "ines": ("INES CORIA", AMARILLO),
     "errante": ("BITACORA DE LA ERRANTE", GRIS),
+    "mateo": ("MATEO SAAVEDRA", GRIS),
     "cantores": ("???", VIOLETA),
+    "voz": ("SIN FECHA", VIOLETA),
 }
 
 RETRATOS = {
@@ -57,6 +62,22 @@ RETRATOS = {
         "paleta": {"o": (110, 70, 20), "s": (240, 200, 160), "v": (255, 221, 0), "m": (150, 60, 60),
                    "X": (225, 225, 235), "y": (255, 221, 0)},
     },
+    "mateo": {      # la gorra de capitan, la barba y el uniforme de la Errante (grabado: en gris)
+        "dibujo": ["...XXXXXX...",
+                   "..XXXXXXXX..",
+                   ".vvvvvvvvvv.",
+                   "..ssssssss..",
+                   "..soossoos..",
+                   "..ssssssss..",
+                   "..bssmmssb..",
+                   "..bbbbbbbb..",
+                   "...bbbbbb...",
+                   "..uuuyyuuu..",
+                   ".uuuuyyuuuu.",
+                   "uuuuuyyuuuuu"],
+        "paleta": {"X": (60, 70, 100), "v": (30, 34, 50), "s": (200, 180, 160), "o": (40, 40, 50),
+                   "m": (120, 70, 70), "b": (110, 90, 70), "u": (120, 126, 140), "y": (190, 190, 200)},
+    },
     "cantores": {   # un glifo que late
         "dibujo": ["............",
                    ".....XX.....",
@@ -73,6 +94,9 @@ RETRATOS = {
         "paleta": {"X": (190, 120, 255), "o": (70, 30, 120)},
     },
 }
+# La voz sin fecha: el casco de Alba, en los colores de los Cantores
+RETRATOS["voz"] = {"dibujo": RETRATOS["alba"]["dibujo"],
+                   "paleta": {"X": (190, 120, 255), "o": (70, 30, 120), "v": (40, 20, 80), "b": (255, 230, 255)}}
 FONDO_RETRATO = (8, 10, 26)
 
 

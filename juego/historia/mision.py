@@ -12,13 +12,24 @@ archivo de historia/misiones/, con el decorador @registrar_mision. Para agregar 
 Una mision es casi todo DATOS (atributos de la clase):
     numero, titulo      "MISION 1", "LA SEÑAL"
     sector              el numero de sector donde se juega (1 a 5, ver SECTORES en config.py)
+    lugar               donde esta en el mapa estelar: (x, y) del centro de su planeta
     tramos              None = la ruta de su sector (rutas.py); o una lista de 4 tramos propia
-    antes, despues      el dialogo de antes y de despues: [(quien, texto), ...]
-    radio               lo que se dice durante la mision: {momento: [(quien, texto), ...]}
+                        (un tramo puede decir que anomalia trae: "anomalia": "niebla")
+    jefe                False = una mision tranquila: termina con el ultimo tramo, sin jefe
+    oculta, requisitos  una mision oculta no aparece en el mapa hasta encontrar sus
+                        'requisitos' (ids de fragmentos)
+    rama_de             (oculta) de que mision sale su camino en el mapa
+    antes, despues      el dialogo de antes y de despues: [renglon, ...]
+    radio               lo que se dice durante la mision: {momento: [renglon, ...]}
                         momentos: "tramo_1" ... "tramo_4" y "jefe"
     fragmentos          lo que se guarda en el Archivo: [Fragmento(...), ...]
     secretos            como se encuentra cada fragmento: [(tipo, fragmento, {opciones}), ...]
                         (los tipos estan en secretos.py; las opciones, en cada tipo)
+    final               True: es el final de la historia (despues de su dialogo, la pantalla final)
+
+Un RENGLON es (quien, texto) o (quien, texto, condicion): la condicion dice que fragmentos
+tienen que estar encontrados ("F01"), cuales no ("!F02") o varios a la vez ("F01+!F06").
+Asi un dialogo cambia segun lo que encontraste (la historia reacciona a los secretos).
 Los textos van en MAYUSCULAS y sin vocales con tilde (la fuente las dibuja mal).
 """
 
@@ -35,6 +46,34 @@ class Fragmento:
         self.reaccion = list(reaccion)
         self.oculto = oculto
 
+
+# ---------- Los renglones con condicion ----------
+
+def se_cumple(condicion, encontrados):
+    # "F01+!F06": F01 encontrado y F06 no. None = siempre
+    if not condicion:
+        return True
+    for parte in condicion.split("+"):
+        if parte.startswith("!"):
+            if parte[1:] in encontrados:
+                return False
+        elif parte not in encontrados:
+            return False
+    return True
+
+
+def ids_de_la_condicion(condicion):
+    # Los fragmentos que nombra una condicion (para los tests)
+    return [parte.lstrip("!") for parte in condicion.split("+")] if condicion else []
+
+
+def filtrar(renglones, encontrados):
+    # Los renglones que corresponden a lo encontrado, como (quien, texto)
+    return [(renglon[0], renglon[1]) for renglon in renglones
+            if se_cumple(renglon[2] if len(renglon) > 2 else None, encontrados)]
+
+
+# ---------- El registro ----------
 
 TIPOS_MISION = {}           # numero -> clase
 
@@ -59,6 +98,10 @@ def todos_los_fragmentos():
     return [(fragmento, clase) for clase in misiones_en_orden() for fragmento in clase.fragmentos]
 
 
+def ids_de_fragmentos():
+    return [fragmento.id for fragmento, _ in todos_los_fragmentos()]
+
+
 def buscar_fragmento(id_):
     for fragmento, _ in todos_los_fragmentos():
         if fragmento.id == id_:
@@ -70,17 +113,31 @@ class Mision:
     numero = None
     titulo = ""
     sector = 1
+    lugar = (0, 0)
     tramos = None
+    jefe = True
+    oculta = False
+    requisitos = []
+    rama_de = None
     antes = []
     despues = []
     radio = {}
     fragmentos = []
     secretos = []
+    final = False
 
     @classmethod
     def disponible(cls, progreso):
-        # Se puede jugar la primera, las cumplidas y la que sigue a una cumplida
+        # La oculta, con sus requisitos encontrados. Las demas: la primera, las cumplidas y
+        # la que sigue a una cumplida
+        if cls.oculta:
+            return all(id_ in progreso.fragmentos for id_ in cls.requisitos)
         return cls.numero == 1 or cls.numero in progreso.misiones or (cls.numero - 1) in progreso.misiones
+
+    @classmethod
+    def visible(cls, progreso):
+        # ¿Aparece en el mapa? Todas menos la oculta que todavia no se encontro
+        return not cls.oculta or cls.disponible(progreso) or cls.numero in progreso.misiones
 
     @classmethod
     def fragmentos_visibles(cls):

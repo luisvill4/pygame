@@ -163,6 +163,66 @@ def logro():
     return efecto
 
 
+# ---------- Modo historia ----------
+
+# El ritmo de los Cantores (glifos.py): A-L-B-A en pulsos cortos y largos. Un corto dura una
+# unidad, un largo tres; entre pulsos una unidad de silencio y entre letras tres
+UNIDAD_ALBA = 55            # ms
+
+
+def _ritmo_alba(notas):
+    # notas: una por pulso, en orden (12). Devuelve la secuencia "E5:55 -:55 G5:165 -:165 ..."
+    letras = [".-", ".-..", "-...", ".-"]
+    partes = []
+    i = 0
+    for numero, letra in enumerate(letras):
+        for j, pulso in enumerate(letra):
+            largo = UNIDAD_ALBA * (3 if pulso == "-" else 1)
+            if numero == len(letras) - 1 and j == len(letra) - 1:
+                largo = 520         # la ultima nota se queda sonando: resuelve
+            partes.append("%s:%d" % (notas[i], largo))
+            i += 1
+            if j < len(letra) - 1:
+                partes.append("-:%d" % UNIDAD_ALBA)
+        if numero < len(letras) - 1:
+            partes.append("-:%d" % (3 * UNIDAD_ALBA))
+    return " ".join(partes)
+
+
+@obra("fragmento")
+def fragmento():
+    # Encontraste un fragmento del Archivo: el compas mismo, A-L-B-A (quien sepa Morse lo lee).
+    # Piano electrico saltando entre Do, Mi y Sol (con la cola del piano, las notas siguen
+    # sonando debajo de las que vienen: entre esas tres nunca raspan), el cristal una octava
+    # arriba y, cuando cae la ultima, Do y Sol abajo
+    melodia = ["E5", "G5", "C6", "E6", "C6", "G5", "G6", "E6", "C6", "G5", "E5", "C6"]
+    efecto = Efecto("fragmento", 2.6, "f", sala=(1.8, 0.5))
+    tono(efecto, I.EPIANO, _ritmo_alba(melodia), reverb=0.3, delay=0.12)
+    tono(efecto, I.CRISTAL, _ritmo_alba(melodia), volumen=-10, reverb=0.4, transponer=12)
+    abrir_acorde(efecto, I.EPIANO, ["C4", "G4", "C5"], inicio=1.87, largo=0.9, volumen=-7, reverb=0.35)
+    aire(efecto, 0.5, [(0, 900), (0.5, 2400)], inicio=1.6, modo="banda", resonancia=0.2, volumen=-16)
+    return efecto
+
+
+@obra("onda_corta")
+def onda_corta():
+    # Un pulso corto del compas en la niebla: una onda gravitatoria (grave, sin altura)
+    efecto = Efecto("onda_corta", 0.22, "p", sala=(1.4, 0.3))
+    cuerpo(efecto, 70, 42, 0.16, volumen=-4)
+    aire(efecto, 0.16, [(0, 420), (0.16, 160)], modo="banda", resonancia=0.3, volumen=-10, reverb=0.3)
+    return efecto
+
+
+@obra("onda_larga")
+def onda_larga():
+    # Un pulso largo: la misma onda, estirada (tres veces)
+    efecto = Efecto("onda_larga", 0.6, "p", sala=(1.4, 0.3))
+    cuerpo(efecto, 64, 38, 0.48, volumen=-4)
+    aire(efecto, 0.48, [(0, 360), (0.24, 520), (0.48, 140)], modo="banda", resonancia=0.3, volumen=-10,
+         reverb=0.3)
+    return efecto
+
+
 @obra("nave_nueva")
 def nave_nueva():
     efecto = Efecto("nave_nueva", 0.35, "mf", sala=(1.2, 0.5))

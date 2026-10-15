@@ -305,6 +305,13 @@ MONEDA_GRABADA_MONEDAS = 15     # secreto F01: monedas que hay que juntar antes 
 MONEDA_GRABADA_DURA = 6000      # ...y cuanto dura antes de apagarse
 RESTOS_ESPERA = 6000            # secreto F02: ms desde que empieza el tramo 3 hasta que cruzan los restos...
 RESTOS_VELOCIDAD = 0.6          # ...y a cuantos px por paso cruzan (tardan ~30 s)
+BALIZA_ESPERA = 5000            # secreto de la baliza: ms desde que empieza su tramo hasta que aparece...
+BALIZA_VELOCIDAD = 0.45         # ...a cuantos px por paso cruza (tarda ~40 s)...
+BALIZA_UNIDAD = 220             # ...y cuanto dura un pulso corto de su luz (ms; el largo, el triple)
+COMPAS_UNIDAD = 180             # el compas que se oye en la niebla: un pulso corto (ms; "ALBA" entero, ~8 s)
+SEGUIR_DISTANCIA = 170          # secreto del cartero: a cuantos px como mucho hay que seguir al ladron...
+SEGUIR_MINIMO = 1200            # ...y cuanto tiempo, como minimo, hasta que se escape (ms)
+GOLPE_DESDE_MARGEN = 45         # secreto de la brujula: cuantos grados de margen tiene el lado del golpe
 
 # Asedio: el ultimo tramo de cada sector, antes del jefe. Llegan escuadrones de todos lados
 # y hay que aguantar. Mientras dura, la barra de nivel se puede llenar pero el nivel espera:

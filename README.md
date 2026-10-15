@@ -40,10 +40,15 @@ Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA
   - En el **mapa estelar** elegís la misión. Se puede jugar la primera, las cumplidas y la que
     sigue a una cumplida.
   - Cada misión esconde **fragmentos** de una historia más grande. Nunca están a simple vista:
-    hay que jugar distinto para encontrarlos.
+    hay que jugar distinto para encontrarlos (quieto, en orden, sin romper algo, siguiendo...).
+    La radio a veces da una pista. Y los diálogos cambian según lo que encontraste.
   - Lo encontrado queda en el **Archivo** (tecla O o botón VISTA en el mapa), aunque después
-    pierdas. El Archivo dice cuántos hay en cada misión, no dónde están.
-  - Si la nave explota, Inés te saca de ahí y volvés al mapa. En la historia no hay récords.
+    pierdas. El Archivo dice cuántos hay en cada misión, no dónde están. Tiene además las
+    **fichas** de todo lo que viste (criaturas, tecnología y fenómenos): el porqué de cada cosa.
+  - Hay una misión que no está en el mapa... hasta que encontrás lo necesario.
+  - Hay dos finales.
+  - Si la nave explota, Inés te saca de ahí y volvés al mapa. En la historia no hay récords ni
+    logros (son del arcade).
 
   Toda la historia, sus secretos y cómo escribir más está en `HISTORIA.md` (**ojo: tiene
   spoilers**).
@@ -321,14 +326,17 @@ Un tipo de objetivo nuevo es una clase en `juego/objetivos.py` con `@registrar_o
 Una formación nueva es una función en `juego/escuadrones.py` con `@formacion("nombre")`: recibe cuántos son y dónde está la nave, y devuelve un par `(desde, hasta)` por enemigo (desde afuera de la pantalla hasta su lugar). Ninguno termina de entrar cerca de la nave: `lugares()` lo corre solo.
 
 ### Una misión de la historia
-Copiá un archivo de `juego/historia/misiones/` (por ejemplo `m1_la_senal.py`), cambiale el `numero`, el `titulo`, el `sector` y los textos, e importalo en `juego/historia/misiones/__init__.py`. Aparece sola en el mapa estelar y en el Archivo. Todo es datos:
-- `antes` y `despues`: el diálogo, como `[("ines", "TEXTO"), ("alba", "TEXTO")]` (los personajes están en `juego/historia/personajes.py`).
+Copiá un archivo de `juego/historia/misiones/` (por ejemplo `m1_la_senal.py`), cambiale el `numero`, el `titulo`, el `sector`, el `lugar` (dónde va en el mapa) y los textos, e importalo en `juego/historia/misiones/__init__.py`. Aparece sola en el mapa estelar y en el Archivo. Todo es datos:
+- `antes` y `despues`: el diálogo, como `[("ines", "TEXTO"), ("alba", "TEXTO")]` (los personajes están en `juego/historia/personajes.py`). Un renglón puede llevar una condición: `("ines", "TEXTO", "F01")` solo sale si encontraste F01, y con `"!F01"` solo si no.
 - `radio`: lo que se dice durante la misión, en los momentos `"tramo_1"` a `"tramo_4"` y `"jefe"`.
-- `fragmentos`: lo que se guarda en el Archivo, `Fragmento("F12", "NOMBRE", ["PARRAFO", ...], reaccion=[...])`.
-- `secretos`: cómo se encuentra cada fragmento, `("moneda_grabada", "F12", {"monedas": 20})`.
-- `tramos` (opcional): su propia ruta, con la forma de `rutas.py`.
+- `fragmentos`: lo que se guarda en el Archivo, `Fragmento("F14", "NOMBRE", ["PARRAFO", ...], reaccion=[...])`.
+- `secretos`: cómo se encuentra cada fragmento, `("racha", "F14", {"monedas": 20})`. Los tipos que hay están en la tabla de `HISTORIA.md`.
+- `tramos`: su ruta, con la forma de `rutas.py` (un tramo puede pedir su anomalía: `"anomalia": "niebla"`).
+- Opcionales: `jefe = False` (una misión tranquila), `oculta = True` con `requisitos` (aparece en el mapa al encontrar esos fragmentos) y `final = True` (después viene la pantalla final).
 
 Los textos van en mayúsculas y sin vocales con tilde. `tests/test_historia.py` revisa solo que todo esté bien escrito y entre en su caja. **Un tipo de secreto nuevo** es una clase en `juego/historia/secretos.py` con `@registrar_secreto` (mirá los que hay). Antes de escribir, leé las reglas de `HISTORIA.md`.
+
+**Si agregás un enemigo, un jefe, un power-up o una anomalía,** sumale también su ficha en `juego/historia/fichas.py` (qué es en la historia): un test lo pide, así todo tiene su porqué.
 
 ### Un logro
 En `juego/logros.py`, sumá un `Logro(id, nombre, descripcion, condicion)` a `LOGROS`. La condición recibe la partida y devuelve True cuando se cumplió (usá `partida.estadisticas`). Para que dé una nave, agregala a `NAVES` en `config.py` con el id del logro.
