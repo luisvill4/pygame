@@ -3,8 +3,9 @@ HUD: el marcador que se dibuja encima del juego.
 
 - Arriba: puntos, creditos y combo (izquierda), record (centro), vidas (derecha).
 - Abajo: power-ups activos (izquierda), barra del jefe, del asedio o de la anomalia
-  (centro), dash y la RUTA del sector (derecha): "SECTOR 2-3", un punto por tramo y la
-  calavera del jefe; la barra de energia es el camino hasta el punto siguiente.
+  (centro), dash y la RUTA del sector (derecha): "2-3" (sector y tramo) con el objetivo
+  del tramo ("DIVISORES 2/3"), un punto por tramo y la calavera del jefe; el camino hasta el
+  punto siguiente se llena con el objetivo.
 - Debajo de las vidas: el desafio del sector y como va.
 - Carteles (los dibuja carteles.py): el aviso de arriba ("TRAMO 2/4", "¡ASEDIO!"...), las
   fichas de los costados, el logro de abajo y los momentos (jefe vencido, rango, sector).
@@ -291,21 +292,20 @@ CALAVERA = [            # el jefe, al final de la ruta (cada X es un pixel de ar
     ".X.X.X.",
 ]
 RUTA_PASO = 56          # px entre un punto de la ruta y el siguiente
-RUTA_Y = 584            # la altura de la ruta (el renglon "SECTOR 2-3" va arriba)
+RUTA_Y = 584            # la altura de la ruta (el renglon "2-3  DIVISORES 2/3" va arriba)
+RENGLON_RUTA = 560
 
 
 def _ruta(pantalla, partida):
-    # Abajo a la derecha, como el mapa de un juego de plataformas: "SECTOR 2-3" (sector y
-    # tramo) y la ruta: un punto por tramo y la calavera del jefe. Lo recorrido va del color
-    # del sector; el camino entre el punto actual y el siguiente es la barra de energia
-    # (destella al ganar energia y se pone naranja casi llena). Asi se ve cuanto falta para el jefe
+    # Abajo a la derecha, como el mapa de un juego de plataformas: "2-3" (sector y tramo),
+    # el objetivo del tramo y la ruta: un punto por tramo y la calavera del jefe. Lo
+    # recorrido va del color del sector; el camino entre el punto actual y el siguiente se
+    # llena con el objetivo. Asi se ve que falta para pasar y cuanto falta para el jefe
     director = partida.director
     derecha = ANCHO - 20
     tramo = director.numero_tramo               # 0 = el jefe (o el cierre del sector)
     color_sector = director.sector["color"]
-    rotulo = "SECTOR " + director.rotulo()
-    color = BLANCO if partida.tiempo - partida.tiempo_nivel < 200 else AMARILLO     # destella al subir
-    texto(pantalla, rotulo, CHICA, color, derecha, 560, alinear="derecha")
+    _renglon_de_la_ruta(pantalla, partida, derecha)
     izquierda = derecha - 4 * RUTA_PASO - 14
     for i in range(4):
         punto_x = izquierda + i * RUTA_PASO
@@ -319,12 +319,12 @@ def _ruta(pantalla, partida):
             pantalla.fill(BLANCO, punto)
             pantalla.fill(CONTORNO, punto.inflate(-6, -6))
             pantalla.fill(color_sector, punto.inflate(-6, -6))
-            _camino_de_energia(pantalla, partida, camino)
+            _camino_del_objetivo(pantalla, partida, camino)
         else:
             pygame.draw.rect(pantalla, TEXTO_APAGADO, punto, 2)
             pantalla.fill(LINEA_APAGADA, camino)
-    # La calavera: roja en el asedio y con el jefe; con la barra llena esperando (el asedio), late
-    if tramo == 0 or partida.barra_llena_esperando() and dibujo.parpadeo(250):
+    # La calavera: roja con el jefe; en el asedio (el jefe viene), late
+    if tramo == 0:
         color_jefe = ROJO
     elif tramo == 4:
         color_jefe = NARANJA if dibujo.parpadeo(500) else ROJO
@@ -333,15 +333,34 @@ def _ruta(pantalla, partida):
     dibujo.pixel_art(pantalla, CALAVERA, izquierda + 4 * RUTA_PASO + 6, RUTA_Y, color_jefe, 2)
 
 
-def _camino_de_energia(pantalla, partida, camino):
-    # El tramo actual: la barra de energia, en bloques (dibujo.barra sin borde)
-    lleno = partida.energia / partida.energia_necesaria()
-    if not partida.puede_ganar_energia():
-        lleno = 0
-    if partida.tiempo - partida.tiempo_energia < 120:
+def _renglon_de_la_ruta(pantalla, partida, derecha):
+    # "2-3  DIVISORES 2/3": el objetivo a la derecha (en verde al cumplirlo) y el sector-tramo
+    # a su izquierda, del color del sector (destella al pasar de tramo). Con el jefe, "2-JEFE"
+    director = partida.director
+    objetivo = director.objetivo
+    if objetivo is not None and director.tramo is not None:
+        if objetivo.cumplido():
+            mensaje, color = "¡CUMPLIDO!", VERDE
+        else:
+            avanzo = partida.tiempo - director.tiempo_avance < 200
+            mensaje, color = objetivo.etiqueta(), AMARILLO if avanzo else BLANCO
+        texto(pantalla, mensaje, CHICA, color, derecha, RENGLON_RUTA, alinear="derecha")
+        derecha -= recursos.fuente(CHICA).size(mensaje)[0] + 24
+    destello = partida.tiempo - partida.tiempo_nivel < 200
+    texto(pantalla, director.rotulo(), CHICA, BLANCO if destello else director.sector["color"], derecha,
+          RENGLON_RUTA, alinear="derecha")
+
+
+def _camino_del_objetivo(pantalla, partida, camino):
+    # El tramo actual: cuanto va del objetivo, en bloques (dibujo.barra sin borde). Destella al
+    # avanzar y queda verde al cumplirlo
+    director = partida.director
+    objetivo = director.objetivo
+    lleno = objetivo.fraccion(partida) if objetivo is not None else 0
+    if objetivo is not None and objetivo.cumplido():
+        color = VERDE
+    elif partida.tiempo - director.tiempo_avance < 120:
         color = BLANCO
-    elif lleno > 0.8 and dibujo.parpadeo(150):
-        color = NARANJA
     else:
         color = AMARILLO
     dibujo.barra(pantalla, camino, lleno, color, borde=None)

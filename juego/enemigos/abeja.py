@@ -42,6 +42,7 @@ _blancas = []
 @registrar_enemigo
 class Abeja(Enemigo):
     tipo = "abeja"
+    plural = "ABEJAS"
     nombre = "ABEJA"
     color = AMARILLO
     tamano = 20

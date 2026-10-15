@@ -120,6 +120,7 @@ _blancos = []               # dron en blanco (para el destello del aviso de pica
 @registrar_enemigo
 class Dron(Enemigo):
     tipo = "enjambre"
+    plural = "DRONES"
     nombre = "ENJAMBRE"
     pista = "¡DESTRUILOS CON EL DASH!"
     color = CIAN

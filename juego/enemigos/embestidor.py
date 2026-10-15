@@ -19,6 +19,7 @@ _blanco = []        # primer cuadro en blanco (respaldo si falta el sprite de ca
 @registrar_enemigo
 class Embestidor(Enemigo):
     tipo = "embestidor"
+    plural = "EMBESTIDORES"
     nombre = "EMBESTIDOR"
     pista = "CORRETE O FRENALO CON DASH"
     color = MAGENTA

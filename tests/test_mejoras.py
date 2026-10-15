@@ -163,7 +163,6 @@ def hacer_perfectos(partida, cantidad):
 
 def test_escudo_roce_se_regenera_toda_la_partida(partida):
     partida.elegir_mejora("roce")
-    partida.ganar_energia = lambda cantidad: None       # (que tantos perfectos no traigan al jefe)
     assert MEJORA_ROCE == [6, 4, 3]
     for _ in range(3):              # tres veces seguidas: no se gasta
         hacer_perfectos(partida, MEJORA_ROCE[0] - 1)

@@ -31,30 +31,29 @@ Al abrir, primero sale una advertencia de fotosensibilidad (con cómo reducir lo
 Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. En FÁCIL y NORMAL el embestidor deja de seguirte con la mira un momento antes de embestir (la línea roja deja de parpadear): ahí es cuando hay que correrse. En DIFÍCIL y PESADILLA te sigue hasta el último instante.
 
 ### La ruta: sectores, tramos y escuadrones
-Cada **sector** es una ruta de **4 tramos** y su **jefe**, como las fases de un juego de naves. Abajo a la derecha está el mapa: **SECTOR 2-3** quiere decir sector 2, tramo 3; hay un punto por tramo y la calavera del jefe al final. Lo recorrido se pinta del color del sector y el camino entre tu punto y el siguiente es la **barra de energía**.
+Cada **sector** es una ruta de **4 tramos** y su **jefe**, como las fases de un juego de naves. Abajo a la derecha está el mapa: **2-3** quiere decir sector 2, tramo 3, y al lado va el objetivo del tramo ("DIVISORES 2/3"); abajo, un punto por tramo y la calavera del jefe al final. Lo recorrido se pinta del color del sector y el camino entre tu punto y el siguiente se llena con el objetivo.
 
-Cada tramo tiene su idea y su cartel ("TRAMO 2/4 · BLANCO FÁCIL · ¡ROMPELOS CON EL DASH!"):
+Cada tramo tiene su idea, su cartel y su **objetivo** ("TRAMO 2/4 · BLANCO FÁCIL · ROMPE 3 DIVISORES"):
 - **Tramos 1 y 2:** presentan a los enemigos del sector, de a uno por tramo.
 - **Tramo 3, ZONA INESTABLE:** llega la anomalía del sector, con pocos enemigos.
-- **Tramo 4, ASEDIO:** escuadrones de todos lados durante 15 segundos. Aunque se llene la barra, el jefe espera a que termine el asedio. Si lo pasás sin perder una vida: puntos y un power-up.
+- **Tramo 4, ASEDIO:** escuadrones de todos lados durante 15 segundos. El objetivo es aguantar; después llega el jefe. Si lo pasás sin perder una vida: puntos y un power-up.
 
-Los enemigos llegan en **escuadrones**: primero una **flecha** en el borde (y un sonido que viene de ese lado), después el grupo entra volando en formación (mientras entra no lastima) y, cuando se le termina el turno, se **retira** (en gris: ya no lastima). Si rompés a todo un escuadrón, ganás un bonus. Un enemigo que te choca también se va. Así la pantalla nunca se llena de enemigos viejos.
+Los enemigos llegan en **escuadrones**: primero una **flecha** en el borde (y un sonido que viene de ese lado), después el grupo entra volando en formación (mientras entra no lastima), pelea su turno (18 segundos) y se **retira** (en gris: ya no lastima). Si rompés a todo un escuadrón, ganás un bonus. Un enemigo que te choca también se va. Así la pantalla nunca se llena de enemigos viejos.
 
-Para pasar al tramo siguiente hacen falta dos cosas, como en Metal Slug: la **barra llena** y la **zona despejada** (llegaron todos los escuadrones del tramo y no queda ninguno). Con la barra llena el tramo se apura: los que faltan entran enseguida y los que están se van pronto; si los rompés, despejás más rápido. Al pasar de tramo las estrellas pegan un acelerón.
+### Pasar de tramo: los objetivos
+Cada tramo es un nivel y pide algo, como las misiones de Metal Slug:
 
-### Subir de nivel: la barra de energía
-Cada tramo es un nivel. Todo lo que hacés bien llena la **barra de energía** (el camino de la ruta) y, cuando se llena y la zona está despejada, pasás al tramo siguiente (lo que sobra pasa al siguiente):
-
-| Qué | Energía |
+| Objetivo | Qué cuenta |
 |---|---|
-| Moneda | 1, y +0.25 por cada paso del combo (con x5, 2 por moneda) |
-| Dash perfecto | 1.5 |
-| Enemigo destruido (o congelado roto) | 0.5 |
-| Escuadrón eliminado entero | 1 |
-| Asedio superado | 3 |
-| Desafío cumplido | 5 |
+| JUNTA 10 MONEDAS | cada moneda |
+| ROMPE 3 DIVISORES | romper ese enemigo con el dash, una onda o congelado (sus hijos no cuentan) |
+| FRENA 2 EMBESTIDAS | interceptar al embestidor con el dash mientras embiste |
+| LOGRA 6 DASH PERFECTOS | cada dash perfecto |
+| AGUANTA (el asedio) | que termine el asedio |
 
-El nivel 1 pide 10 y cada nivel pide 1 más, hasta 16. Jugar con combo alto y usar el dash te hace avanzar más rápido. Durante la pelea con el jefe (y mientras se ven sus carteles) no se gana energía: la barra se ve gris.
+Al cumplirlo: "¡OBJETIVO CUMPLIDO!" y puntos (20 por el número de sector), dejan de llegar escuadrones y los que quedan se van. Uno que acaba de llegar se queda al menos 6 segundos, así nada aparece y se va enseguida. Con la **zona despejada** empieza el tramo siguiente y las estrellas pegan un acelerón. En la segunda vuelta a los sectores los objetivos piden la mitad más.
+
+Si en 90 segundos no lo cumplís (por ejemplo, si todavía no sabés frenar embestidas), **el paso se abre** igual, pero sin premio: nadie se queda trabado.
 
 ### El dash
 El dash es la herramienta principal: te lanza hacia adelante y durante ese instante **nada te hace daño**.
@@ -116,7 +115,7 @@ Después de cada jefe (cuando terminan los carteles del rango) parás en la **ga
   | DIFÍCIL | ✓ | | |
   | PESADILLA | | | |
 
-Todo se paga: si llegás sin créditos, no te llevás nada. Jugar con combo alto rinde el doble, porque da más energía **y** más créditos.
+Todo se paga: si llegás sin créditos, no te llevás nada. Jugar con combo alto rinde más, porque cada moneda da más créditos.
 
 ### Logros y naves
 Hay **16 logros** (vencer a tu primer jefe, 10 dash perfectos, rango S, 5000 puntos...). Se guardan entre partidas en `progreso.json` y cuando desbloqueás uno aparece abajo al centro, con un trofeo (y si regala una nave, te lo dice). Varios logros desbloquean **naves de otro color**: se eligen en **LOGROS** (desde el inicio) con IZQ/DER.
@@ -191,7 +190,8 @@ juego/
   partida.py            # el estado de una partida y sus reglas
   nave.py  moneda.py  proyectiles.py
   progresion.py         # el "director": tramos, escuadrones, asedio, sectores, mejoras
-  guiones.py            # la ruta de cada sector: los 4 tramos y sus escuadrones (solo datos)
+  guiones.py            # la ruta de cada sector: los 4 tramos, sus objetivos y escuadrones (solo datos)
+  objetivos.py          # lo que pide cada tramo para pasar (juntar, romper, frenar, aguantar)
   escuadrones.py        # las formaciones (por donde entran) y el Escuadron
   anomalias.py  desafios.py  rango.py   # lo que pasa en cada sector
   mejoras.py            # las cartas del Taller y de la gasolinera
@@ -247,7 +247,7 @@ herramientas/componer.py          # el estudio: compone toda la musica y los efe
            ...
    ```
 2. Importalo en `juego/enemigos/__init__.py`.
-3. Ponelo en la ruta: en `juego/guiones.py`, sumá un escuadrón a algún tramo, por ejemplo `("zigzag", 2, "pinza")` (tipo, cuántos y por dónde entran). Las formaciones están en `juego/escuadrones.py` (`flanco`, `pinza`, `lluvia`, `esquinas`, `cerco`). La regla de los guiones: un enemigo nuevo por tramo como mucho, y nunca en el asedio. La primera vez que llegue, sale solo su ficha de "NUEVO ENEMIGO".
+3. Ponelo en la ruta: en `juego/guiones.py`, sumá un escuadrón a algún tramo, por ejemplo `("zigzag", 2, "pinza")` (tipo, cuántos y por dónde entran), y dale un `plural` ("ZIGZAGS") por si un objetivo pide romperlos. Las formaciones están en `juego/escuadrones.py` (`flanco`, `pinza`, `lluvia`, `esquinas`, `cerco`). La regla de los guiones: un enemigo nuevo por tramo como mucho, y nunca en el asedio. La primera vez que llegue, sale solo su ficha de "NUEVO ENEMIGO".
 4. (Opcional) `sprites/zigzag.png`: 2 cuadros de 40x40. Si no está, se dibuja uno de respaldo con su color.
 
 Si necesita algo al aparecer, usá `al_aparecer()`; para dibujarse distinto, `dibujar_cuerpo()`. Mirá `embestidor.py` como ejemplo completo.
@@ -289,7 +289,9 @@ En `juego/mejoras.py`, una clase que herede de `Mejora`, con `@registrar_mejora`
 En `juego/tienda.py`, una clase que herede de `Articulo` con `tipo`, `nombre`, `descripcion`, `color` e `icono`, y sus métodos `precio(tienda)`, `al_comprar(tienda)` y, si no siempre tiene sentido, `disponible(partida)`. Anotala en `SERVICIOS` y sumá su `tipo` a `"servicios"` en las dificultades de `config.py` que la vendan.
 
 ### Un tramo o una formación
-Los tramos de cada sector están en `juego/guiones.py`: cada uno tiene `nombre`, `pista` (los dos entran en el cartel: 16 y 32 letras como mucho), `a_la_vez` (cuántos escuadrones a la vez) y la lista de `escuadrones` `(tipo, cuántos, formación)`. Las reglas para escribirlos están arriba del archivo y `tests/test_progresion.py` las comprueba.
+Los tramos de cada sector están en `juego/guiones.py`: cada uno tiene `nombre` (16 letras como mucho), `objetivo` (por ejemplo `("romper", 3, "divisor")`), `a_la_vez` (cuántos escuadrones a la vez) y la lista de `escuadrones` `(tipo, cuántos, formación)`. Las reglas para escribirlos están arriba del archivo, y `tests/test_progresion.py` y `tests/test_objetivos.py` las comprueban (por ejemplo, que si el objetivo pide romper divisores, el tramo traiga divisores).
+
+Un tipo de objetivo nuevo es una clase en `juego/objetivos.py` con `@registrar_objetivo`, un `tipo`, `texto()` (el cartel), `etiqueta()` (el HUD) y los avisos que escucha (`al_recoger_moneda`, `al_romper`, `al_interceptar`, `al_perfecto`, `al_terminar_asedio`), igual que los desafíos.
 
 Una formación nueva es una función en `juego/escuadrones.py` con `@formacion("nombre")`: recibe cuántos son y dónde está la nave, y devuelve un par `(desde, hasta)` por enemigo (desde afuera de la pantalla hasta su lugar). Ninguno termina de entrar cerca de la nave: `lugares()` lo corre solo.
 

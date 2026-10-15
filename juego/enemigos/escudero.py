@@ -47,6 +47,7 @@ def celdas_del_escudo(angulo):
 @registrar_enemigo
 class Escudero(Enemigo):
     tipo = "escudero"
+    plural = "ESCUDEROS"
     nombre = "ESCUDERO"
     pista = "RODEALO: DASH POR LA ESPALDA"
     color = NARANJA

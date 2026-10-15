@@ -34,6 +34,7 @@ def ladron_respaldo(color, mira):
 @registrar_enemigo
 class Ladron(Enemigo):
     tipo = "ladron"
+    plural = "LADRONES"
     nombre = "LADRON"
     pista = "ROBA LA MONEDA: ¡ALCANZALO!"
     color = VIOLETA

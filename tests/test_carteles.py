@@ -11,6 +11,7 @@ from juego.config import (ANCHO, ALTO, AMARILLO, ROJO, CIAN, PIXEL_ARTE, JEFE_CA
                           CARTEL_RANGO, MS_POR_FRAME)
 from juego.desafios import TIPOS_DESAFIO
 from juego.guiones import GUION_ARCADE
+from juego.objetivos import crear_objetivo
 from juego.logros import LOGROS
 from tests.ayudas import jugar
 
@@ -56,7 +57,6 @@ def test_subir_de_nivel_anuncia_el_tramo(partida):
     partida.subir_nivel()
     assert partida.avisos.actual.titulo == "ASEDIO" and partida.avisos.actual.alerta
     partida.avisos.vaciar()
-    partida.director.asedio_cumplido = True
     # En el nivel del jefe no hay aviso: llega su presentacion
     partida.subir_nivel()
     assert partida.jefe is not None and partida.avisos.actual is None
@@ -73,7 +73,8 @@ def test_la_anomalia_no_espera_al_aviso_del_tramo(partida):
 
 def test_todo_entra_en_los_avisos():
     textos = [(clase.nombre, clase.pista) for clase in TIPOS_ANOMALIA.values()]
-    textos += [(tramo["nombre"], tramo["pista"]) for ruta in GUION_ARCADE for tramo in ruta]
+    textos += [(tramo["nombre"], crear_objetivo(tramo["objetivo"], 1.5).texto()) for ruta in GUION_ARCADE
+               for tramo in ruta]
     textos += [("¡ASEDIO SUPERADO!", "+9999 PUNTOS Y UN POWER-UP"), ("¡NUEVO RECORD!", "SUPERASTE 999999")]
     minimo, maximo = ANCHO_PANCARTA
     for titulo, subtitulo in textos:

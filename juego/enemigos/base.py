@@ -116,6 +116,7 @@ FLECHA_ARRIBA, FLECHA_ABAJO = 130, ALTO - 110   # arriba y abajo, fuera de las f
 class Enemigo:
     tipo = None                 # nombre unico (lo usan el registro y config.py)
     nombre = ""                 # como se presenta la primera vez ("NUEVO ENEMIGO: ...")
+    plural = "ENEMIGOS"         # para los objetivos de los tramos ("ROMPE 3 DIVISORES")
     pista = "ESQUIVALO"         # consejo que se muestra al presentarlo
     color = BLANCO              # color de la "X" de aviso y del dibujo de respaldo
     sonido_roto = "enemigo_roto"    # lo que suena cuando el dash lo rompe (sonido.CATALOGO)
@@ -202,8 +203,10 @@ class Enemigo:
         if self.saliendo:
             return
         if self.entrada is not None:
-            partida.quitar_enemigo(self)        # (ni habia entrado: se va sin que se vea)
-            return
+            if partida.tiempo < self.entrada[2]:
+                partida.quitar_enemigo(self)    # (solo se veia la flecha: se va sin que se vea)
+                return
+            self.entrada = None                 # (venia entrando: pega la vuelta)
         self.saliendo = True
         self.naciendo = False               # (un recien nacido que se va ya no parpadea)
         self.aturdido_hasta = 0

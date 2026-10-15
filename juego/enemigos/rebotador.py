@@ -33,6 +33,7 @@ _respaldo = {}      # si falta el sprite: el mismo dibujo para todas las paredes
 @registrar_enemigo
 class Rebotador(Enemigo):
     tipo = "rebotador"
+    plural = "REBOTADORES"
     nombre = "REBOTADOR"
     pista = "REBOTA EN LOS BORDES"
     color = AMARILLO

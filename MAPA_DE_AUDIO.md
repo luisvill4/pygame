@@ -401,7 +401,7 @@ Más `trueno`, el trueno lejano del relámpago.
 | P07 | Dash perfecto (cadena x1 a x5) | `Partida._dash_perfecto` | `seleccion` | `perfecto_N` (N = cadena) | P1 | uno por dash (ya está así en la regla) |
 | P08 | Interceptar al embestidor | `Partida._interceptar` | `golpe` | `interceptado` (+ el perfecto) | P1 | |
 | P09 | Superás el récord | `Partida.sumar_puntos` | `nuevo_record` | `record` + ducking | P1 | prioridad 4 |
-| P10 | Subís de nivel (tramo nuevo: la zona quedó despejada) | `Partida.subir_nivel` | `seleccion` | `nivel` | P1 | si llega el jefe, `alerta` lo tapa (no suena); el primer tramo de un sector nuevo no suena (ya suena `sector_nuevo`) |
+| P10 | Subís de nivel (tramo nuevo: objetivo cumplido y zona despejada) | `Partida.subir_nivel` | `seleccion` | `nivel` | P1 | si llega el jefe, `alerta` lo tapa (no suena); el primer tramo de un sector nuevo no suena (ya suena `sector_nuevo`) |
 | P11 | La barra de energía casi llena (parpadea naranja) | HUD | — | silencio | NO | |
 | P12 | Romper un proyectil destruible con el dash (misil, meteoro) | `Partida._destruir_proyectiles` | `golpe` | `bala_rota` | P1 | |
 | P13 | Textos flotantes, marcador que cuenta, créditos | | — | silencio (ya suena la causa) | NO | |
@@ -496,6 +496,8 @@ Más `trueno`, el trueno lejano del relámpago.
 | D18 | Desafío cumplido | `Director.revisar_desafio` | `powerup` | `desafio_cumplido` + ducking | P1 |
 | D19 | **Desafío fallado** | idem (`estado == "fallado"`) | **—** | `desafio_fallado` | P1 |
 | D20 | Llega el escuadrón siguiente del tramo | `Director._escuadrones` | — | E01b | P2 |
+| D21 | ¡OBJETIVO CUMPLIDO! (el del tramo) | `Director._festejar_objetivo` | — | `bonus` (provisorio: podría tener uno propio) | P2 |
+| D22 | El paso se abre (el objetivo no se cumplió en 90 s) | `Director._abrir_el_paso` | — | `anomalia_fin` | P3 |
 
 ### 4.9 Carteles y HUD
 | Código | Situación | Dónde | Hoy | Propuesta | Prio | Anti-saturación |

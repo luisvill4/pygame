@@ -152,10 +152,11 @@ def cerco(cantidad, nave_x, nave_y):
 class Escuadron:
     # Un grupo de enemigos que llego junto. Lo maneja el Director (progresion.py)
 
-    def __init__(self, tipo, retirada_en):
+    def __init__(self, tipo, llega_en, retirada_en):
         self.tipo = tipo
         self.miembros = []              # todos los que fueron parte (tambien los hijos del divisor)
-        self.retirada_en = retirada_en  # cuando se le termina el turno (partida.tiempo)
+        self.llega_en = llega_en        # cuando termina de entrar (partida.tiempo)
+        self.retirada_en = retirada_en  # cuando se le termina el turno
         self.se_retiro = False          # ya se dio la orden de retirada
         self.escaparon = 0              # cuantos se fueron sin que los rompas
 

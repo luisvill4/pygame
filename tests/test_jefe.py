@@ -13,7 +13,6 @@ def llegar_al_jefe(partida):
     partida.enemigos[:] = [crear_enemigo(t, partida) for t in
                            ["perseguidor", "rebotador", "embestidor", "perseguidor"]]
     partida.nivel = 4
-    partida.director.asedio_cumplido = True     # (el asedio del tramo 4 retiene el nivel)
     partida.subir_nivel()       # nivel 5: aparece el jefe y los enemigos explotan
     return partida.jefe
 

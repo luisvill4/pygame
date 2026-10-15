@@ -73,7 +73,6 @@ def test_mientras_se_cierra_el_sector_no_se_sube_de_nivel(partida):
     partida.nave.invulnerable_hasta = math.inf
     partida.iniciar_jefe()
     partida.jefe_vencido()
-    partida.energia = partida.energia_necesaria() - 0.5         # a una moneda de subir
     nivel = partida.nivel
     partida.moneda.x, partida.moneda.y = partida.nave.x + 15, partida.nave.y + 15
     jugar(partida)

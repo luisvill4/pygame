@@ -13,9 +13,9 @@ Dos relojes, no mezclarlos:
 Reglas importantes:
 - Todo daño a la nave pasa por danar_jugador().
 - Todos los puntos pasan por sumar_puntos() (aplica DOBLE y detecta el record).
-- Toda la energia pasa por ganar_energia(): monedas, dash perfectos, enemigos destruidos,
-  escuadrones, desafios y el asedio llenan la barra; llena, se sube de nivel (en el asedio,
-  el nivel espera a que termine: revisar_energia).
+- Se sube de nivel (un tramo mas de la ruta) al cumplir el OBJETIVO del tramo y despejar
+  la zona: lo decide el Director (progresion.py y objetivos.py). La Partida le avisa lo que
+  pasa: monedas, enemigos rotos (al_romper), perfectos, intercepciones.
 - Los creditos (la plata de la gasolinera) pasan por ganar_creditos() y gastar_creditos().
   Los dan las monedas; no son puntos (gastarlos no baja el puntaje).
 - Dash perfecto: destruir con el dash a un enemigo destruible o interceptar a uno en pleno
@@ -39,8 +39,7 @@ import math
 import random
 
 from juego import hud, dibujo, carteles, impactos
-from juego.config import (ANCHO, COMBO_TIEMPO, COMBO_MAXIMO, MS_POR_FRAME, ENERGIA_MONEDA, ENERGIA_COMBO,
-                          ENERGIA_PERFECTO, ENERGIA_ENEMIGO, ENERGIA_INICIAL, ENERGIA_POR_NIVEL, ENERGIA_MAXIMA,
+from juego.config import (ANCHO, COMBO_TIEMPO, COMBO_MAXIMO, MS_POR_FRAME,
                           PUNTOS_ENEMIGO_CONGELADO, NAVE_VELOCIDAD, RECARGA_POR_DESTRUIR,
                           TURBO_VELOCIDAD, DASH_RECARGA, RECARGA_RAPIDA, PRIMER_POWERUP, ESPERA_POWERUP,
                           INVULNERABLE_GOLPE, INVULNERABLE_ESCUDO, JEFE_CADA_NIVELES, JEFE_PUNTOS,
@@ -102,8 +101,6 @@ class Partida:
         self.combo = 0                  # monedas seguidas sin dejar pasar mucho tiempo
         self.mejor_combo = 0
         self.ultima_moneda = -10000
-        self.energia = 0                # la barra de nivel (ver ganar_energia)
-        self.tiempo_energia = -10000    # la ultima vez que se gano (para que la barra destelle)
         self.creditos = 0               # la plata de la gasolinera (ver ganar_creditos)
         self.tiempo_creditos = -10000   # la ultima vez que se ganaron (para que el HUD destelle)
         self.nivel = 1
@@ -175,14 +172,6 @@ class Partida:
             return duracion
         return duracion * (1 + MEJORA_POTENCIA * self.mejora("potencia"))
 
-    def energia_necesaria(self):
-        # Lo que hay que juntar para pasar de nivel: un poco mas en cada nivel, con tope
-        return min(ENERGIA_INICIAL + (self.nivel - 1) * ENERGIA_POR_NIVEL, ENERGIA_MAXIMA)
-
-    def puede_ganar_energia(self):
-        # Durante la pelea con el jefe (y el cierre del sector) no se sube de nivel
-        return self.jefe is None and not self.director.cerrando_sector()
-
     def tiempo_combo(self):
         # ms maximos entre monedas para seguir el combo (la fiebre del oro y COMBO LARGO lo alargan)
         return COMBO_TIEMPO * self.director.factor_combo() * (1 + MEJORA_COMBO * self.mejora("combo"))
@@ -243,38 +232,6 @@ class Partida:
             self.avisar(Aviso("RECORD", "¡NUEVO RECORD!", "SUPERASTE " + dibujo.numero_arcade(self.puntaje_maximo),
                               None, AVISO_RECORD))
         return puntos
-
-    def ganar_energia(self, cantidad):
-        # Toda la energia pasa por aca. Con la barra llena se sube de nivel y lo que sobra
-        # queda para el siguiente (pero nunca alcanza para saltear un nivel)
-        if cantidad <= 0 or not self.puede_ganar_energia():
-            return
-        self.energia += cantidad
-        self.tiempo_energia = self.tiempo
-        self.revisar_energia()
-
-    def barra_llena_esperando(self):
-        # La barra esta llena pero el nivel espera (el asedio): el HUD lo muestra
-        return self.director.retiene_el_nivel() and self.energia >= self.energia_necesaria()
-
-    def revisar_energia(self):
-        # ¿La barra esta llena? Se sube de nivel... salvo en el asedio: ahi la barra queda
-        # llena esperando, y el Director vuelve a preguntar cuando termina
-        necesaria = self.energia_necesaria()
-        if self.energia < necesaria or not self.puede_ganar_energia():
-            return
-        if self.director.retiene_el_nivel():
-            self.energia = necesaria
-            return
-        sobra = self.energia - necesaria
-        # La barra se vacia ANTES de subir: lo que se gane durante la subida (un desafio que
-        # se cumple cuando llega el jefe) no puede saltear otro nivel
-        self.energia = 0
-        self.subir_nivel()
-        if self.jefe is not None:
-            self.energia = 0                    # despues del jefe se empieza con la barra vacia
-        else:
-            self.energia = min(self.energia + sobra, self.energia_necesaria() - 1)
 
     def ganar_creditos(self, cantidad):
         # Todos los creditos pasan por aca (hoy solo los dan las monedas)
@@ -652,7 +609,7 @@ class Partida:
         self.sonidos.reproducir("perfecto_%d" % multiplicador, x)
         self.entrada.vibrar("perfecto", 1 + 0.08 * (multiplicador - 1))    # la cadena vibra un poco mas
         self.congelar_frames = max(self.congelar_frames, 3)
-        self.ganar_energia(ENERGIA_PERFECTO)
+        self.director.al_perfecto()             # (para el objetivo del tramo)
         self._regenerar_escudo()
 
     def perfectos_para_regenerar(self):
@@ -683,7 +640,7 @@ class Partida:
             self._recoger_moneda()
 
     def _recoger_moneda(self, bonus=0, cartel=""):
-        # Cobrar la moneda: combo, puntos, creditos y energia. 'bonus' y 'cartel': la que se
+        # Cobrar la moneda: combo, puntos y creditos. 'bonus' y 'cartel': la que se
         # le recupera a un ladron (ver recuperar_moneda)
         ahora = self.tiempo
         self.estadisticas.monedas += 1
@@ -713,8 +670,6 @@ class Partida:
         self.tiempo_moneda = ahora
         self.moneda.mover_a_lugar_nuevo(self)
         self.director.al_recoger_moneda(self.combo)
-        # Energia: mas con el combo alto
-        self.ganar_energia(ENERGIA_MONEDA + ENERGIA_COMBO * (self.multiplicador_combo() - 1))
 
     def _vibrar_moneda(self, multiplicador_antes):
         # Cada moneda no vibra (seria todo el tiempo): solo cuando sube el multiplicador
@@ -805,12 +760,10 @@ class Partida:
                 self.entrada.vibrar("hielo_roto")
                 self.congelar_frames = 3
                 if enemigo.destruible:
+                    self.director.al_romper(enemigo)
                     self.destruir_enemigo(enemigo, con_dash=False)
                 else:
                     enemigo.retirarse(self)     # se va (no se puede romper)
-                # La energia va al final: si llena la barra y llega el jefe, los enemigos se
-                # guardan, y este ya tiene que estar fuera (si no, "revive" despues del jefe)
-                self.ganar_energia(ENERGIA_ENEMIGO)
             elif congelados or enemigo.aturdido(ahora):
                 continue        # (congelado o aturdido no lastima)
             elif (nave.en_dash(ahora) and caja_nave.colliderect(enemigo.caja())
@@ -921,7 +874,7 @@ class Partida:
         self.nave.dash_listo = max(self.tiempo, self.nave.dash_listo - RECARGA_POR_DESTRUIR * (1 + botin))
         self.destruir_enemigo(enemigo, con_dash=True)
         self.estadisticas.enemigos += 1
-        self.ganar_energia(ENERGIA_ENEMIGO)
+        self.director.al_romper(enemigo)
         self.director.al_destruir_enemigo()
 
     def destruir_enemigo(self, enemigo, con_dash):

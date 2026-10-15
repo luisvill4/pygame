@@ -6,7 +6,7 @@ import pytest
 
 from juego.config import (SECTORES, CARTEL_JEFE, CARTEL_RANGO, CARTEL_SECTOR, MS_POR_FRAME, JEFE_CADA_NIVELES, ANCHO, ALTO,
                           AVISO_ESCUADRON, ENTRADA_ESCUADRON, TURNO_ESCUADRON, INICIO_TRAMO, ESCUADRON_PUNTOS,
-                          ASEDIO_DURACION, ASEDIO_INICIO, DIFICULTADES)
+                          ASEDIO_DURACION, ASEDIO_INICIO, DIFICULTADES, PERMANENCIA_MINIMA)
 from juego.enemigos import TIPOS_ENEMIGO
 from juego.escuadrones import FORMACIONES, lugares
 from juego.guiones import GUION_ARCADE, tipos_del_guion
@@ -25,7 +25,6 @@ def con_escuadrones(partida):
 def subir_hasta_el_jefe(partida):
     # Sube de nivel hasta que aparece el jefe (sin limpiar la pelea)
     partida.nivel = (partida.nivel // JEFE_CADA_NIVELES + 1) * JEFE_CADA_NIVELES - 1
-    partida.director.asedio_cumplido = True     # (el asedio retiene el nivel: aca no se juega)
     partida.subir_nivel()
 
 
@@ -46,7 +45,7 @@ def test_el_guion_arcade_tiene_una_ruta_por_sector():
 def test_el_guion_usa_enemigos_y_formaciones_que_existen():
     for sector in GUION_ARCADE:
         for tramo in sector:
-            assert len(tramo["nombre"]) <= 16 and len(tramo["pista"]) <= 32    # (entran en el cartel)
+            assert len(tramo["nombre"]) <= 16       # (entra en el cartel; el objetivo: test_objetivos.py)
             for tipo, cantidad, formacion in tramo["escuadrones"]:
                 assert tipo in TIPOS_ENEMIGO and not TIPOS_ENEMIGO[tipo].esbirro
                 assert formacion in FORMACIONES and cantidad >= 1
@@ -114,35 +113,6 @@ def test_al_cambiar_de_tramo_los_escuadrones_se_retiran(partida):
     assert not any(enemigo in partida.enemigos for enemigo in escuadron.miembros)    # se fueron volando
 
 
-def test_con_la_barra_llena_el_tramo_termina_al_despejar_la_zona(partida):
-    # Como en Metal Slug: no se pasa de tramo con enemigos del tramo en pantalla
-    director = con_escuadrones(partida)
-    jugar(partida, int(INICIO_TRAMO / MS_POR_FRAME) + 2)
-    assert len(director.escuadrones) == 1 and director.pendientes == len(director.tramo["escuadrones"]) - 1
-    partida.ganar_energia(100)
-    assert partida.nivel == 1 and partida.barra_llena_esperando()
-    # Se apura: llegan los que faltan y se van pronto (sin romper a nadie, en menos de medio minuto)
-    for _ in range(60 * 30):
-        jugar(partida)
-        if partida.nivel == 2:
-            break
-    assert partida.nivel == 2 and director.numero_tramo == 2
-    assert all(enemigo.saliendo or enemigo.entrada for enemigo in partida.enemigos)
-
-
-def test_romper_al_ultimo_escuadron_despeja_la_zona_enseguida(partida):
-    director = con_escuadrones(partida)
-    director.pendientes = 0
-    escuadron = director.lanzar_escuadron(("ladron", 2, "pinza"))
-    jugar(partida, PASOS_ENTRADA)
-    partida.ganar_energia(100)
-    assert partida.nivel == 1
-    for enemigo in list(escuadron.miembros):
-        partida.destruir_con_dash(enemigo)
-    jugar(partida, 2)
-    assert partida.nivel == 2
-
-
 # ---------- Los escuadrones ----------
 
 def test_un_escuadron_entra_volando_desde_el_borde_sin_lastimar(partida):
@@ -164,9 +134,8 @@ def test_un_escuadron_entra_volando_desde_el_borde_sin_lastimar(partida):
 def test_nunca_hay_mas_escuadrones_que_los_del_tramo(partida):
     director = con_escuadrones(partida)
     random.seed(4)
-    for _ in range(3):
-        partida.subir_nivel()                   # (hasta el tramo 4, el asedio)
-    director.asedio_cumplido = True
+    for _ in range(2):
+        partida.subir_nivel()                   # (el tramo 3: su objetivo no se cumple solo)
     for _ in range(60 * 40):
         jugar(partida)
         atacando = [e for e in director.escuadrones if not e.se_retiro]
@@ -263,16 +232,13 @@ def preparar_asedio(partida):
 def test_el_asedio_llega_en_el_tramo_4_y_al_superarlo_viene_el_jefe(partida):
     director = preparar_asedio(partida)
     jugar(partida, 120)
-    assert partida.enemigos
-    # La barra se llena pero el nivel espera al asedio
-    partida.ganar_energia(100)
-    assert partida.nivel == 4 and partida.jefe is None and partida.barra_llena_esperando()
+    assert partida.enemigos and partida.nivel == 4 and partida.jefe is None     # el jefe espera
     puntaje = partida.puntaje
     jugar(partida, int(ASEDIO_DURACION / MS_POR_FRAME) + 2)
     assert not director.en_asedio
     assert partida.puntaje > puntaje                            # premio
-    assert all(enemigo.saliendo for enemigo in partida.enemigos)     # se retiran...
-    jugar(partida, 120)
+    assert partida.jefe is None                                 # los que quedan se despiden...
+    jugar(partida, int((PERMANENCIA_MINIMA + 2000) / MS_POR_FRAME))
     assert partida.nivel == 5 and partida.jefe is not None      # ...y ahora si: el jefe
     assert partida.enemigos == []
 

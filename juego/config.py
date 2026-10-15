@@ -147,16 +147,6 @@ ORDEN_ESCALADO = ["NITIDO", "SUAVE"]
 
 COMBO_TIEMPO = 2000             # ms maximos entre monedas para seguir el combo
 COMBO_MAXIMO = 5                # el multiplicador llega hasta x5
-# Energia: todo lo que haces bien llena una barra y, llena, subis de nivel (ver Partida.ganar_energia)
-ENERGIA_MONEDA = 1              # por moneda...
-ENERGIA_COMBO = 0.25            # ...mas esto por cada paso del multiplicador del combo (x5: 2 por moneda)
-ENERGIA_PERFECTO = 1.5          # por dash perfecto
-ENERGIA_ENEMIGO = 0.5           # por enemigo destruido (o congelado roto)
-ENERGIA_DESAFIO = 5             # por desafio cumplido
-ENERGIA_ASEDIO = 3              # por asedio superado
-ENERGIA_INICIAL = 10            # lo que pide el nivel 1 para subir...
-ENERGIA_POR_NIVEL = 1           # ...y esto mas en cada nivel...
-ENERGIA_MAXIMA = 16             # ...hasta este tope
 PUNTOS_ENEMIGO_CONGELADO = 5
 
 # Nave
@@ -260,15 +250,18 @@ ENEMIGO_VELOCIDAD_MAX = 4.2     # los que te persiguen nunca van mas rapido que 
 AVISO_ESCUADRON = 900           # ms que se ve la flecha en el borde antes de que entren
 ENTRADA_ESCUADRON = 700         # ms que tardan en entrar volando hasta su lugar (sin hacer daño)
 ESCALONADO = 140                # ms entre un miembro y el siguiente (entran en fila)
-TURNO_ESCUADRON = 12000         # ms que se queda un escuadron; despues los que quedan se retiran
-# El tramo termina con la barra de nivel llena Y la zona despejada (llegaron todos sus
-# escuadrones y no queda ninguno), como en Metal Slug. Con la barra llena se apura: los que
-# faltan entran enseguida y los que estan se quedan como mucho TURNO_APURADO ms mas
-TURNO_APURADO = 4000
+TURNO_ESCUADRON = 18000         # ms que se queda un escuadron; despues los que quedan se retiran
+PERMANENCIA_MINIMA = 6000       # ms que se queda como minimo un escuadron que ya entro, aunque se
+                                # termine el tramo o el asedio (pedido: "apenas llegan se van")
 RESPIRO_ESCUADRON = 1500        # ms entre que se va (o cae) un escuadron y llega el siguiente
 INICIO_TRAMO = 1500             # ms desde que empieza un tramo hasta que llega su primer escuadron
-ESCUADRON_PUNTOS = 4            # bonus por cada miembro al eliminar un escuadron entero...
-ENERGIA_ESCUADRON = 1           # ...y esta energia
+ESCUADRON_PUNTOS = 4            # bonus por cada miembro al eliminar un escuadron entero
+# Objetivos: cada tramo pide algo para pasar al siguiente (ver objetivos.py y guiones.py). Al
+# cumplirlo los enemigos que quedan se retiran y, con la zona despejada, empieza el tramo siguiente
+OBJETIVO_PUNTOS = 20            # premio por cumplir el objetivo, por el numero de sector
+VUELTA_OBJETIVO = 0.5           # en cada vuelta a los sectores, los objetivos piden esta parte mas
+PACIENCIA_OBJETIVO = 90000      # ms: si el objetivo no se cumple en este tiempo, el paso se abre igual
+                                # (sin premio). Asi nadie se queda trabado si todavia no sabe interceptar
 RETIRADA_VELOCIDAD = 6          # px por paso al retirarse (acelera hasta esto; no lastima)
 VUELTA_CANTIDAD = 0.3           # en cada vuelta a los sectores, los escuadrones traen esta parte mas
 RECARGA_POR_DESTRUIR = 400      # ms que se adelanta la recarga del dash por cada enemigo que destruye

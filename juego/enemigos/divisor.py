@@ -42,6 +42,7 @@ def slime(tamano, aplastado):
 class DivisorBase(Enemigo):
     color = VERDE
     destruible = True
+    plural = "DIVISORES"
     nombre = "DIVISOR"
     pista = "¡PARTILO CON EL DASH!"
     hijo = None                 # tipo en el que se parte (None = el mas chico)

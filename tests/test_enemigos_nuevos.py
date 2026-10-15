@@ -169,16 +169,17 @@ def test_cartel_al_presentar_un_enemigo_nuevo(partida):
 
 
 def test_dron_congelado_roto_justo_cuando_llega_el_jefe_no_vuelve(partida):
-    # Bug: la energia del hielo roto llegaba antes de sacar al dron. Si llenaba la barra
-    # y llegaba el jefe, el dron quedaba guardado (fuera de su bandada) y al volver
-    # despues del jefe el juego se caia
-    partida.nivel = 9
-    partida.energia = partida.energia_necesaria() - 0.1
+    # Bug viejo: un dron roto con el hielo justo cuando llegaba el jefe quedaba fuera de su
+    # bandada y al volver despues del jefe el juego se caia. (Hoy es el objetivo cumplido)
+    partida.nivel = 8
+    partida.subir_nivel()                   # el tramo 4
     drones = crear_enemigos("enjambre", partida)
     partida.enemigos.extend(drones)
     partida.activar("hielo", 5000)
     roto = poner_encima(partida, drones[0])
+    partida.director.cumplir_objetivo()
     jugar(partida)
+    partida.iniciar_jefe()
     assert partida.jefe is not None
     assert partida.enemigos == []               # (los que quedaban explotaron)
     # Despues del jefe el sector nuevo empieza sin problema
