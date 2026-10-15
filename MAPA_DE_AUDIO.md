@@ -178,6 +178,7 @@ Los nombres van en `EFECTOS` (`sonido.py`) y en `COMPOSICIONES` (compositor). To
 | Nombre | Cómo suena | Usado en |
 |---|---|---|
 | `aparece` | blip de teletransporte | E01 |
+| `escuadron_llega` | soplido que crece + dos pings de radar Si-Fa (con paneo) | E01b, D20 |
 | `enemigo_roto` (3 variantes) | crunch + chispa | E03 |
 | `aturdido` | "pío-pío" | E05 |
 | `rebote` | "boing" elástico | E08 |
@@ -190,15 +191,19 @@ Los nombres van en `EFECTOS` (`sonido.py`) y en `COMPOSICIONES` (compositor). To
 | `bonus` | arpegio | E15 |
 | `abeja_sale` | bzz corto | E16, CO03 |
 | `abeja_aviso` | bzz agudo que sube, 400 ms | E17 |
-| `retirada` | "poof" grupal (uno solo) | E19, J03 |
+| `retirada` | "poof" grupal (uno solo) | E19, D03, J03 |
 | `mina_tic` | bip (se pide cada vez más seguido) | B01 |
 | `mina_estalla` | estallido seco | B02 |
+| `ladron_roba` | manotazo + risita, 500 ms | E20 |
+| `moneda_recuperada` | arpegio de cristal que sube | E21 |
+| `ladron_escapa` | silbido que se aleja | E22 |
+| `escudo_bloquea` | "tonk" de metal | E23 |
 
 ### Director, carteles y jingles
 | Nombre | Cómo suena | Usado en |
 |---|---|---|
-| `oleada` | alarma de dos tonos ×3 + bombo | D01 |
-| `oleada_superada` | fanfarria corta | D02 |
+| `oleada` | alarma de dos tonos ×3 + bombo (hoy: empieza el ASEDIO) | D01 |
+| `oleada_superada` | fanfarria corta (hoy: ¡ASEDIO SUPERADO!) | D02 |
 | `asteroides_llega`, `tormenta_llega`, `niebla_llega`, `oro_llega` | stinger de cada anomalía: retumbo / chisporroteo / viento hueco / campanitas | D05, D09, D12, D14 |
 | `meteoro_aviso` | silbido que baja, 900 ms (con paneo) | D06 |
 | `tormenta_aviso` | crepitar que crece, 1.2 s | D10 |
@@ -396,7 +401,7 @@ Más `trueno`, el trueno lejano del relámpago.
 | P07 | Dash perfecto (cadena x1 a x5) | `Partida._dash_perfecto` | `seleccion` | `perfecto_N` (N = cadena) | P1 | uno por dash (ya está así en la regla) |
 | P08 | Interceptar al embestidor | `Partida._interceptar` | `golpe` | `interceptado` (+ el perfecto) | P1 | |
 | P09 | Superás el récord | `Partida.sumar_puntos` | `nuevo_record` | `record` + ducking | P1 | prioridad 4 |
-| P10 | Subís de nivel | `Partida.subir_nivel` | `seleccion` | `nivel` | P1 | si llega el jefe, `alerta` lo tapa (no suena) |
+| P10 | Subís de nivel (tramo nuevo: la zona quedó despejada) | `Partida.subir_nivel` | `seleccion` | `nivel` | P1 | si llega el jefe, `alerta` lo tapa (no suena); el primer tramo de un sector nuevo no suena (ya suena `sector_nuevo`) |
 | P11 | La barra de energía casi llena (parpadea naranja) | HUD | — | silencio | NO | |
 | P12 | Romper un proyectil destruible con el dash (misil, meteoro) | `Partida._destruir_proyectiles` | `golpe` | `bala_rota` | P1 | |
 | P13 | Textos flotantes, marcador que cuenta, créditos | | — | silencio (ya suena la causa) | NO | |
@@ -434,7 +439,8 @@ Más `trueno`, el trueno lejano del relámpago.
 ### 4.7 Enemigos
 | Código | Situación | Dónde | Hoy | Propuesta | Prio | Anti-saturación |
 |---|---|---|---|---|---|---|
-| E01 | Aparece un enemigo (al final de la "X", 800 ms) | `Enemigo.reaparecer` → cuando `activo()` pasa a True | — | `aparece` | P2 | enfriamiento 120 ms; en oleadas, uno por grupo |
+| E01 | Aparece un enemigo suelto (al final de la "X", 800 ms) | `Enemigo.reaparecer` → cuando `activo()` pasa a True | — | `aparece` | P2 | enfriamiento 120 ms. Los que llegan en escuadrón no lo usan (E01b) |
+| E01b | Un escuadrón se asoma por un borde (la flecha de aviso) | `Director.lanzar_escuadron` | — | `escuadron_llega`, uno por escuadrón, con paneo del lado por donde entra | P2 | enfriamiento 250 ms |
 | E02 | Hijos del divisor que nacen parpadeando | `nacer_en` | — | lo cubre E12 | NO | |
 | E03 | Destruido con el dash | `Partida.destruir_con_dash` | `golpe` | `enemigo_roto`, más grave cuanto más grande | P1 | máx 3 voces |
 | E04 | Congelado roto | | `moneda` | W15 | P1 | |
@@ -452,7 +458,12 @@ Más `trueno`, el trueno lejano del relámpago.
 | E16 | Una abeja sale de la compuerta | `Colmena.soltar_abeja` | — | `abeja_sale` | P2 | máx 2 voces |
 | E17 | **Abeja: aviso** (400 ms, "!") | `Abeja.mover` (`estado = "aviso"`) | — | `abeja_aviso` | P1 | máx 2 voces |
 | E18 | La abeja vuelve a casa | `volver_a_casa` | — | silencio | NO | |
-| E19 | Enemigos que se van en una nube (fin de oleada, cambio de sector) | `terminar_oleada`, `cambiar_sector` | — | `retirada`, uno solo para todo el grupo | P3 | |
+| E19 | Enemigos que se van (se retiran volando: fin de su turno, cambio de tramo) | `Enemigo.retirarse` | — | silencio: se ven irse en gris | — | el asedio perdido sí suena (D03) |
+| E20 | **Ladrón: agarra la moneda** (se queda quieto 500 ms con ella: el aviso de que va a huir) | `Partida.robar_moneda` | `ladron_roba` | `ladron_roba`, que dura lo mismo que el aviso | P1 | 1 voz |
+| E21 | Ladrón alcanzado con el dash: moneda recuperada | `Partida.recuperar_moneda` | `moneda_recuperada` (+ la moneda, `enemigo_roto` y el perfecto) | `moneda_recuperada` | P1 | |
+| E22 | El ladrón se escapa con la moneda (se corta el combo) | `Partida.moneda_escapada` | `ladron_escapa` | `ladron_escapa`, con paneo hacia el borde (en vez de `combo_cortado`) | P1 | |
+| E23 | El dash rebota en el escudo del escudero | `Partida._rebotar_en_escudo` | `escudo_bloquea` | `escudo_bloquea` | P1 | enfriamiento 80 ms |
+| E24 | Escudero roto por la espalda | `Partida.destruir_con_dash` | `enemigo_roto` + el perfecto | lo cubre E03 | NO | |
 
 **Proyectiles sueltos** (de cualquier jefe):
 
@@ -465,9 +476,9 @@ Más `trueno`, el trueno lejano del relámpago.
 ### 4.8 Director: oleadas, anomalías y desafíos
 | Código | Situación | Dónde | Hoy | Propuesta | Prio |
 |---|---|---|---|---|---|
-| D01 | **¡OLEADA!** | `Director.empezar_oleada` | **`nuevo_record`** (suena a premio) | `oleada` | P1 |
-| D02 | Oleada superada | `terminar_oleada(superada=True)` | `powerup` | `oleada_superada` + ducking | P1 |
-| D03 | La oleada termina y perdiste una vida | `terminar_oleada(False)` | — | `retirada` | P3 |
+| D01 | **Empieza el ASEDIO** (tramo 4) | `Director.empezar_asedio` | **`nuevo_record`** (suena a premio) | `oleada` | P1 |
+| D02 | Asedio superado | `terminar_asedio(superado=True)` | `powerup` | `oleada_superada` + ducking | P1 |
+| D03 | El asedio termina y perdiste una vida | `terminar_asedio(False)` | — | `retirada` | P3 |
 | D04 | Llega una anomalía | `Director.empezar_anomalia` | `nuevo_record` | el stinger de cada una (D05, D09, D12, D14) | P1 |
 | D05 | Asteroides: llegan | | | `asteroides_llega` | P1 |
 | D06 | Asteroides: columna de aviso (900 ms) | `LluviaDeAsteroides.actualizar` | — | `meteoro_aviso`, con paneo según la columna | P1 |
@@ -484,14 +495,14 @@ Más `trueno`, el trueno lejano del relámpago.
 | D17 | El desafío avanza (CAZADOR 3/10...) | `avanzar()` | — | silencio (ya suena la acción) | NO |
 | D18 | Desafío cumplido | `Director.revisar_desafio` | `powerup` | `desafio_cumplido` + ducking | P1 |
 | D19 | **Desafío fallado** | idem (`estado == "fallado"`) | **—** | `desafio_fallado` | P1 |
-| D20 | Llega un refuerzo | `Director._refuerzos` | — | E01 | P2 |
+| D20 | Llega el escuadrón siguiente del tramo | `Director._escuadrones` | — | E01b | P2 |
 
 ### 4.9 Carteles y HUD
 | Código | Situación | Dónde | Hoy | Propuesta | Prio | Anti-saturación |
 |---|---|---|---|---|---|---|
-| C01 | Una pancarta se abre (NIVEL, OLEADA, anomalía, RÉCORD) | `carteles.pancarta` | — | silencio: el aviso ya trae el sonido de lo que pasó (P10, D01...) | NO | |
+| C01 | Una pancarta se abre (TRAMO, ASEDIO, anomalía, RÉCORD) | `carteles.pancarta` | — | silencio: el aviso ya trae el sonido de lo que pasó (P10, D01...) | NO | |
 | C02 | El subtítulo se escribe solo (18 ms por letra) | `carteles.pancarta` | — | `teclear`, uno cada 3 letras | P3 | muy bajo; se calcula en la lógica con `partida.tiempo` |
-| C03 | Ficha NUEVO ENEMIGO (entra por la izquierda) | `Director.completar_presupuesto` (desbloqueo) | — | `ficha_enemigo` | P2 | |
+| C03 | Ficha NUEVO ENEMIGO (entra por la izquierda) | `Director._presentar` (la primera vez que llega un tipo) | — | `ficha_enemigo` | P2 | |
 | C04 | Fichas del desafío (derecha) | | | D16, D18, D19 | — | |
 | C05 | Logro (abajo, la insignia y se abre) | `Partida.revisar_logros` | `nuevo_record` | `logro` + ducking; si regala una nave, `nave_nueva` | P1 | uno por ficha, en fila (como `fichas_logro`) |
 | C06 | ¡JEFE VENCIDO! (franjas) | `Partida.jefe_vencido` | (la explosión) | J10 | P1 | |

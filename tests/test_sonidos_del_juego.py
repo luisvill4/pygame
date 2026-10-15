@@ -129,8 +129,8 @@ def test_el_jefe_llega_con_alerta_y_avisa_la_ventana(partida, pedidos):
     assert "ojo_carga" in pedidos
 
 
-def test_la_oleada_suena_a_peligro(partida, pedidos):
-    partida.director.empezar_oleada()
+def test_el_asedio_suena_a_peligro(partida, pedidos):
+    partida.director.empezar_asedio()
     assert "oleada" in pedidos
 
 

@@ -7,11 +7,10 @@ Mientras apunta, la mira te sigue hasta "apunte_fijo" ms antes de embestir (depe
 dificultad); desde ahi queda fija y la linea deja de parpadear: es el momento de correrse.
 O de contraatacar: un dash contra el en plena embestida lo INTERCEPTA (queda aturdido).
 """
-import math
 import random
 
 from juego import recursos, dibujo
-from juego.config import ANCHO, CENTRO_X, MAGENTA, ROJO, EMBESTIDA, RANGO_EMBESTIDOR, ATURDIDO_INTERCEPTAR
+from juego.config import MAGENTA, ROJO, EMBESTIDA, RANGO_EMBESTIDOR, ATURDIDO_INTERCEPTAR
 from juego.enemigos.base import Enemigo, registrar_enemigo
 
 _blanco = []        # primer cuadro en blanco (respaldo si falta el sprite de carga)
@@ -27,7 +26,6 @@ class Embestidor(Enemigo):
     def al_aparecer(self, partida):
         self.fase = "acercarse"
         self.fase_hasta = self.aparece_en + random.randint(2000, 3500)
-        self.rumbo = random.uniform(0, 2 * math.pi)     # hacia donde deambula
         self.mira = (0, 1, 0)       # hacia donde va a embestir: direccion (x, y) y distancia
         self.mira_fija = False
 
@@ -43,7 +41,7 @@ class Embestidor(Enemigo):
                 self.vx += (dir_x / distancia * rapidez - self.vx) * 0.05
                 self.vy += (dir_y / distancia * rapidez - self.vy) * 0.05
             else:
-                self._deambular()
+                self.deambular()
             self.separarse(partida)
             # Solo embiste si estas dentro del rango (si no, espera a que te acerques)
             if ahora > self.fase_hasta and 0 < distancia < RANGO_EMBESTIDOR:
@@ -87,16 +85,6 @@ class Embestidor(Enemigo):
         # Lo frenaron en plena embestida: cuando se le pase el aturdido, vuelve a acercarse
         self.fase = "acercarse"
         self.fase_hasta = partida.tiempo + ATURDIDO_INTERCEPTAR + random.randint(2000, 3000)
-
-    def _deambular(self):
-        # Despacio y de vez en cuando cambia de rumbo
-        if random.random() < 0.01:
-            self.rumbo = random.uniform(0, 2 * math.pi)
-        if self.x <= 0 or self.x >= ANCHO - 40 or self.y <= 0 or self.y >= 560:
-            # Contra un borde: vuelve hacia el centro de la pantalla
-            self.rumbo = math.atan2(300 - (self.y + 20), CENTRO_X - (self.x + 20))
-        self.vx += (math.cos(self.rumbo) * 0.5 - self.vx) * 0.05
-        self.vy += (math.sin(self.rumbo) * 0.5 - self.vy) * 0.05
 
     def dibujar_cuerpo(self, pantalla, partida):
         if self.fase != "apuntar":

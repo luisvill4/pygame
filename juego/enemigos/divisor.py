@@ -5,7 +5,7 @@ Divisor: una masa verde y lenta que te sigue. El dash la parte en dos:
 
 Los chicos son los mas rapidos y los que mas puntos dan. Los hijos nacen donde se partio
 su padre, salen disparados hacia los costados y parpadean un instante sin hacer daño.
-Solo el grande ocupa presupuesto (los hijos son "parte" de el).
+Los hijos son parte del escuadron del padre (para el bonus hay que romperlos a todos).
 
 Sprites (opcionales): divisor.png (96x48), divisor_mediano.png (64x32) y
 divisor_chico.png (40x20), 2 cuadros cada uno. Si faltan, se dibuja un slime de respaldo.
@@ -70,8 +70,8 @@ class DivisorBase(Enemigo):
         costado_x, costado_y = -nave.vy / largo, nave.vx / largo
         for signo in (-1, 1):
             hijo = TIPOS_ENEMIGO[self.hijo](partida)
-            hijo.costo = 0                  # es parte del padre
-            hijo.de_oleada = self.de_oleada
+            if self.escuadron is not None:
+                self.escuadron.sumar(hijo)  # es parte del escuadron del padre
             hijo.nacer_en(partida, centro_x + costado_x * signo * 10, centro_y + costado_y * signo * 10,
                           DIVISOR_NACIMIENTO)
             hijo.vx, hijo.vy = costado_x * signo * 4, costado_y * signo * 4
@@ -79,7 +79,7 @@ class DivisorBase(Enemigo):
 
     def actualizar(self, partida, congelado):
         # Mientras nace se sigue deslizando (asi se separa de donde estaba el padre)
-        if self.naciendo and not congelado:
+        if self.naciendo and not congelado and not self.saliendo:
             self.x += self.vx
             self.y += self.vy
             self.vx *= 0.9

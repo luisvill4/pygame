@@ -264,7 +264,8 @@ Los avisos de peligro **duran exactamente lo mismo que el aviso visual** y termi
 
 | Estado | Sonido | Para | Prio | Partitura | Timbre y forma |
 |---|---|---|---|---|---|
-| ✅ | `aparece` | E01, D20 | P2 | se materializa: barrido corto que sube (C5 → C6, 80 ms) + D6 de 20 ms | `PULSO_FINO` · pp |
+| ✅ | `aparece` | E01 | P2 | se materializa: barrido corto que sube (C5 → C6, 80 ms) + D6 de 20 ms | `PULSO_FINO` · pp |
+| 🟨 | `escuadron_llega` | E01b, D20 | P2 | un escuadrón se asoma por un borde: soplido de aire que crece (banda 500 → 2400 Hz, 0.5 s) y dos pings Si4-Fa5 (el tritono de La menor: un aviso no resuelve). Con paneo del lado por donde entra | aire + `MARIMBA` · p |
 | ✅ | `enemigo_roto` (3 variantes × 3 tamaños) | E03, M06 | P1 | crunch de ruido de 90 ms + una nota que cae una octava en 60 ms. Altura según el tamaño: grande C4, mediano G4, chico C5. Variantes: el filtro del ruido | ruido + `BAJO` · mf |
 | ✅ | `aturdido` | E05 | P3 | "pío-pío": A7 → E7 → A7 → E7, 30 ms cada una, con vibrato rápido | `PULSO_FINO` · pp |
 | ✅ | `rebote` (4, uno por pared) | E08 | P2 | "boing" de resorte: el `BAJO` baja una quinta y vuelve, con vibrato que se apaga, 150 ms. Abajo C4, arriba G4, izquierda E4, derecha A4 | triángulo · p |
@@ -280,6 +281,10 @@ Los avisos de peligro **duran exactamente lo mismo que el aviso visual** y termi
 | ✅ | `retirada` | E19, D03, J03 | P3 | "poof": ruido de 250 ms con el filtro bajando + E5 → C5 muy suave | ruido + `PULSO_FINO` · pp |
 | ✅ | `mina_tic` | B01 | P1 | Bb5 de 40 ms (fuera de la paleta: peligro). Sale 4 veces en los últimos 500 ms: a 0, 200, 340 y 440 ms | `PULSO_REDONDO` · mf |
 | ✅ | `mina_estalla` | B02 | P1 | ruido seco de 250 ms + `BAJO` de 130 a 45 Hz | ruido + triángulo · f |
+| ✅ | `ladron_roba` | E20 | P1 | 500 ms (lo que se queda quieto con la moneda): manotazo de aire + F5 → B4 (la moneda cae un tritono) + una risita B4 F5 B4 F5 que no resuelve | ruido + `MARIMBA` + `LEAD_HUECO` · mf |
+| ✅ | `ladron_escapa` | E22 | P1 | silbido que se aleja (el filtro baja en 450 ms) + A4 → E4 → B3: la moneda no vuelve a casa | ruido + `MARIMBA` · mf |
+| ✅ | `moneda_recuperada` (armónico) | E21 | P1 | el cristal sube en saltos C5 G5 D6 G6 (quintas y cuartas, sin pasos) + `EPIANO` C4+G4 (quinta abierta) + un grave corto. Suena junto con la moneda y el perfecto | `CRISTAL` + `EPIANO` · mf |
+| ✅ | `escudo_bloquea` (armónico) | E23 | P1 | "tonk": clic + G3 de 220 ms en `METAL` (el Sol: la quinta de cualquier acorde) + grave de 180 a 70 Hz. Sin chispa aguda: es un "no" | ruido + `METAL` + `BAJO_SUB` · mf |
 
 ## 6. Oleadas, anomalías, desafíos y carteles
 | Estado | Sonido | Para | Prio | Partitura | Timbre y forma |
@@ -451,6 +456,8 @@ Todos usan drones en **Do o Sol**, para sonar bien debajo de la música del jueg
 ## Registro
 | Fecha | Qué se hizo |
 |---|---|
+| 2026-10-14 | **La ruta de tramos y escuadrones** (rediseño de la progresión). `escuadron_llega` en `efectos_enemigos.py` (brillo 2576 Hz, -19 LUFS: suave, suena cada pocos segundos), con paneo. `aparece` queda para los enemigos sueltos; la oleada ahora es el ASEDIO del tramo 4 (mismos sonidos `oleada` y `oleada_superada`). **Falta que el usuario lo escuche.** |
+| 2026-10-14 | **Ladrón y Escudero** (contenido nuevo elegido por el usuario). Cuatro efectos en `efectos_enemigos.py`, con la lista de verificación de "Sonidos limpios": `ladron_roba` y `ladron_escapa` (peligro, con la tensión de La menor), `moneda_recuperada` y `escudo_bloquea` (armónicos: suenan con la moneda, el perfecto y el dash). Brillo 755-2481 Hz. **Falta que el usuario los escuche.** |
 | 2026-10-14 | **Sonidos limpios** (pedido: "otros muy saturados que rompen la experiencia"; sección 0.12). Seis patrones: la cinta del master sin nivelar (la causa de fondo, en ~70 efectos y la música), acordes cerrados, el Taller fijo en Fa contra las cartas armónicas, sierras en acordes, intervalos que cambian con el color (el sus ahora se cuenta desde Re) y escalas rápidas en cristal. Rehechos: moneda (suma una capa por multiplicador), dificultad y `taller` (ahora armónicos), cartas, GO, cápsula, `vulnerable`, perfectos, `combo_sube`/`combo_max`, `bonus`, `pw_hielo`, `pw_nova`, `pw_vida`, `oro_llega`, `mejora_elegida`, `desafio_cumplido`, `ui_valor`, `aturdido`. Todo recompuesto (efectos, ambientes y temas). 3 tests nuevos (el master no depende del nivel, notas que raspan en los 11 colores, capas de la moneda), que detectan 4 errores inyectados. **El usuario lo escuchó: "ahora sí se escucha bien".** |
 | 2026-10-14 | **Mezcla y armonía** (pedido: "no se sienten armónicos; mucho solapamiento y saturación"; sección 0.11). Mezcla con margen y un limitador con las fichas (`efectos/fichas.json`); efectos más secos; `CAMPANA` y `METAL` armónicos; los peligros con la tensión de la escala; **los efectos armónicos siguen al acorde** (11 colores, `armonia.py`); y los 7 temas chiptune **rehechos en el estudio** (el usuario eligió rehacerlos). El compositor viejo guarda en `herramientas/chiptune/`. |
 | 2026-10-13 | **Un tema para cada jefe** (pedido del usuario), en el estilo chiptune de `musica_jefe` con el compositor viejo: `musica_jefe_fortaleza`, `_serpiente`, `_colmena`, `_singularidad` (Re menor, ±1 dB del original). El compositor viejo ahora guarda OGG con soundfile si no hay ffmpeg. **La lista está completa.** |

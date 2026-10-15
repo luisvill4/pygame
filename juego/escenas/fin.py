@@ -102,6 +102,7 @@ class Fin(Escena):
             ("MONEDAS", str(estadisticas.monedas)),
             ("MEJOR COMBO", str(partida.mejor_combo)),
             ("ENEMIGOS", str(estadisticas.enemigos)),
+            ("ESCUADRONES", str(estadisticas.escuadrones)),
             ("PERFECTOS", self._perfectos()),
             ("DESAFIOS", str(estadisticas.desafios)),
         ]
@@ -139,8 +140,7 @@ class Fin(Escena):
         partida = self.partida
         dificultad = partida.dificultad
         texto(pantalla, dificultad, CHICA, DIFICULTADES[dificultad]["color"], adentro.centerx, adentro.top + 96)
-        texto(pantalla, "SECTOR " + str(partida.director.numero_sector) + "  NIVEL " + str(partida.nivel), CHICA,
-              TEXTO_SUAVE, adentro.centerx, adentro.top + 122)
+        texto(pantalla, "SECTOR " + partida.director.rotulo(), CHICA, TEXTO_SUAVE, adentro.centerx, adentro.top + 122)
         interfaz.separador(pantalla, adentro.left, adentro.top + 148, adentro.width)
         texto(pantalla, "RANGOS", MINI, TEXTO_SUAVE, adentro.centerx, adentro.top + 168)
         rangos = partida.estadisticas.rangos[:6]

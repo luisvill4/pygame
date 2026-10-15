@@ -1,20 +1,25 @@
 """
-Director de la progresion: decide QUE enemigos hay, en que SECTOR estas y cuando
-llega una OLEADA. (Los juegos le dicen "director" a esta parte: dirige la tension.)
+Director de la progresion: decide QUIEN viene, CUANDO y COMO. (Los juegos le dicen
+"director" a esta parte: dirige la tension.)
 
-- Presupuesto: cada enemigo cuesta puntos (COSTO_ENEMIGO) y cada nivel tiene un
-  presupuesto que crece. Se completa con enemigos al azar entre los desbloqueados,
-  con mas chances para el favorito del sector. Asi la dificultad crece controlada,
-  pero cada partida es distinta.
-- Sectores: cada sector termina con su jefe; al vencerlo se pasa al siguiente
-  (otro ambiente, otro enemigo favorito) y parte de los enemigos se van y llegan otros.
-- Oleadas: picos de tension. Llegan muchos enemigos de golpe, duran unos segundos
-  y se van; pasarla sin perder una vida da un bonus y un power-up.
-- Anomalias: a mitad de cada sector el espacio se pone raro un rato (anomalias.py): la del
+- Ruta: cada sector tiene 4 TRAMOS y el jefe, uno por nivel (guiones.py). Se pasa al
+  tramo siguiente con la barra de nivel llena Y la zona despejada: llegaron todos los
+  escuadrones del tramo y no queda ninguno (rotos o retirados). Con la barra llena el tramo
+  se apura (los que faltan entran ya y los que estan se van pronto). Al empezar un tramo
+  sale su cartel: asi se siente que avanzas, no que la pantalla se ensucia.
+- Escuadrones: en cada tramo los enemigos llegan en grupos (escuadrones.py), en el orden del
+  guion: flecha de aviso en el borde, entran volando en formacion, atacan su turno y se
+  retiran. Si los eliminas a todos: bonus. Nunca hay mas de "a_la_vez" grupos en pantalla.
+- Asedio: el tramo 4. Escuadrones de todos lados por ASEDIO_DURACION ms; la barra de nivel
+  se puede llenar pero el nivel (y el jefe) espera a que termine. Pasarlo sin perder una
+  vida da un bonus y un power-up.
+- Sectores: cada sector termina con su jefe; al vencerlo se pasa al siguiente (otro ambiente,
+  otro guion). Despues del ultimo se vuelve al primero, con escuadrones mas grandes (vuelta()).
+- Anomalias: en el tramo 3 de cada sector el espacio se pone raro (anomalias.py): la del
   sector la mitad de las veces, si no otra (asi se ven todas desde el principio).
 - Desafios: un reto opcional por sector (desafios.py).
 - Rango: al vencer al jefe, una nota de S a C para el sector (rango.py). Mientras se ve
-  el cartel, el sector se esta "cerrando": los enemigos esperan para volver.
+  el cartel, el sector se esta "cerrando": todavia no llega nadie.
 - Mejoras: en el nivel MEJORA_PRIMER_NIVEL deja 3 cartas gratis en 'ofertas' (mejoras.py)
   y la escena Juego abre el Taller. Al cerrar cada sector, en cambio, se para en la
   GASOLINERA ('gasolinera' = True): ahi las cartas se compran con creditos (tienda.py).
@@ -25,36 +30,53 @@ le pide actualizar() en cada paso.
 import math
 import random
 
-from juego.config import (COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, PRESUPUESTO_INICIAL, PRESUPUESTO_POR_NIVEL,
-                          PRESUPUESTO_MAXIMO, ENEMIGOS_MAX, SECTORES, PESO_FAVORITO,
-                          RECAMBIO_SECTOR, OLEADA_DESDE_NIVEL, OLEADA_ESPERA, OLEADA_DURACION,
-                          OLEADA_PRESUPUESTO, OLEADA_PUNTOS, REFUERZO_ESPERA, CARTEL_JEFE, AMARILLO, ROJO,
-                          JEFE_CADA_NIVELES, ANOMALIA_NIVEL, ANOMALIA_ESPERA, RESPIRO_ANOMALIA, ANOMALIA_PROPIA,
-                          DESAFIO_DESDE_NIVEL, DESAFIO_ESPERA, DESAFIO_PUNTOS, CARTEL_RANGO, RANGO_SELLO, VERDE,
-                          MEJORA_PRIMER_NIVEL, ENERGIA_DESAFIO, ENERGIA_OLEADA, AVISO_OLEADA, AVISO_ANOMALIA,
-                          MS_POR_FRAME)
+from juego.config import (ANCHO, SECTORES, CARTEL_JEFE, CARTEL_SECTOR, AMARILLO, ROJO, VERDE, JEFE_CADA_NIVELES, ANOMALIA_NIVEL,
+                          ANOMALIA_ESPERA, ANOMALIA_PROPIA, DESAFIO_DESDE_NIVEL, DESAFIO_ESPERA, DESAFIO_PUNTOS,
+                          CARTEL_RANGO, RANGO_SELLO, MEJORA_PRIMER_NIVEL, ENERGIA_DESAFIO, ENERGIA_ASEDIO,
+                          AVISO_ASEDIO, AVISO_ANOMALIA, AVISO_TRAMO, MS_POR_FRAME, AVISO_ESCUADRON, ESCALONADO,
+                          TURNO_ESCUADRON, TURNO_APURADO, RESPIRO_ESCUADRON, INICIO_TRAMO, ESCUADRON_PUNTOS, ENERGIA_ESCUADRON,
+                          VUELTA_CANTIDAD, ASEDIO_DURACION, ASEDIO_INICIO, ASEDIO_RESPIRO, ASEDIO_TURNO,
+                          ASEDIO_PUNTOS)
 from juego.avisos import Aviso
 from juego.enemigos import crear_enemigos, TIPOS_ENEMIGO
+from juego.escuadrones import Escuadron, lugares
+from juego.guiones import GUIONES
 from juego.anomalias import TIPOS_ANOMALIA, crear_anomalia
 from juego.desafios import TIPOS_DESAFIO
 from juego.rango import Bitacora, calcular_rango
 from juego.mejoras import sortear_mejoras
 
+TRAMOS = JEFE_CADA_NIVELES - 1      # tramos de cada sector (el nivel que sigue es el del jefe)
+
 
 class Director:
-    def __init__(self, partida):
+    def __init__(self, partida, guion="arcade"):
         self.partida = partida
+        self.guion = GUIONES[guion]
         self.sector = SECTORES[0]           # el primero es siempre el Cinturon
         self.numero_sector = 1
         self.tiempo_cartel_sector = -10000
-        # Oleadas
-        self.en_oleada = False
-        self.oleada_hasta = 0
-        self.vidas_al_empezar_oleada = 0
-        self.proxima_oleada = random.randint(*OLEADA_ESPERA)
-        # Refuerzos: si destruis enemigos, cada tanto llega otro hasta llenar el presupuesto
-        self.proximo_refuerzo = REFUERZO_ESPERA
-        # Cartel "NUEVO ENEMIGO" la primera vez que aparece un tipo
+        # El tramo en curso (None = no hay: el jefe o el cierre del sector)
+        self.tramo = None
+        self.numero_tramo = 0
+        self.tiempo_tramo = -10000
+        self.anuncio_en = math.inf          # cuando sale el cartel del tramo (espera al del sector)
+        # Escuadrones: los que estan en pantalla y los que faltan llegar en este tramo
+        # (con_escuadrones = False no llega ninguno: lo usa el fixture de los tests)
+        self.con_escuadrones = True
+        self.escuadrones = []
+        self.cola = []
+        self.pendientes = 0                 # escuadrones del tramo que todavia no llegaron ni una vez
+        self.apurado = False                # la barra se lleno: el tramo se termina
+        self.proximo_escuadron = math.inf
+        # Asedio (el tramo 4)
+        self.en_asedio = False
+        self.asedio_hasta = 0
+        self.proximo_asedio = math.inf
+        self.asedio_cumplido = False
+        self.vidas_al_empezar_asedio = 0
+        # Cartel "NUEVO ENEMIGO" la primera vez que llega un tipo
+        self.vistos = set()
         self.nuevo_tipo = None
         self.tiempo_cartel_nuevo = -10000
         # Anomalias (los tests las apagan con con_anomalias = False)
@@ -73,82 +95,275 @@ class Director:
         self.tiempo_cartel_rango = -10000
         self.rango_pagado = True
         self.fin_del_cierre = -10000
+        self.sector_por_empezar = False     # al terminar el cierre empieza el tramo 1 del sector nuevo
         # Mejoras (con_mejoras = False apaga el Taller y la gasolinera)
         self.con_mejoras = True
         self.ofertas = []                   # cartas gratis del Taller, esperando que elijas una
         self.gasolinera_tras_cierre = False # al terminar el cierre del sector, a la gasolinera
         self.gasolinera = False             # hay que parar ahora (la escena Juego la abre)
 
-    # ---------- Presupuesto ----------
+    # ---------- Consultas ----------
 
-    def presupuesto(self):
-        nivel = self.partida.nivel
-        base = min(PRESUPUESTO_INICIAL + (nivel - 1) * PRESUPUESTO_POR_NIVEL, PRESUPUESTO_MAXIMO)
-        return base * self.partida.reglas["presupuesto"]
+    def tramos_del_sector(self):
+        # Los 4 tramos del sector actual (despues del ultimo sector, el guion vuelve a empezar)
+        return self.guion[(self.numero_sector - 1) % len(self.guion)]
 
-    def fijos(self):
-        # Los enemigos que se quedan (los de las oleadas se van)
-        return [e for e in self.partida.enemigos if not e.de_oleada]
+    def tipos_del_sector(self):
+        # Los enemigos que trae este sector (para los desafios: INTERCEPTOR pide embestidores)
+        return {tipo for tramo in self.tramos_del_sector() for tipo, _, _ in tramo["escuadrones"]}
 
-    def costo_actual(self):
-        # Lo que "cuestan" los enemigos fijos (cada uno sabe su costo: los hijos del
-        # divisor no cuestan nada y cada dron cuesta una parte del enjambre)
-        return sum(e.costo for e in self.fijos())
+    def rotulo(self):
+        # Donde estas, como en los juegos de plataformas: "2-3" (sector 2, tramo 3) o "2-JEFE"
+        return "%d-%s" % (self.numero_sector, self.numero_tramo if self.numero_tramo else "JEFE")
 
-    def cantidad_actual(self):
-        # Cuantos "enemigos" hay (un enjambre cuenta como uno)
-        return sum(e.costo / COSTO_ENEMIGO[e.tipo] for e in self.fijos() if e.costo)
+    def vuelta(self):
+        # 1 la primera vez que se recorren los sectores, 2 la segunda...
+        return (self.numero_sector - 1) // len(SECTORES) + 1
 
-    def agregar(self, tipo, de_oleada=False):
-        nuevos = crear_enemigos(tipo, self.partida)
-        for enemigo in nuevos:
-            enemigo.de_oleada = de_oleada
-        self.partida.enemigos.extend(nuevos)
+    def cerrando_sector(self):
+        # Despues del jefe, mientras se ven "¡JEFE VENCIDO!" y el rango
+        return self.partida.tiempo < self.fin_del_cierre
 
-    def desbloqueados(self):
-        return [tipo for tipo, nivel in DESBLOQUEO_ENEMIGO.items() if self.partida.nivel >= nivel]
+    def retiene_el_nivel(self):
+        # Con la barra llena, el nivel espera a que la zona quede despejada: que hayan llegado
+        # todos los escuadrones del tramo y no quede ninguno. En el asedio, a que se termine
+        if self.tramo is None:
+            return False
+        if self.tramo.get("asedio", False) and not self.asedio_cumplido:
+            return True
+        return self.con_escuadrones and (self.pendientes > 0 or bool(self.escuadrones))
 
-    def elegir_tipo(self, disponible):
-        # Un enemigo al azar que entre en 'disponible'; el favorito del sector pesa mas
-        opciones = [t for t in self.desbloqueados() if COSTO_ENEMIGO[t] <= disponible]
-        if not opciones:
-            return None
-        pesos = [PESO_FAVORITO if t == self.sector["favorito"] else 1 for t in opciones]
-        return random.choices(opciones, weights=pesos)[0]
+    def restante_asedio(self):
+        return max(0, self.asedio_hasta - self.partida.tiempo) if self.en_asedio else 0
 
-    def completar_presupuesto(self):
-        # Agrega enemigos hasta gastar el presupuesto del nivel
-        partida = self.partida
-        # Si recien se desbloqueo un tipo, se presenta primero (para conocerlo), con su cartel
-        for tipo, nivel in DESBLOQUEO_ENEMIGO.items():
-            if partida.nivel == nivel and not any(e.tipo == tipo for e in self.fijos()):
-                self.agregar(tipo)
-                if nivel > 1:
-                    self.nuevo_tipo = TIPOS_ENEMIGO[tipo]
-                    self.tiempo_cartel_nuevo = partida.tiempo
-                    partida.sonidos.reproducir("ficha_enemigo")
-        disponible = self.presupuesto() - self.costo_actual()
-        while self.cantidad_actual() < ENEMIGOS_MAX:
-            tipo = self.elegir_tipo(disponible)
-            if tipo is None:
-                break
-            self.agregar(tipo)
-            disponible -= COSTO_ENEMIGO[tipo]
+    def jefe_del_sector(self):
+        return self.sector["jefe"]
 
-    # ---------- Avisos de la Partida ----------
+    def _a_la_vez(self):
+        # Cuantos escuadrones puede haber en pantalla (uno mas desde la segunda vuelta)
+        return self.tramo["a_la_vez"] + (1 if self.vuelta() > 1 else 0)
+
+    def _cantidad(self, cantidad):
+        # Cuantos trae un escuadron, segun la dificultad y la vuelta (al menos uno)
+        factor = self.partida.reglas["escuadrones"] * (1 + VUELTA_CANTIDAD * (self.vuelta() - 1))
+        return max(1, round(cantidad * factor))
+
+    # ---------- Tramos ----------
 
     def al_empezar(self):
-        self.completar_presupuesto()
+        self.empezar_tramo()
 
     def al_subir_nivel(self):
         partida = self.partida
-        self.completar_presupuesto()
-        if partida.nivel % JEFE_CADA_NIVELES == ANOMALIA_NIVEL and self.con_anomalias:
-            self.proxima_anomalia = partida.tiempo + ANOMALIA_ESPERA
+        if partida.nivel % JEFE_CADA_NIVELES:       # (en el nivel del jefe, el jefe: lo trae la Partida)
+            self.empezar_tramo()
         if partida.nivel == DESAFIO_DESDE_NIVEL and self.numero_sector == 1:
             self.proximo_desafio = partida.tiempo + DESAFIO_ESPERA
         if partida.nivel == MEJORA_PRIMER_NIVEL:
             self.ofrecer_mejoras()
+
+    def empezar_tramo(self):
+        # El tramo del nivel actual: los escuadrones del anterior se retiran, se anuncia el
+        # nuevo y al rato llega su primer escuadron
+        partida = self.partida
+        self.retirar_todos()
+        if self.anomalia is not None:
+            self.terminar_anomalia()                    # la anomalia era del tramo anterior
+            partida.sonidos.reproducir("anomalia_fin")
+        indice = (partida.nivel - 1) % JEFE_CADA_NIVELES
+        self.numero_tramo = indice + 1
+        self.tramo = self.tramos_del_sector()[indice]
+        self.cola = list(self.tramo["escuadrones"])
+        self.pendientes = len(self.cola)
+        self.apurado = False
+        self.tiempo_tramo = partida.tiempo
+        # Si se esta viendo el cartel del sector nuevo, el del tramo y su primer escuadron esperan
+        self.anuncio_en = max(partida.tiempo, self.tiempo_cartel_sector + CARTEL_SECTOR)
+        self.proximo_escuadron = self.anuncio_en + INICIO_TRAMO
+        self.asedio_cumplido = False
+        self.proximo_asedio = math.inf
+        if self.tramo.get("asedio"):
+            self.proximo_asedio = partida.tiempo + ASEDIO_INICIO
+            self.proximo_escuadron = self.proximo_asedio
+        if self.numero_tramo == ANOMALIA_NIVEL and self.con_anomalias:
+            self.proxima_anomalia = partida.tiempo + ANOMALIA_ESPERA
+        if self.anuncio_en <= partida.tiempo:
+            self._anunciar_tramo()
+
+    def _anunciar_tramo(self):
+        # "TRAMO 2/4 - BLANCO FACIL" (el asedio, con cinta de peligro)
+        self.anuncio_en = math.inf
+        tramo = self.tramo
+        asedio = tramo.get("asedio", False)
+        color = ROJO if asedio else self.sector["color"]
+        self.partida.avisar(Aviso("TRAMO %d/%d" % (self.numero_tramo, TRAMOS), tramo["nombre"], tramo["pista"],
+                                  color, AVISO_TRAMO, alerta=asedio))
+
+    def retirar_todos(self):
+        # Todos los escuadrones se van volando (cambio de tramo, fin del asedio)
+        for escuadron in self.escuadrones:
+            escuadron.retirarse(self.partida)
+
+    # ---------- Escuadrones ----------
+
+    def _escuadrones(self):
+        partida = self.partida
+        ahora = partida.tiempo
+        # Los que se quedaron sin turno se retiran (tambien los que se sumaron despues de la
+        # orden, como los hijos de un divisor partido mientras se iba)
+        for escuadron in self.escuadrones:
+            if escuadron.se_retiro or ahora >= escuadron.retirada_en:
+                escuadron.retirarse(partida)
+        # Los que ya no estan (rotos o idos) dejan lugar al siguiente; si los rompiste a todos, bonus
+        respiro = ASEDIO_RESPIRO if self.en_asedio else RESPIRO_ESCUADRON
+        for escuadron in [e for e in self.escuadrones if e.termino(partida)]:
+            self.escuadrones.remove(escuadron)
+            if escuadron.eliminado(partida):
+                self._premiar_escuadron(escuadron)
+            self.proximo_escuadron = max(self.proximo_escuadron, ahora + respiro)
+        if (not self.con_escuadrones or self.tramo is None or partida.jefe is not None or self.cerrando_sector()
+                or self.sector_por_empezar):
+            return
+        if self.tramo.get("asedio") and not self.en_asedio and not self.asedio_cumplido:
+            return                                      # (el asedio todavia no empezo)
+        if self.en_asedio and self.restante_asedio() < 3 * AVISO_ESCUADRON:
+            return                                      # (no llegarian a entrar)
+        if not self.apurado and partida.energia >= partida.energia_necesaria() and not self.en_asedio:
+            self._apurar()
+        if self.apurado and self.pendientes == 0:
+            return                                      # (ya llegaron todos: a despejar la zona)
+        if len(self.escuadrones) < self._a_la_vez() and ahora >= self.proximo_escuadron:
+            self.lanzar_escuadron()
+            # El siguiente no entra al mismo tiempo: asi se lee cada grupo por separado
+            if self.en_asedio or self.apurado:
+                self.proximo_escuadron = ahora + ASEDIO_RESPIRO
+            else:
+                self.proximo_escuadron = ahora + 2 * respiro
+
+    def _apurar(self):
+        # La barra se lleno: los escuadrones que estan se quedan poco y los que faltan llegan ya
+        partida = self.partida
+        self.apurado = True
+        self.proximo_escuadron = min(self.proximo_escuadron, partida.tiempo + ASEDIO_RESPIRO)
+        for escuadron in self.escuadrones:
+            escuadron.retirada_en = min(escuadron.retirada_en, partida.tiempo + TURNO_APURADO)
+
+    def lanzar_escuadron(self, pedido=None):
+        # El siguiente escuadron del guion (o 'pedido' = (tipo, cantidad, formacion), como el
+        # modo desarrollador): cada miembro entra volando desde su lugar de la formacion
+        partida = self.partida
+        if pedido is None:
+            if not self.cola:
+                self.cola = list(self.tramo["escuadrones"])     # el tramo vuelve a empezar
+            pedido = self.cola.pop(0)
+            self.pendientes = max(0, self.pendientes - 1)
+            tipo, cantidad, formacion = pedido
+            cantidad = self._cantidad(cantidad)
+        else:
+            tipo, cantidad, formacion = pedido
+        if self.en_asedio:
+            turno = min(ASEDIO_TURNO, self.asedio_hasta - partida.tiempo)
+        else:
+            turno = TURNO_APURADO if self.apurado else TURNO_ESCUADRON
+        escuadron = Escuadron(tipo, partida.tiempo + AVISO_ESCUADRON + turno)
+        nave_x, nave_y = partida.nave.centro()
+        for i, (desde, hasta) in enumerate(lugares(formacion, cantidad, nave_x, nave_y)):
+            # Una "unidad" casi siempre es un enemigo; un enjambre son varios drones juntos
+            unidad = crear_enemigos(tipo, partida)
+            centro_x = sum(e.centro()[0] for e in unidad) / len(unidad)
+            centro_y = sum(e.centro()[1] for e in unidad) / len(unidad)
+            for enemigo in unidad:
+                lejos_x, lejos_y = enemigo.centro()[0] - centro_x, enemigo.centro()[1] - centro_y
+                enemigo.entrar(partida, (desde[0] + lejos_x, desde[1] + lejos_y),
+                               (hasta[0] + lejos_x, hasta[1] + lejos_y), AVISO_ESCUADRON + i * ESCALONADO)
+                escuadron.sumar(enemigo)
+                partida.enemigos.append(enemigo)
+            if i == 0:
+                partida.sonidos.reproducir("escuadron_llega", max(0, min(desde[0], ANCHO)))  # (de que lado)
+        self.escuadrones.append(escuadron)
+        self._presentar(tipo)
+        return escuadron
+
+    def agregar(self, tipo):
+        # Un enemigo suelto de ese tipo (lo usa el modo desarrollador)
+        return self.lanzar_escuadron((tipo, 1, "flanco"))
+
+    def _presentar(self, tipo):
+        # La primera vez que llega un tipo en la partida, su ficha de "NUEVO ENEMIGO" (menos
+        # el primero de todos: ese lo presenta el juego entero)
+        if tipo in self.vistos:
+            return
+        self.vistos.add(tipo)
+        if len(self.vistos) > 1:
+            self.nuevo_tipo = TIPOS_ENEMIGO[tipo]
+            self.tiempo_cartel_nuevo = self.partida.tiempo
+            self.partida.sonidos.reproducir("ficha_enemigo")
+
+    def _premiar_escuadron(self, escuadron):
+        # Rompiste a todo el grupo (de dos o mas): puntos por cada uno y un poco de energia.
+        # El enjambre ya tiene su propio bonus
+        partida = self.partida
+        if len(escuadron.miembros) < 2 or escuadron.miembros[0].bonus_propio:
+            return
+        partida.estadisticas.escuadrones += 1
+        ganados = partida.sumar_puntos(ESCUADRON_PUNTOS * len(escuadron.miembros))
+        nave_x, nave_y = partida.nave.centro()
+        partida.efectos.texto_flotante("¡ESCUADRON! +" + str(ganados), nave_x, nave_y - 40, AMARILLO)
+        partida.sonidos.reproducir_luego("bonus", 120, nave_x)
+        partida.ganar_energia(ENERGIA_ESCUADRON)
+
+    # ---------- Asedio ----------
+
+    def empezar_asedio(self):
+        partida = self.partida
+        self.en_asedio = True
+        self.proximo_asedio = math.inf
+        self.asedio_hasta = partida.tiempo + ASEDIO_DURACION
+        self.vidas_al_empezar_asedio = partida.vidas
+        self.proximo_escuadron = partida.tiempo
+        partida.sonidos.reproducir("oleada")
+        partida.entrada.vibrar("oleada")
+        partida.efectos.sacudir(10, ROJO)
+
+    def terminar_asedio(self, superado):
+        partida = self.partida
+        if not self.en_asedio:
+            return
+        self.en_asedio = False
+        self.asedio_cumplido = True
+        self.pendientes = 0                 # (despues del asedio el tramo ya esta jugado)
+        if not superado and partida.enemigos:
+            partida.sonidos.reproducir("retirada")
+        self.retirar_todos()
+        self.proximo_escuadron = partida.tiempo + INICIO_TRAMO
+        if superado:
+            # Premio: puntos y un power-up que cae enseguida
+            ganados = partida.sumar_puntos(ASEDIO_PUNTOS * partida.nivel)
+            nave_x, nave_y = partida.nave.centro()
+            partida.efectos.texto_flotante("+" + str(ganados), nave_x, nave_y - 40, AMARILLO)
+            partida.avisar(Aviso("PREMIO", "¡ASEDIO SUPERADO!", "+" + str(ganados) + " PUNTOS Y UN POWER-UP",
+                                 VERDE, AVISO_ASEDIO))
+            partida.sonidos.reproducir("oleada_superada")
+            if partida.capsula is None:
+                partida.proximo_powerup = partida.tiempo
+            partida.ganar_energia(ENERGIA_ASEDIO)
+        partida.revisar_energia()       # si la barra ya estaba llena, ahora si se sube (llega el jefe)
+
+    # ---------- El jefe y el cierre del sector ----------
+
+    def al_empezar_jefe(self):
+        # Se corta todo lo del tramo (el asedio, la anomalia) y el desafio se decide: llegaste al jefe
+        self.en_asedio = False
+        self.terminar_anomalia()
+        self.tramo = None
+        self.numero_tramo = 0
+        self.escuadrones = []
+        self.proxima_anomalia = math.inf
+        self.proximo_desafio = math.inf
+        self.bitacora.inicio_jefe = self.partida.tiempo
+        if self.desafio_en_curso():
+            self.desafio.al_llegar_el_jefe()
+            self.revisar_desafio()
 
     def al_vencer_al_jefe(self):
         # Vencido el jefe, se cierra el sector: "¡JEFE VENCIDO!", el cartel del rango, y
@@ -172,33 +387,23 @@ class Director:
         self.bitacora = Bitacora()
         self.desafio = None
         self.proximo_desafio = self.fin_del_cierre + DESAFIO_ESPERA
+        self.sector_por_empezar = True
         self.gasolinera_tras_cierre = True  # al terminar el cierre, a la gasolinera
 
-    def cerrando_sector(self):
-        # Despues del jefe, mientras se ven "¡JEFE VENCIDO!" y el rango
-        return self.partida.tiempo < self.fin_del_cierre
+    def cambiar_sector(self):
+        # El siguiente de la lista (despues del ultimo, vuelve al primero)
+        self.sector = SECTORES[(SECTORES.index(self.sector) + 1) % len(SECTORES)]
+        self.numero_sector += 1
+        self.tiempo_cartel_sector = self.partida.tiempo
 
-    def al_volver_del_jefe(self):
-        self.completar_presupuesto()
-
-    def jefe_del_sector(self):
-        return self.sector["jefe"]
-
-    def al_empezar_jefe(self):
-        # Si habia una oleada o una anomalia, se cortan (sus enemigos no se guardan),
-        # y el desafio se decide: llegaste al jefe
-        self.terminar_oleada(superada=False)
-        self.terminar_anomalia()
-        self.proxima_anomalia = math.inf
-        self.proximo_desafio = math.inf
-        self.bitacora.inicio_jefe = self.partida.tiempo
-        if self.desafio_en_curso():
-            self.desafio.al_llegar_el_jefe()
-            self.revisar_desafio()
-
-    def vuelta(self):
-        # 1 la primera vez que se recorren los sectores, 2 la segunda...
-        return (self.numero_sector - 1) // len(SECTORES) + 1
+    def _empezar_sector(self):
+        # Termino el cierre: se pasa al primer nivel del sector nuevo (su tramo 1). Sin el
+        # cartel del nivel: ya sale el del sector
+        partida = self.partida
+        self.sector_por_empezar = False
+        primer_nivel = (self.numero_sector - 1) * JEFE_CADA_NIVELES + 1
+        partida.nivel = max(partida.nivel, primer_nivel - 1)
+        partida.subir_nivel(anunciar=False)
 
     # ---------- Lo que pasa en la partida (para el desafio y la bitacora) ----------
 
@@ -234,49 +439,27 @@ class Director:
             self.desafio.al_destruir_enemigo()
             self.revisar_desafio()
 
-    # ---------- Sectores ----------
-
-    def cambiar_sector(self):
-        # El siguiente de la lista (despues del ultimo, vuelve al primero)
-        partida = self.partida
-        self.sector = SECTORES[(SECTORES.index(self.sector) + 1) % len(SECTORES)]
-        self.numero_sector += 1
-        self.tiempo_cartel_sector = partida.tiempo
-        # Parte de los enemigos se va y despues llegan otros. Si estaban guardados por la
-        # pelea con el jefe, directamente no vuelven; si estan en pantalla, se van en una nube.
-        # Un enjambre se va entero (cuenta como un grupo)
-        guardados = partida.enemigos_guardados
-        grupos = {}
-        for enemigo in (guardados if guardados else self.fijos()):
-            grupos.setdefault(id(getattr(enemigo, "bandada", enemigo)), []).append(enemigo)
-        for grupo in random.sample(list(grupos.values()), int(len(grupos) * RECAMBIO_SECTOR)):
-            for enemigo in grupo:
-                if enemigo in guardados:
-                    guardados.remove(enemigo)
-                    enemigo.al_quitar(partida)
-                else:
-                    centro_x, centro_y = enemigo.centro()
-                    partida.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color], 14, 3, 3)
-                    partida.quitar_enemigo(enemigo)
-
     # ---------- Cada paso ----------
 
     def actualizar(self):
         partida = self.partida
-        tranquilo = partida.jefe is None and not partida.enemigos_guardados and not self.cerrando_sector()
-        if self.en_oleada:
-            if partida.tiempo >= self.oleada_hasta:
-                self.terminar_oleada(superada=partida.vidas >= self.vidas_al_empezar_oleada)
-        elif (partida.tiempo >= self.proxima_oleada and partida.nivel >= OLEADA_DESDE_NIVEL
-              and tranquilo and self.anomalia is None):
-            self.empezar_oleada()
+        if self.sector_por_empezar and not self.cerrando_sector():
+            self._empezar_sector()
+        if partida.tiempo >= self.anuncio_en and self.tramo is not None:
+            self._anunciar_tramo()
+        if self.en_asedio and partida.tiempo >= self.asedio_hasta:
+            self.terminar_asedio(superado=partida.vidas >= self.vidas_al_empezar_asedio)
+        elif partida.tiempo >= self.proximo_asedio and partida.jefe is None and self.con_escuadrones:
+            self.empezar_asedio()
         if self.anomalia is not None:
             self.anomalia.actualizar(partida)
             if self.anomalia.termino(partida):
                 self.terminar_anomalia()
                 partida.sonidos.reproducir("anomalia_fin")      # (si la corta el jefe, no suena)
-        elif partida.tiempo >= self.proxima_anomalia and tranquilo and not self.en_oleada:
+        elif partida.tiempo >= self.proxima_anomalia and partida.jefe is None and not self.en_asedio:
             self.empezar_anomalia()
+        self._escuadrones()
+        partida.revisar_energia()           # (si la barra estaba llena esperando la zona despejada)
         if partida.tiempo >= self.proximo_desafio and partida.jefe is None:
             self.proponer_desafio()
         self._sonidos_del_rango()
@@ -285,67 +468,6 @@ class Director:
         if self.gasolinera_tras_cierre and not self.cerrando_sector():
             self.gasolinera_tras_cierre = False
             self.gasolinera = self.con_mejoras
-        self._refuerzos()
-
-    def _refuerzos(self):
-        # Si destruiste enemigos y sobra presupuesto, cada REFUERZO_ESPERA llega uno
-        partida = self.partida
-        if partida.tiempo < self.proximo_refuerzo:
-            return
-        self.proximo_refuerzo = partida.tiempo + REFUERZO_ESPERA
-        if self.en_oleada or partida.jefe is not None or partida.enemigos_guardados:
-            return
-        if self.cantidad_actual() >= ENEMIGOS_MAX:
-            return
-        tipo = self.elegir_tipo(self.presupuesto() - self.costo_actual())
-        if tipo is not None:
-            self.agregar(tipo)
-
-    def empezar_oleada(self):
-        partida = self.partida
-        self.en_oleada = True
-        self.oleada_hasta = partida.tiempo + OLEADA_DURACION
-        self.vidas_al_empezar_oleada = partida.vidas
-        partida.sonidos.reproducir("oleada")
-        partida.entrada.vibrar("oleada")
-        partida.efectos.sacudir(10, ROJO)
-        partida.avisar(Aviso("ALERTA", "¡OLEADA!", "AGUANTA SIN PERDER VIDAS", ROJO, AVISO_OLEADA, alerta=True),
-                       urgente=True)
-        disponible = self.presupuesto() * OLEADA_PRESUPUESTO
-        while True:
-            tipo = self.elegir_tipo(disponible)
-            if tipo is None:
-                break
-            self.agregar(tipo, de_oleada=True)
-            disponible -= COSTO_ENEMIGO[tipo]
-
-    def terminar_oleada(self, superada):
-        partida = self.partida
-        if not self.en_oleada:
-            return
-        self.en_oleada = False
-        self.proxima_oleada = partida.tiempo + random.randint(*OLEADA_ESPERA)
-        # Los enemigos de la oleada se retiran (un solo "poof" para todo el grupo)
-        if not superada and any(e.de_oleada for e in partida.enemigos):
-            partida.sonidos.reproducir("retirada")
-        for enemigo in [e for e in partida.enemigos if e.de_oleada]:
-            centro_x, centro_y = enemigo.centro()
-            partida.efectos.explosion(centro_x, centro_y, [(40, 40, 60), enemigo.color], 14, 3, 3)
-            partida.quitar_enemigo(enemigo)
-        if superada:
-            # Premio: puntos y un power-up que cae enseguida
-            ganados = partida.sumar_puntos(OLEADA_PUNTOS * partida.nivel)
-            nave_x, nave_y = partida.nave.centro()
-            partida.efectos.texto_flotante("+" + str(ganados), nave_x, nave_y - 40, AMARILLO)
-            partida.avisar(Aviso("PREMIO", "¡OLEADA SUPERADA!", "+" + str(ganados) + " PUNTOS Y UN POWER-UP",
-                                 VERDE, AVISO_OLEADA))
-            partida.sonidos.reproducir("oleada_superada")
-            if partida.capsula is None:
-                partida.proximo_powerup = partida.tiempo
-            partida.ganar_energia(ENERGIA_OLEADA)
-
-    def restante_oleada(self):
-        return max(0, self.oleada_hasta - self.partida.tiempo) if self.en_oleada else 0
 
     # ---------- Anomalias ----------
 
@@ -364,8 +486,6 @@ class Director:
             tipo = self.elegir_anomalia()
         self.anomalia = crear_anomalia(tipo, partida)
         self.proxima_anomalia = math.inf
-        # Ninguna oleada encima de la anomalia ni justo despues
-        self.proxima_oleada = max(self.proxima_oleada, self.anomalia.hasta + RESPIRO_ANOMALIA)
         partida.sonidos.reproducir(self.anomalia.tipo + "_llega")
         partida.entrada.vibrar("anomalia")
         partida.efectos.sacudir(10, self.anomalia.color)

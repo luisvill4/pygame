@@ -10,17 +10,22 @@ para agregar un enemigo nuevo NO hay que tocar ningun otro archivo:
     2. Ponerle @registrar_enemigo, un 'tipo' unico, un 'color', 'nombre' y 'pista'.
     3. Escribir mover(): como cambia su velocidad en cada paso.
     4. Importarlo en enemigos/__init__.py.
-    5. Darle un costo en COSTO_ENEMIGO y un nivel en DESBLOQUEO_ENEMIGO (config.py).
+    5. Ponerlo en los tramos de guiones.py (cuantos, con que formacion y en que sector).
     (Opcional) sprites/mi_enemigo.png: 2 cuadros de 'tamano' x 'tamano' (40 por defecto).
                Si no esta, se dibuja uno de respaldo.
 
-Todo lo comun ya lo resuelve la clase base: la "X" de aviso al aparecer, el
-congelado del hielo, los bordes, la animacion y el sprite de respaldo.
+Todo lo comun ya lo resuelve la clase base: la entrada volando desde un borde (con su
+flecha de aviso), la retirada, el congelado del hielo, los bordes, la animacion y el
+sprite de respaldo.
 Opciones para cada tipo (atributos de la clase):
     tamano, radio          tamaño del dibujo y radio del circulo de daño
     destruible             el dash lo destruye (da 'puntos_dash' y llama a al_destruirse)
     muere_al_chocar        si te pega, se destruye (en vez de reaparecer lejos)
     crear()                si un "enemigo" son varios a la vez (como el enjambre)
+Y avisos que la Partida le pregunta (metodos, por defecto "no"):
+    hace_danio()           ¿lastima si lo tocas? (el ladron nunca)
+    interceptable()        ¿un dash lo frena ahora? (el embestidor cargando)
+    bloquea_dash(x, y)     ¿un dash que viene desde (x, y) rebota? (el escudo del escudero)
 """
 import math
 import random
@@ -30,7 +35,7 @@ import pygame
 from juego import recursos, dibujo
 from juego.config import (ANCHO, ALTO, BLANCO, HIELO, AMARILLO, AVISO_APARICION, DISTANCIA_APARICION, MS_CUADRO_ENEMIGO,
                           PUNTOS_ENEMIGO_CONGELADO, SEPARACION_ENEMIGOS, FUERZA_SEPARACION, RADIO_ENEMIGO,
-                          COSTO_ENEMIGO, ENEMIGO_VELOCIDAD_MAX, CONTORNO)
+                          ENEMIGO_VELOCIDAD_MAX, CONTORNO, ENTRADA_ESCUADRON, RETIRADA_VELOCIDAD)
 
 DISTANCIA_PUNTOS_HIELO = 170    # el "+5" de un congelado solo se ve si la nave esta a menos de esto
 
@@ -81,8 +86,31 @@ def enemigo_respaldo(color, tamano=40):
     return imagen
 
 
+def flecha_de_aviso(pantalla, punta_x, punta_y, angulo, color):
+    # Dos chevrones ">>" de cuadraditos en la grilla de 2 px, apuntando hacia 'angulo', con la
+    # punta en (punta_x, punta_y); el de adelante en el color del enemigo y el de atras mas
+    # oscuro (da sensacion de movimiento). Con contorno oscuro: se lee sobre cualquier fondo
+    dir_x, dir_y = math.cos(angulo), math.sin(angulo)
+    costado_x, costado_y = -dir_y, dir_x
+    oscuro = tuple(c // 2 for c in color)
+    for atras, tono in ((LARGO_CHEVRON, oscuro), (0, color)):
+        cuadros = []
+        for paso in range(5):
+            for lado in (-1, 1):
+                cuadros.append((punta_x - dir_x * (atras + paso * 4) + costado_x * lado * paso * 4,
+                                punta_y - dir_y * (atras + paso * 4) + costado_y * lado * paso * 4))
+        for relleno, borde in ((CONTORNO, 5), (tono, 3)):
+            for x, y in cuadros:
+                pantalla.fill(relleno, (dibujo.en_grilla(x) - borde + 1, dibujo.en_grilla(y) - borde + 1,
+                                        2 * borde, 2 * borde))
+
+
 _cuadros = {}               # tipo -> cuadros de la animacion
 _congelados = {}            # tipo -> imagen congelada
+_retirados = {}             # tipo -> imagen en gris (retirandose)
+LARGO_CHEVRON = 14          # px entre los dos chevrones de la flecha de aviso
+MARGEN_FLECHA = 48          # px desde el borde hasta la punta de la flecha (entra entera)
+FLECHA_ARRIBA, FLECHA_ABAJO = 130, ALTO - 110   # arriba y abajo, fuera de las franjas del HUD
 
 
 class Enemigo:
@@ -97,8 +125,8 @@ class Enemigo:
     rebota_en_bordes = False    # si no rebota, al tocar un borde se detiene
     destruible = False          # el dash lo destruye
     puntos_dash = 0             # puntos por destruirlo con el dash
-    muere_al_chocar = False     # si te pega, se destruye (si no, reaparece lejos)
-    de_oleada = False           # los de una oleada se van cuando termina
+    muere_al_chocar = False     # si te pega, se destruye (si no, se retira)
+    bonus_propio = False        # su grupo ya tiene su bonus (el enjambre): sin el del escuadron
     esbirro = False             # es de un jefe (ej: las abejas de la Colmena): se va cuando lo vencen
 
     # ---------- Sprites (compartidos por todos los enemigos del mismo tipo) ----------
@@ -131,9 +159,12 @@ class Enemigo:
 
     def __init__(self, partida):
         self.desfase = random.randint(0, 1000)      # para que no se animen todos al mismo tiempo
-        self.costo = COSTO_ENEMIGO.get(self.tipo, 0)    # lo que ocupa del presupuesto del nivel
+        self.escuadron = None       # el grupo con el que llego (escuadrones.py; None = suelto)
+        self.entrada = None         # entrando volando: (desde, hasta, cuando arranca); None = ya entro
+        self.saliendo = False       # retirandose: vuela hacia afuera y no lastima
         self.naciendo = False       # recien nacido en un lugar (parpadea en vez de mostrar la X)
         self.aturdido_hasta = 0     # aturdido por una onda: quieto y sin lastimar hasta este momento
+        self.rumbo = random.uniform(0, 2 * math.pi)     # hacia donde va cuando deambula
         self.reaparecer(partida)
 
     def reaparecer(self, partida):
@@ -142,8 +173,45 @@ class Enemigo:
         self.vx, self.vy = 0, 0
         self.aparece_en = partida.tiempo + AVISO_APARICION
         self.naciendo = False
+        self.sonar_al_aparecer = True       # (el que entra volando ya sono con su escuadron)
         self.aturdido_hasta = 0
         self.al_aparecer(partida)
+
+    def entrar(self, partida, desde, hasta, demora):
+        # Entrar volando desde 'desde' (un punto afuera de la pantalla) hasta 'hasta' (su lugar),
+        # como en los juegos de naves. Durante 'demora' ms solo se ve su flecha en el borde (el
+        # aviso); despues vuela ENTRADA_ESCUADRON ms sin hacer daño, y recien ahi ataca
+        self.x, self.y = desde[0] - self.tamano / 2, desde[1] - self.tamano / 2
+        self.vx, self.vy = 0, 0
+        self.entrada = (desde, hasta, partida.tiempo + demora)
+        self.aparece_en = partida.tiempo + demora + ENTRADA_ESCUADRON
+        self.naciendo = False
+        self.sonar_al_aparecer = False
+        self.saliendo = False
+        self.aturdido_hasta = 0
+        self.al_aparecer(partida)
+        self.al_entrar(partida, hasta)
+
+    def al_entrar(self, partida, hasta):
+        # Para las subclases: algo mas que preparar al entrar (el enjambre ubica su bandada)
+        pass
+
+    def retirarse(self, partida):
+        # Se va volando por el borde mas cercano, sin lastimar (se le termino el turno, te
+        # choco, termino el asedio...). Cuando sale de la pantalla, sale del juego
+        if self.saliendo:
+            return
+        if self.entrada is not None:
+            partida.quitar_enemigo(self)        # (ni habia entrado: se va sin que se vea)
+            return
+        self.saliendo = True
+        self.naciendo = False               # (un recien nacido que se va ya no parpadea)
+        self.aturdido_hasta = 0
+        self.al_retirarse(partida)
+
+    def al_retirarse(self, partida):
+        # Para las subclases: que hace al empezar a irse (el ladron suelta la moneda)
+        pass
 
     def nacer_en(self, partida, centro_x, centro_y, espera):
         # Aparecer en un lugar exacto (ej: al partirse un divisor). Durante 'espera' ms
@@ -162,13 +230,14 @@ class Enemigo:
 
     def al_quitar(self, partida):
         # Para las subclases: se lo saca del juego por cualquier motivo (destruido,
-        # fin de la oleada, cambio de sector...). Ej: el dron deja su bandada
+        # retirado, llega el jefe...). Ej: el dron deja su bandada
         pass
 
     # ---------- Consultas ----------
 
     def activo(self, tiempo):
-        return tiempo >= self.aparece_en
+        # Ya llego y todavia no se va: ataca, choca y se puede romper
+        return tiempo >= self.aparece_en and not self.saliendo
 
     def hace_danio(self):
         # Para las subclases: un enemigo que por un rato no lastima (ej: una abeja volviendo a casa)
@@ -181,6 +250,19 @@ class Enemigo:
     def al_interceptar(self, partida):
         # Para las subclases: que hace despues de que lo frenaron con el dash
         pass
+
+    def bloquea_dash(self, desde_x, desde_y):
+        # Para las subclases: ¿un dash (o una onda) que llega desde (desde_x, desde_y) choca
+        # contra su defensa? Entonces la nave rebota y el no sufre nada (ej: el escudero de frente)
+        return False
+
+    def al_bloquear(self, partida):
+        # Para las subclases: que hace despues de frenar un dash (ej: el escudo destella)
+        pass
+
+    def punto_de_bloqueo(self):
+        # Donde saltan las chispas cuando frena un dash (el escudero: el medio del escudo)
+        return self.centro()
 
     def aturdido(self, tiempo):
         return tiempo < self.aturdido_hasta
@@ -219,9 +301,15 @@ class Enemigo:
     # ---------- Movimiento ----------
 
     def actualizar(self, partida, congelado):
+        if self.saliendo:
+            self._salir(partida)
+            return
+        if self.entrada is not None:
+            self._entrar_volando(partida)
+            return
         if not self.activo(partida.tiempo) or congelado or self.aturdido(partida.tiempo):
             return
-        if not self.naciendo and partida.tiempo - self.aparece_en < 20:
+        if self.sonar_al_aparecer and not self.naciendo and partida.tiempo - self.aparece_en < 20:
             partida.sonidos.reproducir("aparece", self.x)      # se materializo (termino la "X")
         self.naciendo = False
         self.mover(partida)
@@ -233,6 +321,50 @@ class Enemigo:
     def mover(self, partida):
         # Para las subclases: cambiar self.vx / self.vy segun su comportamiento
         raise NotImplementedError
+
+    def _entrar_volando(self, partida):
+        # De 'desde' a 'hasta', frenando al final (la curva "ease out": rapido y despues suave)
+        desde, hasta, arranca = self.entrada
+        if partida.tiempo < arranca:
+            return
+        avance = min(1, (partida.tiempo - arranca) / ENTRADA_ESCUADRON)
+        suave = 1 - (1 - avance) ** 3
+        self.x = desde[0] + (hasta[0] - desde[0]) * suave - self.tamano / 2
+        self.y = desde[1] + (hasta[1] - desde[1]) * suave - self.tamano / 2
+        if avance >= 1:
+            self.entrada = None
+
+    def _salir(self, partida):
+        # Acelera hacia el borde mas cercano; afuera de la pantalla, sale del juego
+        if self.fuera_de_la_pantalla():
+            if self.escuadron is not None:
+                self.escuadron.escaparon += 1
+            partida.quitar_enemigo(self)
+            return
+        huida_x, huida_y = self.borde_mas_cercano()
+        self.vx += (huida_x * RETIRADA_VELOCIDAD - self.vx) * 0.08
+        self.vy += (huida_y * RETIRADA_VELOCIDAD - self.vy) * 0.08
+        self.x += self.vx
+        self.y += self.vy
+
+    def borde_mas_cercano(self):
+        # Hacia donde queda el borde mas cercano: (-1, 0), (1, 0), (0, -1) o (0, 1)
+        centro_x, centro_y = self.centro()
+        distancias = {(-1, 0): centro_x, (1, 0): ANCHO - centro_x, (0, -1): centro_y, (0, 1): ALTO - centro_y}
+        return min(distancias, key=distancias.get)
+
+    def fuera_de_la_pantalla(self):
+        return self.x <= -self.tamano or self.x >= ANCHO or self.y <= -self.tamano or self.y >= ALTO
+
+    def deambular(self, velocidad=0.5):
+        # Despacio y de vez en cuando cambia de rumbo; contra un borde, vuelve hacia el centro
+        if random.random() < 0.01:
+            self.rumbo = random.uniform(0, 2 * math.pi)
+        if self.x <= 0 or self.x >= ANCHO - self.tamano or self.y <= 0 or self.y >= ALTO - self.tamano:
+            centro_x, centro_y = self.centro()
+            self.rumbo = math.atan2(ALTO / 2 - centro_y, ANCHO / 2 - centro_x)
+        self.vx += (math.cos(self.rumbo) * velocidad - self.vx) * 0.05
+        self.vy += (math.sin(self.rumbo) * velocidad - self.vy) * 0.05
 
     def paso(self, partida):
         # Multiplicador de la velocidad al moverse (el rebotador se acelera con el nivel)
@@ -270,6 +402,16 @@ class Enemigo:
 
     def dibujar(self, pantalla, partida):
         centro_x, centro_y = (int(c) for c in self.centro())
+        if self.saliendo:
+            # Retirandose: en gris (ya no lastima)
+            dibujo.pegar(pantalla, self.imagen_retirada(), self.x, self.y)
+            return
+        if self.entrada is not None:
+            if partida.tiempo < self.entrada[2]:
+                self._dibujar_aviso_de_entrada(pantalla)
+            else:
+                self.dibujar_animado(pantalla)
+            return
         if not self.activo(partida.tiempo):
             if self.naciendo:
                 # Recien nacido: parpadea (todavia no hace daño)
@@ -300,6 +442,25 @@ class Enemigo:
         self.dibujar_cuerpo(pantalla, partida)
         if self.aturdido(partida.tiempo):
             self._dibujar_estrellitas(pantalla, centro_x, self.y - 6)
+
+    @classmethod
+    def imagen_retirada(cls):
+        # El primer cuadro en gris oscuro (no necesita sprite): "este ya no es peligroso"
+        if cls.tipo not in _retirados:
+            _retirados[cls.tipo] = recursos.tenir(cls.cuadros()[0], (90, 90, 120))
+        return _retirados[cls.tipo]
+
+    def _dibujar_aviso_de_entrada(self, pantalla):
+        # Una flecha en el borde, del color del enemigo, que apunta hacia adentro: "por aca
+        # entran". Late (dibujo.parpadeo respeta DESTELLOS REDUCIDOS)
+        if not dibujo.parpadeo(120):
+            return
+        desde_x, desde_y = self.entrada[0]
+        hasta_x, hasta_y = self.entrada[1]
+        punta_x = max(MARGEN_FLECHA, min(desde_x, ANCHO - MARGEN_FLECHA))
+        punta_y = max(FLECHA_ARRIBA, min(desde_y, FLECHA_ABAJO))
+        angulo = math.atan2(hasta_y - desde_y, hasta_x - desde_x)
+        flecha_de_aviso(pantalla, punta_x, punta_y, angulo, self.color)
 
     def _dibujar_estrellitas(self, pantalla, centro_x, arriba):
         # Aturdido: tres estrellitas que giran sobre la cabeza (en saltos, estilo retro)

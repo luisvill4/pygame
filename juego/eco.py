@@ -49,11 +49,11 @@ class Eco:
             if (enemigo not in partida.enemigos or not enemigo.activo(partida.tiempo)
                     or not caja.colliderect(enemigo.caja())):
                 continue
-            if partida.puede_destruir(enemigo):
+            centro_x, centro_y = self.x + modulo_nave.TAMANO / 2, self.y + modulo_nave.TAMANO / 2
+            if partida.puede_destruir(enemigo, (centro_x, centro_y)):
                 partida.destruir_con_dash(enemigo)
             elif id(enemigo) not in self.tocados:
                 self.tocados.add(id(enemigo))
-                centro_x, centro_y = self.x + modulo_nave.TAMANO / 2, self.y + modulo_nave.TAMANO / 2
                 enemigo.empujar(partida, centro_x, centro_y, 30, ATURDIDO_ONDA)
         return True
 

@@ -45,7 +45,7 @@ def test_la_bitacora_anota_golpes_y_combo(partida):
     assert partida.director.bitacora.mejor_combo == 3
 
 
-def test_al_vencer_al_jefe_sale_el_rango_y_despues_vuelven_los_enemigos(partida):
+def test_al_vencer_al_jefe_sale_el_rango_y_despues_empieza_el_sector(partida):
     partida.nave.invulnerable_hasta = math.inf
     director = partida.director
     partida.enemigos.append(crear_enemigo("perseguidor", partida))
@@ -62,11 +62,11 @@ def test_al_vencer_al_jefe_sale_el_rango_y_despues_vuelven_los_enemigos(partida)
     assert partida.puntaje == puntos                    # todavia no cayo la letra
     jugar(partida, 4)
     assert partida.puntaje == puntos + RANGO_PUNTOS["B"]
-    # Los enemigos esperan a que se cierre el sector
-    assert partida.enemigos == [] and director.cerrando_sector()
+    # El sector nuevo espera a que se cierre el anterior
+    assert partida.enemigos == [] and director.cerrando_sector() and director.tramo is None
     jugar(partida, int((CARTEL_RANGO - RANGO_SELLO) / MS_POR_FRAME) + 2)
     assert not director.cerrando_sector()
-    assert partida.enemigos
+    assert director.numero_tramo == 1 and director.numero_sector == 2
 
 
 def test_mientras_se_cierra_el_sector_no_se_sube_de_nivel(partida):

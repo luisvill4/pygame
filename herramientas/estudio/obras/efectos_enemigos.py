@@ -23,6 +23,17 @@ def aparece():
     return efecto
 
 
+@obra("escuadron_llega")
+def escuadron_llega():
+    # Un escuadron se asoma por un borde (la flecha de aviso): un soplido que crece, como algo
+    # que se acerca volando, y dos pings de radar Si-Fa (el tritono de la escala: no resuelve,
+    # es un aviso). Suave: suena cada pocos segundos. Con paneo: se oye de que lado vienen
+    efecto = Efecto("escuadron_llega", 0.55, "p", sala=(0.8, 0.4))
+    aire(efecto, 0.5, [(0, 500), (0.5, 2400)], modo="banda", resonancia=0.25, volumen=-5)
+    tono(efecto, I.MARIMBA, "-:100 B4:110 F5:220", volumen=-3)
+    return efecto
+
+
 def _roto(numero, nota):
     # Lo rompiste con el dash: crujido, una nota que cae una octava y un golpe grave
     efecto = Efecto("enemigo_roto_%d" % numero, 0.3, "mf", sala=(0.8, 0.4))
@@ -160,4 +171,51 @@ def mina_tic():
 def mina_estalla():
     efecto = Efecto("mina_estalla", 0.35, "f", sala=(0.9, 0.3))
     explosion(efecto, 0.3, brillo=5000, grave=(130, 45))
+    return efecto
+
+
+@obra("ladron_roba")
+def ladron_roba():
+    # 500 ms (lo que se queda quieto con la moneda: el aviso de que va a huir): un manotazo de
+    # aire, la moneda que cae un tritono (Fa-Si) y una risita que va y viene entre Si y Fa
+    # (la tension de La menor: no resuelve, "ahora se va")
+    efecto = Efecto("ladron_roba", 0.5, "mf", sala=(0.6, 0.4))
+    aire(efecto, 0.06, [(0, 2500), (0.06, 5000)], modo="banda", resonancia=0.3, volumen=-6,
+         forma=[(0, 0), (0.005, 1), (0.06, 0)])
+    tono(efecto, I.MARIMBA, "F5:50 B4:90", volumen=-2)
+    tono(efecto, I.LEAD_HUECO, "-:180 B4:50 F5:50 B4:50 F5:120", volumen=-10)
+    return efecto
+
+
+@obra("ladron_escapa")
+def ladron_escapa():
+    # Se fue con la moneda (y con tu combo): un silbido que se aleja y la moneda que baja por
+    # La, Mi y Si, sin volver a casa
+    efecto = Efecto("ladron_escapa", 0.6, "mf", sala=(1.0, 0.45))
+    aire(efecto, 0.45, [(0, 3000), (0.45, 500)], modo="banda", resonancia=0.3, volumen=-8,
+         forma=[(0, 0), (0.03, 1), (0.45, 0)])
+    tono(efecto, I.MARIMBA, "A4:110 E4:110 B3:260", volumen=-2)
+    return efecto
+
+
+@obra("moneda_recuperada")
+def moneda_recuperada():
+    # Le sacaste la moneda al ladron: el cristal sube en saltos (quintas y cuartas: cada nota
+    # sigue sonando debajo de la otra sin rasparse) y un piano en quinta abierta. Sigue al
+    # acorde: suena junto con la moneda y el perfecto, que tambien lo siguen
+    efecto = Efecto("moneda_recuperada", 0.5, "mf", sala=(1.2, 0.5))
+    tono(efecto, I.CRISTAL, "C5:40 G5:40 D6:40 G6!:300", reverb=0.25)
+    tono(efecto, I.EPIANO, "-:120 C4+G4:300", volumen=-8)
+    cuerpo(efecto, 120, 60, 0.08, volumen=-10)
+    return efecto
+
+
+@obra("escudo_bloquea")
+def escudo_bloquea():
+    # El dash rebota en el escudo: "tonk" de metal (una sola nota, el Sol: la quinta del acorde
+    # que suene) con un golpe grave y seco. Sin chispa aguda: es un "no", no un premio
+    efecto = Efecto("escudo_bloquea", 0.3, "mf", sala=(0.7, 0.4))
+    clic(efecto, volumen=-4, brillo=3000)
+    tono(efecto, I.METAL, "G3:220", volumen=-2)
+    cuerpo(efecto, 180, 70, 0.08, volumen=-4)
     return efecto

@@ -30,15 +30,28 @@ Al abrir, primero sale una advertencia de fotosensibilidad (con cómo reducir lo
 
 Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. En FÁCIL y NORMAL el embestidor deja de seguirte con la mira un momento antes de embestir (la línea roja deja de parpadear): ahí es cuando hay que correrse. En DIFÍCIL y PESADILLA te sigue hasta el último instante.
 
+### La ruta: sectores, tramos y escuadrones
+Cada **sector** es una ruta de **4 tramos** y su **jefe**, como las fases de un juego de naves. Abajo a la derecha está el mapa: **SECTOR 2-3** quiere decir sector 2, tramo 3; hay un punto por tramo y la calavera del jefe al final. Lo recorrido se pinta del color del sector y el camino entre tu punto y el siguiente es la **barra de energía**.
+
+Cada tramo tiene su idea y su cartel ("TRAMO 2/4 · BLANCO FÁCIL · ¡ROMPELOS CON EL DASH!"):
+- **Tramos 1 y 2:** presentan a los enemigos del sector, de a uno por tramo.
+- **Tramo 3, ZONA INESTABLE:** llega la anomalía del sector, con pocos enemigos.
+- **Tramo 4, ASEDIO:** escuadrones de todos lados durante 15 segundos. Aunque se llene la barra, el jefe espera a que termine el asedio. Si lo pasás sin perder una vida: puntos y un power-up.
+
+Los enemigos llegan en **escuadrones**: primero una **flecha** en el borde (y un sonido que viene de ese lado), después el grupo entra volando en formación (mientras entra no lastima) y, cuando se le termina el turno, se **retira** (en gris: ya no lastima). Si rompés a todo un escuadrón, ganás un bonus. Un enemigo que te choca también se va. Así la pantalla nunca se llena de enemigos viejos.
+
+Para pasar al tramo siguiente hacen falta dos cosas, como en Metal Slug: la **barra llena** y la **zona despejada** (llegaron todos los escuadrones del tramo y no queda ninguno). Con la barra llena el tramo se apura: los que faltan entran enseguida y los que están se van pronto; si los rompés, despejás más rápido. Al pasar de tramo las estrellas pegan un acelerón.
+
 ### Subir de nivel: la barra de energía
-Abajo a la derecha, debajo de "NIVEL", hay una **barra de energía**. Todo lo que hacés bien la llena y, cuando se llena, subís de nivel (lo que sobra pasa al siguiente):
+Cada tramo es un nivel. Todo lo que hacés bien llena la **barra de energía** (el camino de la ruta) y, cuando se llena y la zona está despejada, pasás al tramo siguiente (lo que sobra pasa al siguiente):
 
 | Qué | Energía |
 |---|---|
 | Moneda | 1, y +0.25 por cada paso del combo (con x5, 2 por moneda) |
 | Dash perfecto | 1.5 |
 | Enemigo destruido (o congelado roto) | 0.5 |
-| Oleada superada | 3 |
+| Escuadrón eliminado entero | 1 |
+| Asedio superado | 3 |
 | Desafío cumplido | 5 |
 
 El nivel 1 pide 10 y cada nivel pide 1 más, hasta 16. Jugar con combo alto y usar el dash te hace avanzar más rápido. Durante la pelea con el jefe (y mientras se ven sus carteles) no se gana energía: la barra se ve gris.
@@ -49,6 +62,8 @@ El dash es la herramienta principal: te lanza hacia adelante y durante ese insta
 - Algunos enemigos (el divisor, el enjambre, las abejas) y algunos proyectiles (misiles, asteroides) se **destruyen** con el dash, y cada uno adelanta la recarga. Atravesar a los demás enemigos o a las balas solo te salva del golpe: no da nada.
 - **Dash perfecto:** romper (o partir) con el dash a un enemigo destruible es un "¡PERFECTO!": unos puntos más, el combo no se corta y **el dash se recarga casi enseguida**. Varios seguidos (antes de 1.5 s) forman una **cadena** que multiplica esos puntos hasta x5.
 - **Interceptar:** si le pegás con el dash al **embestidor mientras embiste**, lo frenás en seco: queda aturdido 2 s (no lastima), da 10 puntos y cuenta como dash perfecto ("¡INTERCEPTADO!").
+- **El ladrón** (desde el sector 3) no lastima: va hacia la moneda y, si la agarra, se queda quieto medio segundo y huye con ella al borde más cercano. Mientras la lleva, el combo no se corta. Si lo alcanzás con el dash, **recuperás la moneda** (se cobra en el momento, con 10 puntos más) y es un dash perfecto. Si se escapa, se corta el combo y la moneda aparece en otro lado.
+- **El escudero** (desde el sector 4) tiene un escudo de frente que gira despacio hacia vos. Un dash de frente **rebota** (no te lastima, pero no le hace nada); rodealo y rompelo **por el costado o la espalda**. Las ondas y el ECO también chocan contra el escudo.
 - Contra los jefes, el dash es la única forma de pegarles.
 
 ### Mejoras (el Taller y la gasolinera)
@@ -110,15 +125,15 @@ Al perder, el **Game Over** muestra el resumen de la partida: tiempo, sector, mo
 
 ### Carteles
 Cada cosa tiene su lugar, así nunca se pisan:
-- **Arriba al centro, los avisos:** NIVEL (y cuántos niveles faltan para el jefe), ¡OLEADA!, ¡OLEADA SUPERADA!, cada anomalía con su consejo y ¡NUEVO RECORD!. Salen **de a uno**: el que llega espera su turno, salvo una amenaza (oleada o anomalía), que pasa primero.
+- **Arriba al centro, los avisos:** el tramo nuevo (el asedio, con cinta de peligro), ¡ASEDIO SUPERADO!, cada anomalía con su consejo y ¡NUEVO RECORD!. Salen **de a uno**: el que llega espera su turno, salvo una amenaza (una anomalía o la última vida), que pasa primero.
 - **A los costados, las fichas:** enemigo nuevo (izquierda) y desafío (derecha). Si el aviso de arriba es ancho, bajan para no tocarlo.
 - **Abajo al centro, los logros.**
 - **De lado a lado, los grandes momentos:** ¡JEFE VENCIDO! (con el premio), el rango del sector (las estrellas salen de a una y al final cae la letra como un sello) y, al volver de la gasolinera, el nombre del sector nuevo.
 
-Todos se vuelven casi transparentes cuando tienen algo abajo (la nave, la moneda, un enemigo, una bala), así nunca te tapan el juego. Cada tanto llega una **oleada**: muchos enemigos durante unos segundos; si la pasás sin perder una vida, ganás puntos y un power-up. Los enemigos de cada nivel se eligen al azar según un "presupuesto", así que cada partida es distinta.
+Todos se vuelven casi transparentes cuando tienen algo abajo (la nave, la moneda, un enemigo, una bala), así nunca te tapan el juego. Mientras jugás, las nebulosas y los planetas del fondo se ven más oscuros que en los menús: así lo que importa se lee primero.
 
 ### Sectores y jefes
-El viaje pasa por 5 **sectores**, cada uno con su ambiente (asteroides, brasas, luciérnagas, un panal gigante, polvo que cae en un agujero negro), sus enemigos favoritos y **su jefe**, que llega cada 5 niveles. Al vencerlo se pasa al sector siguiente; después del último se vuelve a empezar, más difícil.
+El viaje pasa por 5 **sectores**, cada uno con su ambiente (asteroides, brasas, luciérnagas, un panal gigante, polvo que cae en un agujero negro), su ruta de tramos y **su jefe**, que llega cada 5 niveles. Al vencerlo se pasa al sector siguiente; después del último se vuelve a empezar, con escuadrones más grandes.
 
 Las peleas son un **baile**: cada jefe avisa antes de atacar, ataca al ritmo de su "pulso" y después deja un hueco para pegarle con el dash.
 
@@ -131,7 +146,7 @@ Las peleas son un **baile**: cada jefe avisa antes de atacar, ataca al ritmo de 
 | Abismo azul | **La Singularidad** | Te atrae (el dash te libera). El anillo de asteroides gira a ritmo; cuando colapsa, entrá por un hueco y dash al núcleo. |
 
 ### Anomalías, desafíos y rango
-- **Anomalías:** a mitad de cada sector (en su 3er nivel) el espacio se pone raro durante 20 segundos. Cada sector tiene la suya, que llega la mitad de las veces; la otra mitad llega una de las otras, así las cuatro se pueden ver desde el primer sector. Siempre avisan antes de atacar:
+- **Anomalías:** en el tramo 3 de cada sector (ZONA INESTABLE) el espacio se pone raro hasta que termina el tramo (20 segundos como mucho). Cada sector tiene la suya, que llega la mitad de las veces; la otra mitad llega una de las otras, así las cuatro se pueden ver desde el primer sector. Siempre avisan antes de atacar:
 
   | Sector | Suele traer | Qué pasa |
   |---|---|---|
@@ -175,7 +190,9 @@ juego/
   app.py                # crea todo y corre el bucle principal
   partida.py            # el estado de una partida y sus reglas
   nave.py  moneda.py  proyectiles.py
-  progresion.py         # el "director": enemigos de cada nivel, sectores, oleadas, mejoras
+  progresion.py         # el "director": tramos, escuadrones, asedio, sectores, mejoras
+  guiones.py            # la ruta de cada sector: los 4 tramos y sus escuadrones (solo datos)
+  escuadrones.py        # las formaciones (por donde entran) y el Escuadron
   anomalias.py  desafios.py  rango.py   # lo que pasa en cada sector
   mejoras.py            # las cartas del Taller y de la gasolinera
   tienda.py             # la gasolinera: que se vende, los precios y que pasa al comprar
@@ -203,7 +220,8 @@ herramientas/componer.py          # el estudio: compone toda la musica y los efe
 - **Una responsabilidad por módulo.** Si querés cambiar cómo se ve el marcador, vas a `hud.py`; si querés cambiar el mando, a `entrada.py`. No hay que buscar en un archivo de 2000 líneas.
 - **`config.py` solo tiene valores.** Podés ajustar la dificultad sin miedo a romper la lógica.
 - **Escenas (patrón *State*).** Cada pantalla es una clase con `actualizar()` y `dibujar()`. La `App` llama a esos dos métodos sobre la escena actual. Para cambiar de pantalla: `self.app.cambiar_escena(OtraEscena(...))`.
-- **Registros (patrón *Registry*).** Los enemigos, jefes, power-ups, anomalías, desafíos y mejoras se anotan solos con un decorador (`@registrar_enemigo`…). El resto del juego los crea por nombre, así que **agregar uno nuevo no obliga a tocar el resto del código**.
+- **Registros (patrón *Registry*).** Los enemigos, jefes, power-ups, anomalías, desafíos, mejoras y formaciones se anotan solos con un decorador (`@registrar_enemigo`, `@formacion`…). El resto del juego los crea por nombre, así que **agregar uno nuevo no obliga a tocar el resto del código**.
+- **El nivel es un guion, no un sorteo.** Qué enemigos llegan, cuántos y por dónde está escrito a mano en `guiones.py` (solo datos), tramo por tramo. Antes la dificultad crecía sumando enemigos al azar que no se iban nunca y la pantalla se "ensuciaba"; ahora cada tramo tiene su idea y los grupos entran, atacan y se van. Un futuro modo historia es otro guion con la misma forma (`GUIONES["historia"]`).
 - **Clases base (patrón *Template Method*).** `Enemigo`, `Jefe` y `PowerUp` resuelven todo lo común: aparecer con aviso, congelarse con el hielo, el sprite de respaldo, el HUD… Cada tipo escribe solo lo que lo hace distinto.
 - **`Partida` en vez de variables globales.** Todo el estado de una partida vive en un objeto. Empezar otra partida es crear una nueva, así no queda nada "sucio" de la anterior.
 - **Entrada por acciones.** El juego pregunta "¿se apretó DASH?", no "¿se apretó la barra espaciadora?". Así teclado y mando funcionan igual.
@@ -229,12 +247,14 @@ herramientas/componer.py          # el estudio: compone toda la musica y los efe
            ...
    ```
 2. Importalo en `juego/enemigos/__init__.py`.
-3. Dale un costo en `COSTO_ENEMIGO` y un nivel de aparición en `DESBLOQUEO_ENEMIGO` (`config.py`). El director lo va a sumar solo, según el presupuesto de cada nivel; podés hacerlo el `favorito` de algún sector en `SECTORES`.
+3. Ponelo en la ruta: en `juego/guiones.py`, sumá un escuadrón a algún tramo, por ejemplo `("zigzag", 2, "pinza")` (tipo, cuántos y por dónde entran). Las formaciones están en `juego/escuadrones.py` (`flanco`, `pinza`, `lluvia`, `esquinas`, `cerco`). La regla de los guiones: un enemigo nuevo por tramo como mucho, y nunca en el asedio. La primera vez que llegue, sale solo su ficha de "NUEVO ENEMIGO".
 4. (Opcional) `sprites/zigzag.png`: 2 cuadros de 40x40. Si no está, se dibuja uno de respaldo con su color.
 
 Si necesita algo al aparecer, usá `al_aparecer()`; para dibujarse distinto, `dibujar_cuerpo()`. Mirá `embestidor.py` como ejemplo completo.
 
 Otras opciones (atributos de la clase): `tamano` y `radio` (tamaño y radio de daño), `destruible = True` (el dash lo destruye; ver `divisor.py`), `muere_al_chocar = True`, y `crear()` si un "enemigo" son varios a la vez (ver `enjambre.py`). Con `nombre` y `pista` se presenta solo la primera vez que aparece.
+
+Y métodos que el juego le pregunta (por defecto dicen "no"): `hace_danio()` (el ladrón nunca lastima), `interceptable()` (el embestidor cargando) y `bloquea_dash(x, y)` (el escudo del escudero: un dash que llega desde ahí rebota). Para moverse sin rumbo, `deambular()`.
 
 ### Un jefe
 1. Creá `juego/jefes/mi_jefe.py` con una clase que herede de `Jefe`, con `@registrar_jefe` y un `tipo`.
@@ -267,6 +287,11 @@ En `juego/mejoras.py`, una clase que herede de `Mejora`, con `@registrar_mejora`
 
 ### Un servicio de la gasolinera
 En `juego/tienda.py`, una clase que herede de `Articulo` con `tipo`, `nombre`, `descripcion`, `color` e `icono`, y sus métodos `precio(tienda)`, `al_comprar(tienda)` y, si no siempre tiene sentido, `disponible(partida)`. Anotala en `SERVICIOS` y sumá su `tipo` a `"servicios"` en las dificultades de `config.py` que la vendan.
+
+### Un tramo o una formación
+Los tramos de cada sector están en `juego/guiones.py`: cada uno tiene `nombre`, `pista` (los dos entran en el cartel: 16 y 32 letras como mucho), `a_la_vez` (cuántos escuadrones a la vez) y la lista de `escuadrones` `(tipo, cuántos, formación)`. Las reglas para escribirlos están arriba del archivo y `tests/test_progresion.py` las comprueba.
+
+Una formación nueva es una función en `juego/escuadrones.py` con `@formacion("nombre")`: recibe cuántos son y dónde está la nave, y devuelve un par `(desde, hasta)` por enemigo (desde afuera de la pantalla hasta su lugar). Ninguno termina de entrar cerca de la nave: `lugares()` lo corre solo.
 
 ### Un logro
 En `juego/logros.py`, sumá un `Logro(id, nombre, descripcion, condicion)` a `LOGROS`. La condición recibe la partida y devuelve True cuando se cumplió (usá `partida.estadisticas`). Para que dé una nave, agregala a `NAVES` en `config.py` con el id del logro.

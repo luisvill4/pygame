@@ -57,6 +57,17 @@ def test_nunca_se_saltean_dos_niveles(partida):
     assert partida.energia < partida.energia_necesaria()
 
 
+def test_un_desafio_cumplido_cuando_llega_el_jefe_no_saltea_su_nivel(partida):
+    # Bug: "SIN DASH" se cumple al llegar el jefe y su energia entraba en plena subida:
+    # el jefe peleaba en el nivel 6 (y despues del jefe se salteaba el tramo 1)
+    partida.director.desafio = TIPOS_DESAFIO["sin_dash"]()
+    partida.nivel = JEFE_CADA_NIVELES - 1
+    partida.director.asedio_cumplido = True
+    partida.ganar_energia(partida.energia_necesaria())
+    assert partida.jefe is not None and partida.nivel == JEFE_CADA_NIVELES
+    assert partida.director.desafio.estado == "cumplido"
+
+
 def test_cada_nivel_pide_un_poco_mas_con_tope(partida):
     assert partida.energia_necesaria() == ENERGIA_INICIAL
     partida.nivel = 3
@@ -80,7 +91,8 @@ def test_la_barra_se_dibuja(partida):
     pantalla = pygame.Surface((ANCHO, ALTO))
     partida.energia = partida.energia_necesaria() / 2
     hud.dibujar(pantalla, partida)
-    # Algun bloque amarillo dentro de la barra (abajo a la derecha)
-    barra = pygame.Rect(ANCHO - 148, 576, 128, 12)
+    # Algun bloque amarillo en el camino del tramo actual (la ruta, abajo a la derecha)
+    inicio = ANCHO - 20 - 4 * hud.RUTA_PASO - 14
+    barra = pygame.Rect(inicio + 16, hud.RUTA_Y - 2, hud.RUTA_PASO - 20, 4)
     colores = {tuple(pantalla.get_at((x, barra.centery)))[:3] for x in range(barra.left, barra.right)}
     assert any(color[0] > 200 and color[1] > 150 and color[2] < 100 for color in colores)

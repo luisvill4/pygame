@@ -13,7 +13,8 @@ def llegar_al_jefe(partida):
     partida.enemigos[:] = [crear_enemigo(t, partida) for t in
                            ["perseguidor", "rebotador", "embestidor", "perseguidor"]]
     partida.nivel = 4
-    partida.subir_nivel()       # nivel 5: aparece el jefe y se guardan los enemigos
+    partida.director.asedio_cumplido = True     # (el asedio del tramo 4 retiene el nivel)
+    partida.subir_nivel()       # nivel 5: aparece el jefe y los enemigos explotan
     return partida.jefe
 
 
@@ -21,12 +22,11 @@ def test_todos_los_jefes_de_los_sectores_existen():
     assert {sector["jefe"] for sector in SECTORES} <= set(TIPOS_JEFE)
 
 
-def test_aparece_en_el_nivel_5_y_guarda_a_los_enemigos(partida):
+def test_aparece_en_el_nivel_5_y_los_enemigos_explotan(partida):
     jefe = llegar_al_jefe(partida)
     assert jefe is not None
     assert jefe.vida == JEFE_VIDA
     assert partida.enemigos == []
-    assert len(partida.enemigos_guardados) >= 4
 
 
 def test_golpe_con_dash_en_el_nucleo(partida):
@@ -65,17 +65,13 @@ def test_el_aviso_muestra_justo_las_balas_que_salen(partida):
             assert math.atan2(bala.vy, bala.vx) == pytest.approx(math.atan2(math.sin(direccion), math.cos(direccion)))
 
 
-def test_al_vencerlo_vuelven_los_enemigos_y_se_completa_el_presupuesto(partida):
+def test_al_vencerlo_empieza_el_sector_siguiente(partida):
     partida.nave.invulnerable_hasta = math.inf
     llegar_al_jefe(partida)
-    guardados = list(partida.enemigos_guardados)
     partida.jefe_vencido()
     jugar(partida, int((CARTEL_JEFE + CARTEL_RANGO) / MS_POR_FRAME) + 2)
-    # Vuelven los que estaban (menos los que se fueron al cambiar de sector)
-    # y se completa el presupuesto del nivel
-    volvieron = [enemigo for enemigo in guardados if enemigo in partida.enemigos]
-    assert len(volvieron) >= len(guardados) - int(len(guardados) * 0.34)
-    assert partida.director.costo_actual() >= partida.director.presupuesto() - 1
+    assert partida.director.sector is SECTORES[1]
+    assert partida.director.numero_tramo == 1 and partida.nivel == 6
 
 
 def test_los_enemigos_no_vuelven_mientras_esta_el_cartel(partida):

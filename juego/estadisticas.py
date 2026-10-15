@@ -15,6 +15,8 @@ class Estadisticas:
         self.perfectos = 0          # dash perfectos (romper o interceptar enemigos con el dash)
         self.mejor_cadena = 0       # mas perfectos seguidos (ver CADENA_PERFECTOS)
         self.interceptados = 0      # embestidores frenados con el dash
+        self.recuperadas = 0        # monedas recuperadas de un ladron
+        self.escuadrones = 0        # escuadrones eliminados enteros
         self.powerups = 0           # power-ups recogidos
         self.desafios = 0           # desafios cumplidos
         self.sectores_limpios = 0   # sectores cerrados sin recibir un golpe

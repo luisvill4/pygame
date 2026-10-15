@@ -3,19 +3,17 @@ import math
 
 import pytest
 
-from juego.config import (ANCHO, RANGO_EMBESTIDOR, DISTANCIA_APARICION, COSTO_ENEMIGO, DESBLOQUEO_ENEMIGO, SECTORES,
-                          DIFICULTADES, ENEMIGO_VELOCIDAD_MAX, NAVE_VELOCIDAD, ALTO, MS_CUADRO_REBOTE, MS_POR_FRAME,
+from juego.config import (ANCHO, RANGO_EMBESTIDOR, DISTANCIA_APARICION, DIFICULTADES, ENEMIGO_VELOCIDAD_MAX, NAVE_VELOCIDAD, ALTO, MS_CUADRO_REBOTE, MS_POR_FRAME,
                           ATURDIDO_ONDA)
 from juego import recursos
 from juego.enemigos import TIPOS_ENEMIGO, crear_enemigo
 from juego.enemigos.rebotador import CHOQUE, PEGADO
+from juego.guiones import GUION_ARCADE, tipos_del_guion
 from tests.ayudas import jugar
 
 
-def test_todos_los_tipos_de_config_existen():
-    usados = set(COSTO_ENEMIGO) | set(DESBLOQUEO_ENEMIGO) | {s["favorito"] for s in SECTORES}
-    assert usados <= set(TIPOS_ENEMIGO)
-    assert set(DESBLOQUEO_ENEMIGO) <= set(COSTO_ENEMIGO)
+def test_todos_los_tipos_del_guion_existen():
+    assert tipos_del_guion(GUION_ARCADE) <= set(TIPOS_ENEMIGO)
 
 
 def test_enemigo_que_no_existe_avisa_claro(partida):
@@ -169,7 +167,7 @@ def test_el_rebotador_aturdido_por_una_onda_vuelve_a_rebotar(partida):
     assert math.hypot(rebotador.vx, rebotador.vy) == pytest.approx(math.hypot(3, 3))
 
 
-@pytest.mark.parametrize("tipo", ["perseguidor", "rebotador", "divisor_chico"])
+@pytest.mark.parametrize("tipo", ["perseguidor", "rebotador", "divisor_chico", "ladron", "escudero"])
 def test_ninguno_te_persigue_mas_rapido_que_la_nave(partida, tipo):
     # En PESADILLA y en el nivel 20 (lo mas rapido posible) la nave igual puede escaparse
     partida.reglas = DIFICULTADES["PESADILLA"]

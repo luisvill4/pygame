@@ -34,13 +34,14 @@ def app(tmp_path):
 
 @pytest.fixture
 def partida(app):
-    # Una partida recien empezada y "limpia": sin enemigos, sin power-ups cayendo
-    # sin anomalias ni desafios y con la moneda lejos, para probar una cosa a la vez
+    # Una partida recien empezada y "limpia": sin enemigos (ni escuadrones ni asedio), sin
+    # power-ups cayendo, sin anomalias ni desafios y con la moneda lejos, para probar una cosa a la vez
     app.nueva_partida()
     nueva = app.escena.partida
     nueva.enemigos.clear()
+    nueva.director.escuadrones.clear()
+    nueva.director.con_escuadrones = False      # (los escuadrones tienen sus propios tests)
     nueva.proximo_powerup = math.inf
-    nueva.director.proxima_oleada = math.inf
     nueva.director.con_anomalias = False        # (tienen sus propios tests)
     nueva.director.con_desafios = False
     nueva.director.con_mejoras = False         # (las cartas del Taller tambien)

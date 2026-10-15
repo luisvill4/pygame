@@ -89,8 +89,10 @@ def test_sin_cortar_el_combo(partida):
 
 
 def test_cazador_solo_cuando_hay_enemigos_destruibles(partida):
-    assert not TIPOS_DESAFIO["cazador"].disponible(partida)     # nivel 1: no hay ninguno
-    partida.nivel = 4
+    # Depende de los enemigos que trae el sector
+    partida.director.tipos_del_sector = lambda: {"perseguidor", "rebotador"}
+    assert not TIPOS_DESAFIO["cazador"].disponible(partida)
+    partida.director.tipos_del_sector = lambda: {"perseguidor", "divisor"}
     assert TIPOS_DESAFIO["cazador"].disponible(partida)
     desafio = poner(partida, "cazador")
     for _ in range(DESAFIO_CAZADOR):

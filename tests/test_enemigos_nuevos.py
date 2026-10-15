@@ -3,9 +3,9 @@ import math
 
 import pytest
 
-from juego.config import (COSTO_ENEMIGO, DIVISOR_PUNTOS, ENJAMBRE_CANTIDAD, ENJAMBRE_PUNTOS, ENJAMBRE_BONUS,
-                          RECARGA_POR_DESTRUIR, REFUERZO_ESPERA, DIVISOR_NACIMIENTO, MS_POR_FRAME,
-                          CARTEL_JEFE, CARTEL_RANGO, DASH_PERFECTO_PUNTOS)
+from juego.config import (DIVISOR_PUNTOS, ENJAMBRE_CANTIDAD, ENJAMBRE_PUNTOS, ENJAMBRE_BONUS,
+                          RECARGA_POR_DESTRUIR, DIVISOR_NACIMIENTO, MS_POR_FRAME, CARTEL_JEFE, CARTEL_RANGO,
+                          DASH_PERFECTO_PUNTOS, AVISO_ESCUADRON, ENTRADA_ESCUADRON)
 from juego.enemigos import TIPOS_ENEMIGO, crear_enemigo, crear_enemigos
 from tests.ayudas import jugar
 
@@ -40,7 +40,7 @@ def test_el_dash_parte_al_divisor_en_dos(partida):
     assert divisor not in partida.enemigos
     hijos = [e for e in partida.enemigos if e.tipo == "divisor_mediano"]
     assert len(hijos) == 2
-    assert all(h.costo == 0 and h.naciendo for h in hijos)     # no cuestan y nacen parpadeando
+    assert all(h.naciendo for h in hijos)                       # nacen parpadeando
     # Sus puntos y los del dash perfecto (romperlo con el dash lo es), y la recarga se adelanta
     assert partida.puntaje == DIVISOR_PUNTOS["divisor"] + DASH_PERFECTO_PUNTOS
     assert partida.estadisticas.perfectos == 1
@@ -93,13 +93,24 @@ def test_los_enemigos_normales_no_se_destruyen_con_el_dash(partida):
     assert perseguidor in partida.enemigos and partida.vidas == 3   # lo atraviesa
 
 
-def test_un_enjambre_son_varios_drones_que_cuestan_como_uno(partida):
+def test_un_enjambre_son_varios_drones_con_una_bandada(partida):
     drones = crear_enemigos("enjambre", partida)
     assert len(drones) == ENJAMBRE_CANTIDAD
     assert len({id(d.bandada) for d in drones}) == 1
-    assert sum(d.costo for d in drones) == pytest.approx(COSTO_ENEMIGO["enjambre"])
-    partida.enemigos.extend(drones)
-    assert partida.director.cantidad_actual() == pytest.approx(1)
+
+
+def test_el_enjambre_entra_volando_en_formacion(partida):
+    # Un escuadron de un enjambre: los drones entran juntos y la bandada queda donde llegaron
+    partida.director.con_escuadrones = True
+    partida.nave.invulnerable_hasta = math.inf
+    escuadron = partida.director.lanzar_escuadron(("enjambre", 1, "flanco"))
+    assert len(escuadron.miembros) == ENJAMBRE_CANTIDAD
+    jugar(partida, int((AVISO_ESCUADRON + ENTRADA_ESCUADRON) / MS_POR_FRAME) + 2)
+    bandada = escuadron.miembros[0].bandada
+    for dron in escuadron.miembros:
+        assert dron.activo(partida.tiempo)
+        centro_x, centro_y = dron.centro()
+        assert math.hypot(centro_x - bandada.x, centro_y - bandada.y) < 80
 
 
 def test_el_dron_explota_al_chocarte(partida):
@@ -147,36 +158,14 @@ def test_el_enjambre_vuela_en_formacion_y_se_lanza_en_picada(partida):
         assert math.hypot(centro_x - bandada.x, centro_y - bandada.y) < 80
 
 
-def test_si_destruis_enemigos_llegan_refuerzos(partida):
-    partida.nivel = 6
-    partida.director.completar_presupuesto()
-    costo_lleno = partida.director.costo_actual()
-    for enemigo in list(partida.enemigos):
-        partida.quitar_enemigo(enemigo)
-    partida.nave.invulnerable_hasta = math.inf
-    jugar(partida, int(REFUERZO_ESPERA / MS_POR_FRAME) * 2 + 5)
-    assert 0 < partida.director.costo_actual() <= costo_lleno
-
-
 def test_cartel_al_presentar_un_enemigo_nuevo(partida):
-    partida.nivel = 3
-    partida.subir_nivel()                   # nivel 4: aparece el divisor
+    # El divisor llega por primera vez en el tramo 2 del Cinturon
+    partida.director.con_escuadrones = True
+    partida.director.vistos = {"perseguidor"}
+    partida.subir_nivel()
+    partida.director.lanzar_escuadron()
     assert partida.director.nuevo_tipo is TIPOS_ENEMIGO["divisor"]
     assert any(e.tipo == "divisor" for e in partida.enemigos)
-
-
-def test_el_enjambre_vuelve_junto_despues_del_jefe(partida):
-    drones = crear_enemigos("enjambre", partida)
-    partida.enemigos.extend(drones)
-    partida.iniciar_jefe()                  # se guardan durante la pelea
-    partida.nave.invulnerable_hasta = math.inf
-    partida.jefe_vencido()
-    jugar(partida, int((CARTEL_JEFE + CARTEL_RANGO) / MS_POR_FRAME) + 2)
-    assert all(d in partida.enemigos for d in drones)
-    bandada = drones[0].bandada
-    for dron in drones:
-        centro_x, centro_y = dron.centro()
-        assert math.hypot(centro_x - bandada.x, centro_y - bandada.y) < 80
 
 
 def test_dron_congelado_roto_justo_cuando_llega_el_jefe_no_vuelve(partida):
@@ -191,9 +180,8 @@ def test_dron_congelado_roto_justo_cuando_llega_el_jefe_no_vuelve(partida):
     roto = poner_encima(partida, drones[0])
     jugar(partida)
     assert partida.jefe is not None
-    assert roto not in partida.enemigos_guardados
-    # Despues del jefe vuelven los enemigos y se mueven sin problema (al cambiar de sector
-    # se va una parte al azar: por eso no se pregunta por cada dron)
+    assert partida.enemigos == []               # (los que quedaban explotaron)
+    # Despues del jefe el sector nuevo empieza sin problema
     partida.desactivar("hielo")
     partida.nave.invulnerable_hasta = math.inf
     partida.jefe_vencido()

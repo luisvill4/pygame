@@ -7,7 +7,7 @@ import pytest
 
 
 from juego.anomalias import TIPOS_ANOMALIA, crear_anomalia
-from juego.config import (ANCHO, ALTO, ANOMALIA_DURACION, ANOMALIA_ESPERA, RESPIRO_ANOMALIA, ASTEROIDES_AVISO,
+from juego.config import (ANCHO, ALTO, ANOMALIA_DURACION, ANOMALIA_ESPERA, ASTEROIDES_AVISO,
                           ASTEROIDES_PUNTOS, ASTEROIDES_ESPERA, TORMENTA_AVISO, COMBO_TIEMPO, ORO_COMBO, ORO_MULTIPLICADOR,
                           MS_POR_FRAME, SECTORES, BLANCO, ANOMALIA_PROPIA)
 from juego.proyectiles import Meteoro
@@ -29,8 +29,18 @@ def test_llega_en_el_tercer_nivel_del_sector(partida):
     assert director.anomalia is None                # todavia no
     jugar(partida, 10)
     assert director.anomalia.tipo in TIPOS_ANOMALIA
-    # Mientras dura (y un rato despues) no hay oleadas
-    assert director.proxima_oleada >= director.anomalia.hasta + RESPIRO_ANOMALIA
+
+
+def test_la_anomalia_termina_con_su_tramo(partida):
+    # Es del tramo 3: al pasar al tramo 4 (el asedio) se va
+    director = partida.director
+    director.con_anomalias = True
+    partida.nivel = 2
+    partida.subir_nivel()
+    jugar(partida, int(ANOMALIA_ESPERA / MS_POR_FRAME) + 5)
+    assert director.anomalia is not None
+    partida.subir_nivel()
+    assert director.anomalia is None
 
 
 def test_se_va_sola(partida):

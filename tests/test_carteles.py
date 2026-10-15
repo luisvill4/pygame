@@ -10,6 +10,7 @@ from juego.carteles import (medidas_pancarta, caja_pancarta, ANCHO_PANCARTA, ENT
 from juego.config import (ANCHO, ALTO, AMARILLO, ROJO, CIAN, PIXEL_ARTE, JEFE_CADA_NIVELES, CARTEL_JEFE,
                           CARTEL_RANGO, MS_POR_FRAME)
 from juego.desafios import TIPOS_DESAFIO
+from juego.guiones import GUION_ARCADE
 from juego.logros import LOGROS
 from tests.ayudas import jugar
 
@@ -46,32 +47,34 @@ def test_un_aviso_urgente_pasa_primero():
     assert cola.actual is despues
 
 
-def test_subir_de_nivel_avisa_cuanto_falta_para_el_jefe(partida):
+def test_subir_de_nivel_anuncia_el_tramo(partida):
+    partida.avisos.vaciar()
     partida.subir_nivel()
-    assert partida.avisos.actual.titulo == "NIVEL 2"
-    assert partida.avisos.actual.subtitulo == "JEFE EN " + str(JEFE_CADA_NIVELES - 2) + " NIVELES"
+    assert partida.avisos.actual.etiqueta == "TRAMO 2/4"
     partida.avisos.vaciar()
     partida.nivel = JEFE_CADA_NIVELES - 2
     partida.subir_nivel()
-    assert partida.avisos.actual.subtitulo == "PROXIMO NIVEL: ¡JEFE!"
+    assert partida.avisos.actual.titulo == "ASEDIO" and partida.avisos.actual.alerta
+    partida.avisos.vaciar()
+    partida.director.asedio_cumplido = True
     # En el nivel del jefe no hay aviso: llega su presentacion
     partida.subir_nivel()
     assert partida.jefe is not None and partida.avisos.actual is None
 
 
-def test_la_oleada_no_espera_al_aviso_del_nivel(partida):
+def test_la_anomalia_no_espera_al_aviso_del_tramo(partida):
     partida.subir_nivel()
-    partida.director.empezar_oleada()
+    partida.director.empezar_anomalia("niebla")
     jugar(partida, int(SALIDA_RAPIDA / MS_POR_FRAME) + 2)
-    assert partida.avisos.actual.titulo == "¡OLEADA!" and partida.avisos.actual.alerta
+    assert partida.avisos.actual.etiqueta == "ANOMALIA"
 
 
 # ---------- Que todo entre ----------
 
 def test_todo_entra_en_los_avisos():
     textos = [(clase.nombre, clase.pista) for clase in TIPOS_ANOMALIA.values()]
-    textos += [("NIVEL 99", "PROXIMO NIVEL: ¡JEFE!"), ("¡OLEADA!", "AGUANTA SIN PERDER VIDAS"),
-               ("¡OLEADA SUPERADA!", "+9999 PUNTOS Y UN POWER-UP"), ("¡NUEVO RECORD!", "SUPERASTE 999999")]
+    textos += [(tramo["nombre"], tramo["pista"]) for ruta in GUION_ARCADE for tramo in ruta]
+    textos += [("¡ASEDIO SUPERADO!", "+9999 PUNTOS Y UN POWER-UP"), ("¡NUEVO RECORD!", "SUPERASTE 999999")]
     minimo, maximo = ANCHO_PANCARTA
     for titulo, subtitulo in textos:
         ancho, alto, tamano = medidas_pancarta(aviso(titulo, subtitulo))

@@ -31,6 +31,7 @@ class Juego(Escena):
         self.partida = partida
         self.saltar_dibujo = False
         self.dash_pendiente = False     # dash apretado durante el hit-stop (sale al terminar)
+        self.nivel_visto = partida.nivel    # para el aceleron del fondo al pasar de tramo
 
     @property
     def musica(self):
@@ -106,6 +107,11 @@ class Juego(Escena):
         pidio_dash = entrada.pulso(DASH) or self.dash_pendiente
         self.dash_pendiente = False
         partida.actualizar(dx, dy, pidio_dash)
+        if partida.nivel != self.nivel_visto:
+            # Tramo nuevo (no el del jefe): las estrellas pegan un aceleron, la nave avanza
+            self.nivel_visto = partida.nivel
+            if partida.jefe is None:
+                self.app.fondo.acelerar()
         self.mover_fondo(partida)       # con paralaje: el fondo se corre al reves de la nave
 
         if partida.termino:

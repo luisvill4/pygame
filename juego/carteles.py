@@ -2,7 +2,7 @@
 Carteles del juego: todo lo que aparece encima de la partida para contar algo.
 
 Tres tamaños, cada uno en su lugar (asi nunca se pisan):
-    pancarta(...)       los AVISOS, arriba al centro: "NIVEL 7", "¡OLEADA!", una anomalia,
+    pancarta(...)       los AVISOS, arriba al centro: "TRAMO 2/4", "¡ASEDIO SUPERADO!", una anomalia,
                         "¡NUEVO RECORD!". Salen de a uno, en una cola (avisos.py)
     ficha_*(...)        tarjetas chicas a los costados: enemigo nuevo (izquierda) y desafio
                         (derecha). Si el aviso de arriba es ancho, bajan para no tocarlo

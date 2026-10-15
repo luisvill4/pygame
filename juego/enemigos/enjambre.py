@@ -8,8 +8,8 @@ Enjambre: ENJAMBRE_CANTIDAD drones chiquitos que vuelan juntos, en formacion.
 - El dash destruye los drones de a uno. Si destruis el enjambre entero con el dash,
   hay un bonus. Si un dron te choca, explota (se pierde).
 
-Para el presupuesto, el enjambre entero cuesta COSTO_ENEMIGO["enjambre"] (repartido
-entre sus drones). Sprite (opcional): enjambre.png, 2 cuadros de 20x20.
+En los guiones, un "enjambre" es una bandada entera (entra volando en su formacion).
+Sprite (opcional): enjambre.png, 2 cuadros de 20x20.
 """
 import math
 import random
@@ -17,7 +17,7 @@ import random
 import pygame
 
 from juego import dibujo, recursos
-from juego.config import (ANCHO, CIAN, BLANCO, AMARILLO, ALTO, AVISO_APARICION, COSTO_ENEMIGO, ENJAMBRE_CANTIDAD,
+from juego.config import (ANCHO, CIAN, BLANCO, AMARILLO, ALTO, AVISO_APARICION, ENJAMBRE_CANTIDAD,
                           ENJAMBRE_VELOCIDAD, ENJAMBRE_PICADA, ENJAMBRE_ESPERA_PICADA, ENJAMBRE_PUNTOS,
                           ENJAMBRE_BONUS, ARCOIRIS)
 from juego.enemigos.base import Enemigo, registrar_enemigo, lugar_lejos_de_la_nave
@@ -127,6 +127,7 @@ class Dron(Enemigo):
     radio = 7
     destruible = True
     muere_al_chocar = True
+    bonus_propio = True                 # (el de destruir el enjambre entero)
     puntos_dash = ENJAMBRE_PUNTOS
 
     @classmethod
@@ -147,7 +148,6 @@ class Dron(Enemigo):
     def __init__(self, partida, bandada):
         self.bandada = bandada              # (antes de super: reaparecer() la usa)
         super().__init__(partida)
-        self.costo = COSTO_ENEMIGO["enjambre"] / ENJAMBRE_CANTIDAD
 
     def reaparecer(self, partida):
         # Aparece (con su X) en su lugar de la formacion
@@ -158,6 +158,21 @@ class Dron(Enemigo):
         else:
             lugar_x, lugar_y = self.bandada.x, self.bandada.y
         self.x, self.y = lugar_x - self.tamano / 2, lugar_y - self.tamano / 2
+
+    def al_entrar(self, partida, hasta):
+        # El centro de la bandada queda donde termina de entrar el grupo, y la primera picada
+        # se cuenta desde que llego (no desde que se vio la flecha)
+        # ('hasta' es el lugar de este dron: el centro esta a la misma distancia que ahora)
+        bandada = self.bandada
+        lugar_x, lugar_y = bandada.lugar(self, partida.tiempo)
+        bandada.x += hasta[0] - lugar_x
+        bandada.y += hasta[1] - lugar_y
+        bandada.proxima_picada = self.aparece_en + random.randint(*ENJAMBRE_ESPERA_PICADA)
+
+    def _dibujar_aviso_de_entrada(self, pantalla):
+        # Una sola flecha por enjambre (la del primer dron), no cinco encimadas
+        if self.bandada.drones and self.bandada.drones[0] is self:
+            super()._dibujar_aviso_de_entrada(pantalla)
 
     def mover(self, partida):
         # Vuela hacia su lugar en la formacion (como un resorte)

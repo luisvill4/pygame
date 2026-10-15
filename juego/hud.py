@@ -2,10 +2,11 @@
 HUD: el marcador que se dibuja encima del juego.
 
 - Arriba: puntos, creditos y combo (izquierda), record (centro), vidas (derecha).
-- Abajo: power-ups activos (izquierda), barra del jefe, de la oleada o de la anomalia
-  (centro), dash, nivel y la barra de energia para subir de nivel (derecha).
+- Abajo: power-ups activos (izquierda), barra del jefe, del asedio o de la anomalia
+  (centro), dash y la RUTA del sector (derecha): "SECTOR 2-3", un punto por tramo y la
+  calavera del jefe; la barra de energia es el camino hasta el punto siguiente.
 - Debajo de las vidas: el desafio del sector y como va.
-- Carteles (los dibuja carteles.py): el aviso de arriba ("NIVEL 7", "¡OLEADA!"...), las
+- Carteles (los dibuja carteles.py): el aviso de arriba ("TRAMO 2/4", "¡ASEDIO!"...), las
   fichas de los costados, el logro de abajo y los momentos (jefe vencido, rango, sector).
 - Carteles y fichas se dibujan primero en una capa aparte (_cartel). Si debajo hay algo
   que importa (la nave, la moneda, un enemigo, una bala...), la capa se pega casi
@@ -27,7 +28,8 @@ from juego import impactos, dibujo, nave, recursos, accesibilidad, carteles
 from juego.carteles import texto, cinta, franja, DURACION_FICHA, FONDO_CINE, ROJO_OSCURO
 from juego.dibujo import MINI, CHICA, GRANDE
 from juego.config import (ANCHO, CENTRO_X, ALTO, ROJO, BLANCO, AMARILLO, GRIS, CIAN, MAGENTA, VERDE, NARANJA,
-                          CARTEL_JEFE, CARTEL_RANGO, CARTEL_SECTOR, OLEADA_DURACION, ANOMALIA_DURACION,
+                          CARTEL_JEFE, CARTEL_RANGO, CARTEL_SECTOR, ASEDIO_DURACION, ANOMALIA_DURACION,
+                          LINEA_APAGADA, TEXTO_APAGADO,
                           CARTEL_ALFA_TAPANDO, CARTEL_ALFA_MOMENTO, CARTEL_MARGEN, CARTEL_ESPERA_TAPANDO, CONTORNO,
                           COMBO_MAXIMO)
 from juego.powerups import TIPOS_POWERUP
@@ -36,7 +38,7 @@ from juego.powerups import TIPOS_POWERUP
 def zonas_hud():
     return [
         pygame.Rect(0, 0, ANCHO, 100),       # arriba: puntos, combo, record y vidas
-        pygame.Rect(0, 524, ANCHO, 76),      # abajo: dash, nivel, energia y barra del jefe
+        pygame.Rect(0, 524, ANCHO, 76),      # abajo: dash, la ruta y la barra del jefe
         pygame.Rect(0, 430, 180, 170),              # abajo a la izquierda: power-ups activos
     ]
 
@@ -62,9 +64,9 @@ def dibujar(pantalla, partida):
     director = partida.director
     if partida.jefe is not None:
         _barra_jefe(pantalla, partida.jefe, partida.tiempo)
-    elif director.en_oleada:
+    elif director.en_asedio:
         color = ROJO if dibujo.parpadeo(300) else AMARILLO
-        _barra_tiempo(pantalla, "OLEADA", director.restante_oleada() / OLEADA_DURACION, color)
+        _barra_tiempo(pantalla, "ASEDIO", director.restante_asedio() / ASEDIO_DURACION, color)
     elif director.anomalia is not None:
         anomalia = director.anomalia
         _barra_tiempo(pantalla, anomalia.nombre, anomalia.restante(partida) / ANOMALIA_DURACION, anomalia.color)
@@ -193,10 +195,8 @@ def _marcador(pantalla, partida):
         aviso = "MODO DEV" + ("  INVENCIBLE" if partida.invencible else "")
         texto(pantalla, aviso, MINI, MAGENTA, centro, 592)
 
-    # Dash, nivel y la barra de energia (abajo a la derecha, de arriba hacia abajo)
-    color = BLANCO if ahora - partida.tiempo_nivel < 200 else AMARILLO      # destella al subir
-    texto(pantalla, "NIVEL " + str(partida.nivel), CHICA, color, derecha, 563, alinear="derecha")
-    _barra_energia(pantalla, partida)
+    # Dash y la ruta del sector (abajo a la derecha, de arriba hacia abajo)
+    _ruta(pantalla, partida)
     # Dashes extra (mejora DOBLE DASH): cuadraditos a la izquierda, llenos si se pueden usar
     nave_jugador = partida.nave
     for i in range(nave_jugador.dash_extra_max):
@@ -282,22 +282,69 @@ def icono_credito(pantalla, centro_x, centro_y):
         pygame.draw.circle(pantalla, AMARILLO, (centro_x, centro_y), 8)
 
 
-def _barra_energia(pantalla, partida):
-    # Debajo de "NIVEL": cuanto falta para subir, en bloques de 4 px (estilo retro).
-    # Destella en blanco al ganar energia y parpadea casi llena. Con el jefe queda vacia
+CALAVERA = [            # el jefe, al final de la ruta (cada X es un pixel de arte)
+    ".XXXXX.",
+    "XXXXXXX",
+    "X..X..X",
+    "XXXXXXX",
+    ".XX.XX.",
+    ".X.X.X.",
+]
+RUTA_PASO = 56          # px entre un punto de la ruta y el siguiente
+RUTA_Y = 584            # la altura de la ruta (el renglon "SECTOR 2-3" va arriba)
+
+
+def _ruta(pantalla, partida):
+    # Abajo a la derecha, como el mapa de un juego de plataformas: "SECTOR 2-3" (sector y
+    # tramo) y la ruta: un punto por tramo y la calavera del jefe. Lo recorrido va del color
+    # del sector; el camino entre el punto actual y el siguiente es la barra de energia
+    # (destella al ganar energia y se pone naranja casi llena). Asi se ve cuanto falta para el jefe
+    director = partida.director
     derecha = ANCHO - 20
-    marco = pygame.Rect(derecha - 128, 576, 128, 12)
-    if not partida.puede_ganar_energia():
-        dibujo.barra(pantalla, marco, 0, GRIS)
-        return
+    tramo = director.numero_tramo               # 0 = el jefe (o el cierre del sector)
+    color_sector = director.sector["color"]
+    rotulo = "SECTOR " + director.rotulo()
+    color = BLANCO if partida.tiempo - partida.tiempo_nivel < 200 else AMARILLO     # destella al subir
+    texto(pantalla, rotulo, CHICA, color, derecha, 560, alinear="derecha")
+    izquierda = derecha - 4 * RUTA_PASO - 14
+    for i in range(4):
+        punto_x = izquierda + i * RUTA_PASO
+        recorrido = tramo == 0 or i + 1 < tramo
+        punto = pygame.Rect(punto_x, RUTA_Y - 6, 12, 12)
+        camino = pygame.Rect(punto_x + 16, RUTA_Y - 2, RUTA_PASO - 20, 4)
+        if recorrido:
+            pantalla.fill(color_sector, punto)
+            pantalla.fill(color_sector, camino)
+        elif i + 1 == tramo:
+            pantalla.fill(BLANCO, punto)
+            pantalla.fill(CONTORNO, punto.inflate(-6, -6))
+            pantalla.fill(color_sector, punto.inflate(-6, -6))
+            _camino_de_energia(pantalla, partida, camino)
+        else:
+            pygame.draw.rect(pantalla, TEXTO_APAGADO, punto, 2)
+            pantalla.fill(LINEA_APAGADA, camino)
+    # La calavera: roja en el asedio y con el jefe; con la barra llena esperando (el asedio), late
+    if tramo == 0 or partida.barra_llena_esperando() and dibujo.parpadeo(250):
+        color_jefe = ROJO
+    elif tramo == 4:
+        color_jefe = NARANJA if dibujo.parpadeo(500) else ROJO
+    else:
+        color_jefe = TEXTO_APAGADO
+    dibujo.pixel_art(pantalla, CALAVERA, izquierda + 4 * RUTA_PASO + 6, RUTA_Y, color_jefe, 2)
+
+
+def _camino_de_energia(pantalla, partida, camino):
+    # El tramo actual: la barra de energia, en bloques (dibujo.barra sin borde)
     lleno = partida.energia / partida.energia_necesaria()
+    if not partida.puede_ganar_energia():
+        lleno = 0
     if partida.tiempo - partida.tiempo_energia < 120:
         color = BLANCO
     elif lleno > 0.8 and dibujo.parpadeo(150):
         color = NARANJA
     else:
         color = AMARILLO
-    dibujo.barra(pantalla, marco, lleno, color)
+    dibujo.barra(pantalla, camino, lleno, color, borde=None)
 
 
 ALTO_ACTIVO = 34        # px entre un power-up activo y el de arriba
@@ -362,11 +409,11 @@ def _desafio(pantalla, desafio):
           alinear="derecha")
 
 
-BARRA_CENTRAL = pygame.Rect(CENTRO_X - 160, 564, 320, 16)      # jefe, oleada o anomalia (abajo al centro)
+BARRA_CENTRAL = pygame.Rect(CENTRO_X - 160, 564, 320, 16)      # jefe, asedio o anomalia (abajo al centro)
 
 
 def _barra_tiempo(pantalla, nombre, restante, color):
-    # Abajo al centro: el nombre (de la oleada o de la anomalia) y cuanto le queda (de 0 a 1)
+    # Abajo al centro: el nombre (del asedio o de la anomalia) y cuanto le queda (de 0 a 1)
     texto(pantalla, nombre, CHICA, color, BARRA_CENTRAL.left, BARRA_CENTRAL.top - 14, alinear="izquierda")
     dibujo.barra(pantalla, BARRA_CENTRAL, restante, color)
 

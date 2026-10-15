@@ -301,7 +301,6 @@ def test_se_puede_escapar_de_la_caida_sin_dash(partida):
         c.vida = 0
     jefe.con_coraza = False
     jefe.ms_pulso = FORTALEZA_PULSOS[-1]
-    partida.director.proximo_refuerzo = math.inf
     partida.nave.x, partida.nave.y = 375, 420
     jefe.x = jefe.x_sobre(400)
     jefe.cambiar_fase_pulsos("apuntar", 2, partida.tiempo)

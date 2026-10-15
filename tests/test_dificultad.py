@@ -30,13 +30,12 @@ def test_reglas_de_cada_dificultad(app, nombre):
 
 
 def test_mas_dificil_mas_enemigos(app):
-    presupuestos = []
+    # Cada escuadron trae mas enemigos
+    cantidades = []
     for nombre in ORDEN_DIFICULTADES:
         app.nueva_partida(nombre)
-        partida = app.escena.partida
-        partida.nivel = 8
-        presupuestos.append(partida.director.presupuesto())
-    assert presupuestos == sorted(presupuestos)
+        cantidades.append(app.escena.partida.director._cantidad(3))
+    assert cantidades == sorted(cantidades) and cantidades[0] < cantidades[-1]
 
 
 def test_el_selector_cambia_con_animacion_y_vuelve_a_empezar(app):

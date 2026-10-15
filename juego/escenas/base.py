@@ -55,13 +55,14 @@ class Escena:
         if self.app.fondo.relampago > relampago_antes:
             self.app.sonidos.reproducir_luego("trueno", 450)   # el trueno llega despues del destello
 
-    def dibujar_fondo(self, pantalla):
-        self.app.fondo.dibujar(pantalla, self.app.fraccion)
+    def dibujar_fondo(self, pantalla, apagado=False):
+        # 'apagado': jugando, el fondo va mas oscuro (que no compita con el juego)
+        self.app.fondo.dibujar(pantalla, self.app.fraccion, apagado)
 
     def dibujar_partida(self, pantalla, partida, con_nave=True):
         # Por capas: fondo y mundo (interpolados) -> temblor y destello -> HUD.
         # El temblor y el destello van antes del HUD: mueven el mundo, no el marcador
-        self.dibujar_fondo(pantalla)
+        self.dibujar_fondo(pantalla, apagado=True)
         partida.dibujar(pantalla, con_nave, self.app.fraccion)
         self.app.efectos.dibujar_temblor_y_destello(pantalla)
         partida.dibujar_impactos(pantalla)
@@ -70,6 +71,6 @@ class Escena:
     def captura_del_mundo(self, partida):
         # El fondo y el juego, sin HUD ni temblor: el fondo de la Pausa, el Taller...
         imagen = pygame.Surface(self.app.pantalla.get_size())
-        self.dibujar_fondo(imagen)
+        self.dibujar_fondo(imagen, apagado=True)
         partida.dibujar(imagen, True, self.app.fraccion)
         return imagen

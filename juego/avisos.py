@@ -1,10 +1,10 @@
 """
-Avisos: los carteles de la franja de arriba ("NIVEL 7", "¡OLEADA!", una anomalia...).
+Avisos: los carteles de la franja de arriba ("TRAMO 2/4", "¡ASEDIO SUPERADO!", una anomalia...).
 
 Salen de a UNO, en una cola (el patron Cola o "Queue": el primero que llega es el primero
 que sale). El que llega mientras se ve otro espera su turno, asi nunca se pisan (antes
 "¡OLEADA!" y "NIVEL 2" salian uno encima del otro).
-Los urgentes (una amenaza: la oleada, una anomalia) no esperan: el que se esta viendo se
+Los urgentes (una amenaza: una anomalia, la ultima vida) no esperan: el que se esta viendo se
 va enseguida y el urgente pasa primero.
 
 Aca esta solo la logica (cuando empieza y cuando termina cada uno, con partida.tiempo):

@@ -153,7 +153,7 @@ ENERGIA_COMBO = 0.25            # ...mas esto por cada paso del multiplicador de
 ENERGIA_PERFECTO = 1.5          # por dash perfecto
 ENERGIA_ENEMIGO = 0.5           # por enemigo destruido (o congelado roto)
 ENERGIA_DESAFIO = 5             # por desafio cumplido
-ENERGIA_OLEADA = 3              # por oleada superada
+ENERGIA_ASEDIO = 3              # por asedio superado
 ENERGIA_INICIAL = 10            # lo que pide el nivel 1 para subir...
 ENERGIA_POR_NIVEL = 1           # ...y esto mas en cada nivel...
 ENERGIA_MAXIMA = 16             # ...hasta este tope
@@ -252,13 +252,25 @@ DISTANCIA_APARICION = 300       # los enemigos aparecen a mas de esta distancia 
 ENEMIGO_VELOCIDAD_MAX = 4.2     # los que te persiguen nunca van mas rapido que esto (la nave va a 5):
                                 # asi siempre se puede escapar. Los ataques con aviso (embestidas, picadas) si
 
-# Presupuesto de amenaza: cada enemigo "cuesta" puntos y cada nivel tiene un presupuesto.
-# El juego elige al azar que enemigos poner hasta gastarlo (entre los ya desbloqueados),
-# asi cada partida es distinta pero la dificultad sigue controlada (ver progresion.py)
-COSTO_ENEMIGO = {"rebotador": 1, "perseguidor": 2, "embestidor": 3, "divisor": 4, "enjambre": 3}
-DESBLOQUEO_ENEMIGO = {"perseguidor": 1, "rebotador": 2, "embestidor": 3,   # nivel desde el que aparece
-                      "divisor": 4, "enjambre": 7}
-REFUERZO_ESPERA = 5000          # ms: si destruiste enemigos, cada tanto llega otro hasta llenar el presupuesto
+# Tramos y escuadrones (ver guiones.py y escuadrones.py). Cada sector es una ruta de 4 TRAMOS
+# y el jefe (un tramo por nivel). En cada tramo los enemigos llegan en ESCUADRONES: se avisa
+# con una flecha en el borde, entran volando en formacion, atacan un rato y se RETIRAN. Asi
+# la pantalla nunca se llena de enemigos viejos: lo que cambia de un tramo a otro es QUIEN
+# viene y COMO llega, no cuantos se juntan
+AVISO_ESCUADRON = 900           # ms que se ve la flecha en el borde antes de que entren
+ENTRADA_ESCUADRON = 700         # ms que tardan en entrar volando hasta su lugar (sin hacer daño)
+ESCALONADO = 140                # ms entre un miembro y el siguiente (entran en fila)
+TURNO_ESCUADRON = 12000         # ms que se queda un escuadron; despues los que quedan se retiran
+# El tramo termina con la barra de nivel llena Y la zona despejada (llegaron todos sus
+# escuadrones y no queda ninguno), como en Metal Slug. Con la barra llena se apura: los que
+# faltan entran enseguida y los que estan se quedan como mucho TURNO_APURADO ms mas
+TURNO_APURADO = 4000
+RESPIRO_ESCUADRON = 1500        # ms entre que se va (o cae) un escuadron y llega el siguiente
+INICIO_TRAMO = 1500             # ms desde que empieza un tramo hasta que llega su primer escuadron
+ESCUADRON_PUNTOS = 4            # bonus por cada miembro al eliminar un escuadron entero...
+ENERGIA_ESCUADRON = 1           # ...y esta energia
+RETIRADA_VELOCIDAD = 6          # px por paso al retirarse (acelera hasta esto; no lastima)
+VUELTA_CANTIDAD = 0.3           # en cada vuelta a los sectores, los escuadrones traen esta parte mas
 RECARGA_POR_DESTRUIR = 400      # ms que se adelanta la recarga del dash por cada enemigo que destruye
 
 # Divisor: masa verde que el dash parte en dos (grande -> 2 medianos -> 2 chicos cada uno)
@@ -273,18 +285,30 @@ ENJAMBRE_PICADA = 3.8           # velocidad cuando se lanza en picada contra la 
 ENJAMBRE_ESPERA_PICADA = (3500, 5500)   # ms entre picadas (al azar)
 ENJAMBRE_PUNTOS = 2             # por dron
 ENJAMBRE_BONUS = 10             # por destruir el enjambre entero con el dash
-PRESUPUESTO_INICIAL = 2
-PRESUPUESTO_POR_NIVEL = 1.8
-PRESUPUESTO_MAXIMO = 24
-ENEMIGOS_MAX = 10               # nunca mas que esto en pantalla (sin contar las oleadas)
 
-# Oleadas: cada tanto llegan muchos enemigos de golpe por unos segundos y despues se van
-OLEADA_DESDE_NIVEL = 2
-OLEADA_ESPERA = (35000, 55000)  # ms de juego entre una oleada y la siguiente (al azar)
-OLEADA_DURACION = 12000         # ms que dura
-OLEADA_PRESUPUESTO = 0.6        # enemigos extra: esta parte del presupuesto del nivel
-OLEADA_PUNTOS = 10              # bonus por nivel si la pasas sin perder una vida
+# Ladron: va hacia la moneda y, si la agarra, huye con ella al borde mas cercano. No lastima:
+# lo que te roba es el combo. Mientras la lleva, el reloj del combo espera
+LADRON_VELOCIDAD = 2.0          # buscando la moneda (siempre mas lento que la nave)
+LADRON_HUIDA = 3.6              # huyendo con ella (con el tope de ENEMIGO_VELOCIDAD_MAX)
+LADRON_AGARRE = 500             # ms que se queda quieto al agarrarla: tu momento para reaccionar
+LADRON_PUNTOS = 3               # por romperlo con el dash...
+LADRON_BONUS = 10               # ...y esto mas si le recuperas la moneda (que ademas se cobra)
 
+# Escudero: persigue lento con un escudo de frente que gira despacio hacia la nave.
+# El dash de frente rebota; por el costado o la espalda lo rompe
+ESCUDERO_VELOCIDAD = 1.3
+ESCUDERO_GIRO = 1.6             # grados por paso que gira el escudo (la nave lo puede rodear)
+ESCUDERO_ARCO = 140             # grados que cubre el escudo (centrados en hacia donde mira)
+ESCUDERO_PUNTOS = 6             # por romperlo con el dash
+
+# Asedio: el ultimo tramo de cada sector, antes del jefe. Llegan escuadrones de todos lados
+# y hay que aguantar. Mientras dura, la barra de nivel se puede llenar pero el nivel espera:
+# el jefe llega recien al terminar el asedio
+ASEDIO_DURACION = 15000         # ms que dura
+ASEDIO_INICIO = 2500            # ms desde que empieza el tramo (despues del cartel)
+ASEDIO_RESPIRO = 600            # ms entre escuadrones durante el asedio
+ASEDIO_TURNO = 7000             # ms que se queda cada escuadron del asedio (asi van rotando)
+ASEDIO_PUNTOS = 10              # bonus por nivel si lo pasas sin perder una vida
 # Los que persiguen se separan entre si, para no terminar todos encimados en el mismo punto
 SEPARACION_ENEMIGOS = 50        # distancia (px) a la que empiezan a alejarse de otro enemigo
 FUERZA_SEPARACION = 0.3         # que tan fuerte se alejan (mas = se separan mas rapido)
@@ -312,8 +336,8 @@ VINETA_ULTIMA_VIDA = 0.45       # que tan fuerte late la vineta con una vida (0 
 NEGRO_VELO = (4, 4, 12)         # el velo oscuro del cuadro de impacto
 CARTEL_SECTOR = 2500            # ms que se ve el cartel del sector nuevo
 # Avisos de la franja de arriba: salen de a uno, en una cola (ver avisos.py). Ms que se ve cada uno
-AVISO_NIVEL = 1800              # "NIVEL 7" y cuanto falta para el jefe
-AVISO_OLEADA = 2200             # "¡OLEADA!" y "¡OLEADA SUPERADA!"
+AVISO_TRAMO = 2200              # "TRAMO 2: EMBOSCADA"
+AVISO_ASEDIO = 2200             # "¡ASEDIO!" y "¡ASEDIO SUPERADO!"
 AVISO_ANOMALIA = 3200           # el nombre de la anomalia y su consejo
 AVISO_RECORD = 2400             # "¡NUEVO RECORD!"
 AVISO_ULTIMA_VIDA = 2400        # "¡ULTIMA VIDA!"
@@ -383,8 +407,7 @@ ABEJA_PUNTOS = 2
 ANOMALIA_PROPIA = 0.5           # chances de que llegue la del sector (si no, una de las otras)
 ANOMALIA_NIVEL = 3              # llega en el 3er nivel de cada sector (niveles 3, 8, 13...)
 ANOMALIA_ESPERA = 4000          # ms desde que empieza ese nivel
-ANOMALIA_DURACION = 20000       # ms que dura
-RESPIRO_ANOMALIA = 10000        # ms sin oleadas despues de una anomalia
+ANOMALIA_DURACION = 20000       # ms que dura, como mucho (termina antes si se termina el tramo)
 ASTEROIDES_ESPERA = 1000        # ms entre un asteroide y el siguiente
 ASTEROIDES_AVISO = 900          # ms que se ve la columna de aviso antes de que caiga
 ASTEROIDES_VELOCIDAD = 5        # px por paso al caer
@@ -425,7 +448,7 @@ MODO_DESARROLLADOR = True       # False lo apaga (por ejemplo, para pasarle el j
 # Cada dificultad tiene su propia tabla de records.
 #   vidas:          vidas al empezar (y maximas)
 #   velocidad:      multiplica la velocidad de enemigos y balas
-#   presupuesto:    multiplica el presupuesto de enemigos (mas o menos enemigos)
+#   escuadrones:    multiplica cuantos enemigos trae cada escuadron (redondeado, al menos 1)
 #   espera_powerup: multiplica la espera entre power-ups (mas = caen menos seguido)
 #   apunte_fijo:    ms antes de embestir en que el embestidor deja de seguirte con la mira:
 #                   embiste hacia donde estabas un momento antes (0 = te sigue hasta el final)
@@ -433,19 +456,19 @@ MODO_DESARROLLADOR = True       # False lo apaga (por ejemplo, para pasarle el j
 ORDEN_DIFICULTADES = ["FACIL", "NORMAL", "DIFICIL", "PESADILLA"]
 DIFICULTADES = {
     "FACIL": {"color": VERDE, "paleta": TREBOL, "calaveras": 1, "vidas": 5, "velocidad": 0.8,
-              "presupuesto": 0.7, "espera_powerup": 0.8, "apunte_fijo": 350,
+              "escuadrones": 0.7, "espera_powerup": 0.8, "apunte_fijo": 350,
               "servicios": ["sortear", "escudo", "reparar"],
               "descripcion": ["5 VIDAS", "ENEMIGOS MAS LENTOS", "MAS POWER-UPS"]},
     "NORMAL": {"color": CIAN, "paleta": ENERGIA, "calaveras": 2, "vidas": 3, "velocidad": 1.0,
-               "presupuesto": 1.0, "espera_powerup": 1.0, "apunte_fijo": 200,
+               "escuadrones": 1.0, "espera_powerup": 1.0, "apunte_fijo": 200,
                "servicios": ["sortear", "escudo"],
                "descripcion": ["3 VIDAS", "EL DESAFIO ORIGINAL", ""]},
     "DIFICIL": {"color": AMARILLO, "paleta": ORO, "calaveras": 3, "vidas": 3, "velocidad": 1.15,
-                "presupuesto": 1.3, "espera_powerup": 1.3, "apunte_fijo": 0,
+                "escuadrones": 1.3, "espera_powerup": 1.3, "apunte_fijo": 0,
                 "servicios": ["sortear"],
                 "descripcion": ["3 VIDAS", "ENEMIGOS 15% MAS RAPIDOS", "MAS ENEMIGOS, MENOS POWER-UPS"]},
     "PESADILLA": {"color": ROJO, "paleta": FUEGO, "calaveras": 4, "vidas": 1, "velocidad": 1.3,
-                  "presupuesto": 1.6, "espera_powerup": 1.6, "apunte_fijo": 0,
+                  "escuadrones": 1.6, "espera_powerup": 1.6, "apunte_fijo": 0,
                   "servicios": [],
                   "descripcion": ["1 VIDA", "ENEMIGOS 30% MAS RAPIDOS", "SIN PIEDAD"]},
 }
@@ -456,27 +479,25 @@ DIFICULTADES = {
 #   fondo:     el color del espacio
 #   ambiente:  las particulas del fondo (ver fondo.py): asteroides, brasas, esporas, panal o abismo
 #   estrellas: cuanto de rojo, verde y azul tienen las estrellas (1 = blancas)
-#   favorito:  el enemigo que mas aparece; lema: la frase del cartel al llegar
+#   lema:      la frase del cartel al llegar (los enemigos de cada tramo estan en guiones.py)
 #   anomalia:  la que suele llegar a mitad del sector (ANOMALIA_PROPIA; None = una al azar)
 # Ningun color del fondo pasa de ~110 por canal, para que no se confunda con enemigos
-PESO_FAVORITO = 3               # el enemigo favorito del sector sale 3 veces mas seguido
-RECAMBIO_SECTOR = 0.34          # al cambiar de sector se va esta parte de los enemigos (vienen otros)
 SECTORES = [
     {"nombre": "CINTURON EXTERIOR", "lema": "DONDE EMPIEZA TODO", "color": CIAN, "jefe": "ojo",
      "tinte": None, "fondo": FONDO, "ambiente": "asteroides", "estrellas": (1, 1, 1),
-     "favorito": "perseguidor", "anomalia": "asteroides"},
+     "anomalia": "asteroides"},
     {"nombre": "NEBULOSA CARMESI", "lema": "EL AIRE ARDE", "color": ROJO, "jefe": "fortaleza",
      "tinte": (110, 35, 50), "fondo": (16, 4, 8), "ambiente": "brasas", "estrellas": (1, 0.7, 0.7),
-     "favorito": "embestidor", "anomalia": "tormenta"},
+     "anomalia": "tormenta"},
     {"nombre": "CAMPO ESMERALDA", "lema": "ALGO SE MUEVE ENTRE LAS ESPORAS", "color": VERDE, "jefe": "serpiente",
      "tinte": (35, 105, 70), "fondo": (4, 14, 10), "ambiente": "esporas", "estrellas": (0.75, 1, 0.8),
-     "favorito": "divisor", "anomalia": "niebla"},
+     "anomalia": "niebla"},
     {"nombre": "MAR DE AMBAR", "lema": "LA COLMENA TE OBSERVA", "color": AMARILLO, "jefe": "colmena",
      "tinte": (110, 80, 30), "fondo": (14, 10, 4), "ambiente": "panal", "estrellas": (1, 0.85, 0.6),
-     "favorito": "enjambre", "anomalia": "oro"},
+     "anomalia": "oro"},
     {"nombre": "ABISMO AZUL", "lema": "NI LA LUZ ESCAPA", "color": HIELO, "jefe": "singularidad",
      "tinte": (35, 65, 110), "fondo": (4, 6, 20), "ambiente": "abismo", "estrellas": (0.7, 0.8, 1),
-     "favorito": "rebotador", "anomalia": None},
+     "anomalia": None},
 ]
 TRANSICION_SECTOR = 60          # pasos (1 s) que tarda el fondo en cambiar de color, en 4 etapas
 
@@ -486,6 +507,11 @@ MS_CUADRO_MONEDA = 100
 MS_CUADRO_ESCUDO = 150
 MS_CUADRO_JEFE = 200
 MS_CUADRO_REBOTE = 70           # cada cuadro del rebotador aplastandose contra una pared
+
+# Mientras se juega, las nebulosas y los planetas del fondo se ven a este brillo (1 = como
+# en los menus). Asi el fondo queda "atras" y lo que importa (enemigos, monedas, balas) se lee
+# primero: un planeta naranja a pleno brillo parecia un asteroide peligroso
+BRILLO_FONDO_JUGANDO = 0.6
 
 # Fondo con paralaje: lo lejano se mueve lento y lo cercano rapido
 REACCION_PARALAJE = 0.15        # cuanto se corre el fondo cuando se mueve la nave
@@ -557,6 +583,8 @@ VIBRACIONES = {
     "perfecto":        (1, [(50, 0, 0.25), (70, 0.04, 0.1)]),
     "interceptar":     (2, [(70, 0.18, 0.25), (80, 0.06, 0.08)]),
     "hielo_roto":      (1, [(60, 0, 0.18), (60, 0, 0.06)]),
+    "bloqueo":         (1, [(50, 0.12, 0.15), (60, 0.04, 0.04)]),           # el dash rebota en un escudo
+    "robo_escapa":     (1, [(120, 0.06, 0.1), (120, 0.03, 0.04)]),          # el ladron se fue con la moneda
     "nova":            (2, [(100, 0.25, 0.25), (120, 0.14, 0.12), (120, 0.05, 0.04)]),
 
     # --- Golpes a la nave (suben un instante antes del pico, asi no es un latigazo) ---

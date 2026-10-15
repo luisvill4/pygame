@@ -19,7 +19,7 @@ from tests.ayudas import avanzar, tecla, empezar_partida, ir_al_ajuste
 def empezar(app):
     partida = empezar_partida(app)
     assert isinstance(app.escena, Juego)
-    partida.director.proxima_oleada = float("inf")
+    partida.director.con_escuadrones = False
     partida.enemigos.clear()
     partida.proximo_powerup = float("inf")
     partida.moneda.x, partida.moneda.y = -500, -500

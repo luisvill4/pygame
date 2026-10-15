@@ -5,7 +5,7 @@ Juego arcade 2D hecho con Pygame: una nave recoge monedas, esquiva enemigos y pe
 ## Cómo ejecutar y probar
 ```
 python main.py
-python -m pytest        # ~450 tests, 45-100 s, sin ventana
+python -m pytest        # ~500 tests, 70-150 s, sin ventana
 ```
 - Python 3.12, pygame 2.6.1 (≥ 2.1.4 por `pygame.transform.grayscale`) y pytest. El estudio de sonido necesita además numpy, numba y soundfile. Todo está en `requirements.txt`.
 - **Git:** `main` tiene la versión de un solo archivo de antes del refactor; se trabaja en la rama `refactor-modular`. `.gitignore` deja afuera `records.json`, `config.json`, `progreso.json` y `__pycache__`.
@@ -27,10 +27,13 @@ juego/
   interpolacion.py      # Interpolador: dibujar en posiciones intermedias entre pasos de logica
   reloj.py              # LimitadorFPS
   partida.py            # Partida: todo el estado de una partida y sus reglas
-  progresion.py         # Director: presupuesto de enemigos, sectores, oleadas, anomalias, desafios, rango
+  progresion.py         # Director: tramos, escuadrones, asedio, sectores, anomalias, desafios, rango
+  guiones.py            # SOLO datos: la ruta de cada sector (4 tramos con sus escuadrones). GUIONES["arcade"]
+  escuadrones.py        # las formaciones (@formacion: flanco, pinza, lluvia, esquinas, cerco) y Escuadron
   anomalias.py  desafios.py  mejoras.py  rango.py  tienda.py  estadisticas.py  logros.py  eco.py
   nave.py  moneda.py  proyectiles.py
   enemigos/  base.py (Enemigo + registro) · perseguidor · rebotador · embestidor · divisor · enjambre · abeja
+             · ladron · escudero
   jefes/     base.py (Jefe + registro + pulso) · partes.py · ojo · fortaleza · serpiente · colmena · singularidad
   powerups/  base.py (PowerUp, Capsula, registro) · tipos.py (en el orden del HUD)
   escenas/   base.py · presentacion · inicio · dificultad · logros · opciones · listo · juego · taller
@@ -92,10 +95,11 @@ Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
 - **Partículas** (`efectos.Efectos`): cuadrados en la grilla de 2 px que no se desvanecen con transparencia: cambian de color por etapas según una **paleta** de oscuro a brillante (`FUEGO`, `ORO`, `ESCARCHA`…). También: `onda_de_choque`, `fogonazo`, `texto_flotante` (nunca se pisan) y el temblor/destello (`sacudir`).
 - **Neón** (opción NEON): un resplandor **solo en lo que es energía** (proyectiles con `brillo`, la moneda, las cápsulas, las chispas), nunca en toda la pantalla: un bloom general lavaba el pixel art de los jefes.
 - **Carteles del juego** (`carteles.py`), cada tamaño en su lugar:
-  - **Avisos** arriba al centro (NIVEL, ¡OLEADA!, anomalías, récord): salen **de a uno** con `partida.avisar(Aviso(...), urgente)` → `ColaDeAvisos`. Los urgentes se cuelan adelante.
+  - **Avisos** arriba al centro (TRAMO 2/4, ¡ASEDIO SUPERADO!, anomalías, récord): salen **de a uno** con `partida.avisar(Aviso(...), urgente)` → `ColaDeAvisos`. Los urgentes se cuelan adelante.
   - **Fichas** a los costados: nuevo enemigo (izquierda) y desafío (derecha). Bajan si el aviso de arriba las tocaría.
   - **Logro** abajo al centro, uno detrás de otro.
   - **Momentos** en franjas de lado a lado: jefe vencido y sector nuevo. Y el panel del **rango**.
+- **Fondo atrás del juego:** jugando (`dibujar_partida`, `captura_del_mundo`) el fondo se dibuja `apagado` (nebulosas y planetas a `BRILLO_FONDO_JUGANDO`): un planeta naranja a pleno brillo parecía un peligro. En los menús, a pleno.
 - **Transiciones:** `App.cambiar_escena(escena, transicion=True)` dibuja el barrido de rombos encima (es solo dibujo). Sin transición lo que tiene que ser instantáneo: pausar y seguir, READY → juego, la explosión y el panel F1.
 - Variantes de sprites sin archivos nuevos: `recursos.tenir()` (gris + color: congelado, golpe) y `recursos.blanquear()`.
 
@@ -134,6 +138,8 @@ El usuario dibuja los sprites; Claude los integra. Todos en `sprites/`.
 |---|---|---|---|
 | `rebotador_vuelo.png` | 80x40 | 2 de 40x40 mientras vuela: el 1 = la columna 0 de `rebotador.png`; el 2 cambia poco (púas que laten, brillo o pestañeo: el usuario sacó el aleteo porque cambiaba la silueta) | `Rebotador.cuadros()` |
 | `colmena_compuerta.png` | 64x32 | 2 de 32x32: cerrada, abierta | encima de la Colmena en (16, 30), (112, 30), (16, 98) y (112, 98) |
+| `ladron.png` | 80x40 | 2 de 40x40 (violeta `#BE78FF`; un antifaz ayuda a leerlo) | `Enemigo.cuadros()`; la moneda robada va encima de su cabeza, así que arriba conviene dejar aire |
+| `escudero.png` | 80x40 | 2 de 40x40 (naranja `#FF8C00`), **solo el cuerpo y sin girar**: el escudo lo dibuja el código alrededor (radio 26 a 32 px del centro) | `Enemigo.cuadros()` |
 
 Las variantes (congelado, golpe, brillo) se generan solas: no hace falta dibujarlas. **La llama del motor son partículas y el usuario prefiere que siga así: no proponer un sprite de propulsor.** Fuera de esta lista, no proponer sprites nuevos.
 
@@ -156,11 +162,12 @@ Las variantes (congelado, golpe, brillo) se generan solas: no hace falta dibujar
 ### Partida (`partida.py`)
 - Todo el estado de una partida. Los servicios le llegan por parámetro (`efectos`, `sonidos`, `entrada`, `records`, `opciones`, `progreso`: si es `None`, no se revisan logros).
 - **Reglas: siempre pasar por ellas.** `sumar_puntos(base)` (DOBLE y récord), `ganar_energia(cantidad)` (única entrada a la barra de nivel), `ganar_creditos`/`gastar_creditos`, `danar_jugador(x, y)`, `recoger_powerup(...)`, `subir_nivel()`, `iniciar_jefe()`, `jefe_vencido()`, `quitar_enemigo()` y `activar(tipo, duracion)` (nunca acorta).
-- **Subir de nivel = barra de energía** (pedido del usuario): la llenan las monedas (más con combo), los perfectos, los enemigos rotos, las oleadas y los desafíos. No se gana con jefe ni en el cierre del sector. Nunca se saltean dos niveles.
+- **Subir de nivel = barra de energía** (pedido del usuario): la llenan las monedas (más con combo), los perfectos, los enemigos rotos, los escuadrones eliminados, el asedio y los desafíos. No se gana con jefe ni en el cierre del sector. Nunca se saltean dos niveles: `revisar_energia` vacía la barra **antes** de `subir_nivel` (un desafío que se cumplía al llegar el jefe metía su energía en plena subida y salteaba un nivel).
+- **Cada nivel es un tramo** y el nivel **espera** (`Director.retiene_el_nivel()`; la barra queda llena: `barra_llena_esperando()`) hasta que la zona esté despejada (llegaron todos los escuadrones del tramo y no queda ninguno) y, en el tramo 4, hasta que termine el asedio. El Director llama a `revisar_energia()` en cada paso. Después del jefe, al terminar el cierre, el Director pasa solo al primer nivel del sector nuevo (`subir_nivel(anunciar=False)`).
 - **Dash perfecto** (pedido del usuario: atravesar cualquier cosa era fácil para farmear): solo cuenta si el dash **rompe un enemigo `destruible`** o **intercepta** uno (`interceptable()`: el embestidor cargando). Una vez por dash. Otro perfecto antes de `CADENA_PERFECTOS` sube la cadena.
 - **Créditos** (la plata de la gasolinera) no son puntos: gastarlos no baja el puntaje.
 - **Mejoras:** `mejora(tipo)` dice cuántas veces se eligió; cada regla que depende de una mejora la consulta ahí (`vel_max`, `recarga_dash`, `tiempo_combo`, `puede_destruir`...). `sumar_mejora` es la regla; `elegir_mejora` es la del Taller. ESCUDO ROCE se recarga con perfectos sin escudo puesto y dura hasta el golpe (antes duraba 8 s y el usuario sentía que funcionaba una vez). DOBLE DASH es rara y desde el sector 3 (con dos dash era muy fácil).
-- **Orden de `actualizar`:** tiempo → nave → ecos → corte del combo → imán → moneda → power-ups → director → enemigos guardados → enemigos → jefe (o balas sueltas) → efectos → logros (cada 30 pasos).
+- **Orden de `actualizar`:** tiempo → nave → ecos → corte del combo → imán → moneda → power-ups → director → enemigos → jefe (o balas sueltas) → efectos → logros (cada 30 pasos).
 
 ### Entrada (`entrada.py`)
 - Teclado y mando se convierten en **acciones** (`ACEPTAR`, `VOLVER`, `PAUSA`, `OPCIONES`, `DASH`, direcciones, `PESTANA_ANTERIOR`/`SIGUIENTE` = LB/RB o Q/E). Las de un toque se consultan con `pulso(accion)`; el movimiento con `direccion()` (stick en cualquier ángulo).
@@ -174,16 +181,26 @@ Las variantes (congelado, golpe, brillo) se generan solas: no hace falta dibujar
   - **Giro tipo RotSprite** (`nave.girada`): con `rotate` directo el pixel art se rompía. Cada ángulo cuesta 2-5 ms la primera vez: **Inicio y la Presentación llaman a `nave.preparar_giros(2)` en cada paso**, así llegan calculados a la partida.
   - Choques: `caja_recoger()` (50x50) para recoger; `RADIO_NAVE` = 11 para el daño.
 - **Moneda:** `lugar_para_moneda` busca lugar con `hud.posicion_libre()`, lejos de enemigos y del jefe.
-- **HUD:** `hud.zonas_hud()` son las zonas donde no caen cosas. **Si el HUD cambia de lugar, actualizarlas.**
+- **HUD:** `hud.zonas_hud()` son las zonas donde no caen cosas. **Si el HUD cambia de lugar, actualizarlas.** Abajo a la derecha, la **ruta** (`_ruta`): "SECTOR 2-3", un punto por tramo y la calavera del jefe; el camino entre el punto actual y el siguiente es la barra de energía. Abajo al centro, la barra del jefe, del asedio o de la anomalía.
 - **Enemigos** (`enemigos/`, registro `TIPOS_ENEMIGO` con `@registrar_enemigo`):
-  - La base resuelve la aparición con aviso, el congelado, los bordes, la animación y la separación. Las subclases escriben `mover()` (y si hace falta `al_aparecer()`, `paso()`, `dibujar_cuerpo()`).
-  - Atributos de clase: `tamano`, `radio`, `destruible`, `puntos_dash`, `muere_al_chocar`, `nombre`/`pista` (la ficha de "nuevo enemigo"), `esbirro` (de un jefe), y `crear()` para los que nacen en grupo (el enjambre).
+  - La base resuelve la **entrada** (`entrar(partida, desde, hasta, demora)`: flecha en el borde durante la demora, después vuela `ENTRADA_ESCUADRON` ms sin lastimar), la **retirada** (`retirarse()`: vuela al borde más cercano en gris, no lastima ni se puede romper, `activo()` es False; afuera sale con `quitar_enemigo`), el congelado, los bordes, la animación y la separación. Las subclases escriben `mover()` (y si hace falta `al_aparecer()`, `al_entrar()`, `al_retirarse()`, `paso()`, `dibujar_cuerpo()`). `reaparecer()` (la "X" en un lugar al azar) queda solo para lo que no llega en escuadrón.
+  - **Nada aparece de la nada ni se queda para siempre** (pedido del usuario: "la pantalla se ensucia"): un enemigo que te choca, o que se rompe con el hielo sin ser destruible, **se retira** (no reaparece). **Trampa:** lo que se suma a un escuadrón después de la orden de retirada (los hijos del divisor) también se tiene que ir: el Director repite `retirarse()` en cada paso, y `retirarse()` corta el `naciendo` (si no, el divisor recién nacido se acomodaba adentro de la pantalla y trababa el tramo).
+  - Atributos de clase: `tamano`, `radio`, `destruible`, `puntos_dash`, `muere_al_chocar`, `bonus_propio` (su grupo ya tiene bonus: sin el del escuadrón), `nombre`/`pista` (la ficha de "nuevo enemigo"), `esbirro` (de un jefe), y `crear()` para los que nacen en grupo (el enjambre: una "unidad" de varios drones que entra junta y dibuja una sola flecha).
+  - Avisos que la Partida le pregunta (por defecto "no"): `hace_danio()`, `interceptable()` y `bloquea_dash(x, y)` (con `al_bloquear` y `punto_de_bloqueo`). Las ondas y el ECO preguntan con `partida.puede_destruir(enemigo, desde)`: **una defensa nueva también tiene que frenarlas** (si no, ONDA rompía al escudero de frente).
+  - **Ladrón** (sector 3, decisiones del usuario): no lastima; roba la moneda y huye al borde más cercano. Las reglas de la moneda robada están en la Partida (`robar_moneda`, `recuperar_moneda`, `moneda_escapada`, `soltar_moneda`); `moneda.robada_por` dice quién la tiene. Mientras la lleva, **el reloj del combo espera** (`ultima_moneda` avanza con el tiempo) y ni el imán ni la nave la pueden agarrar. Todo lo que saca a un ladrón del juego sin el dash (se retira, llega el jefe) la suelta sin castigo; si se escapa con ella, cuenta como que se escapó de su escuadrón.
+  - **Escudero** (sector 4): el dash de frente rebota (`_rebotar_en_escudo`, como contra un jefe, sin daño); por el costado o la espalda lo rompe (perfecto). El escudo **se dibuja con código** en la grilla de 2 px (`celdas_del_escudo`): así gira sin romper el pixel art.
   - **Tope de velocidad:** `Enemigo.rapidez()` nunca deja que uno que te persigue sea más rápido que la nave. Los ataques con aviso (embestida, picadas) no tienen tope.
   - **Todo enemigo que sale del juego pasa por `Partida.quitar_enemigo()`.**
   - **Aturdido:** quieto y sin lastimar (ondas, ECO, intercepción). El rebotador reescribe `empujar()` (si no, quedaba quieto para siempre).
   - El embestidor fija la mira un rato antes de embestir según la dificultad (`reglas["apunte_fijo"]`, pedido del usuario): la línea deja de parpadear y es la señal para correrse.
-- **Director** (`progresion.py`): presupuesto de enemigos por nivel (cada tipo con costo y nivel de desbloqueo), refuerzos, oleadas, **sectores = biomas, uno por jefe** (`SECTORES`, en orden fijo), anomalías (una por sector, al azar con más chance la del sector), desafíos (uno por sector), el **rango** al vencer al jefe y el **cierre del sector** (mientras dura, nada vuelve ni se gana energía), y las ofertas de mejoras. `con_anomalias`/`con_desafios`/`con_mejoras = False` los apagan (los usa el fixture de los tests).
-- **Dificultad:** `Partida(..., dificultad)` guarda `reglas = DIFICULTADES[dificultad]` (velocidad, espera de power-ups, apunte fijo, servicios de la gasolinera, vidas).
+- **Director** (`progresion.py`). El rediseño "que se sienta progresión, no una pantalla sucia" (pedido del usuario, inspirado en Metal Slug y los juegos de naves):
+  - **Ruta:** cada sector = 4 **tramos** + jefe, un tramo por nivel (`numero_tramo` = `(nivel - 1) % 5 + 1`; 0 = jefe o cierre). El guion (`guiones.py`; `Partida(..., modo="arcade")` → `GUIONES[modo]`) dice por tramo `nombre`, `pista`, `a_la_vez` y la lista de `escuadrones` `(tipo, cuantos, formacion)`. Reglas de un guion (las comprueba `test_progresion.py`): un enemigo nuevo por tramo como mucho y nunca en el asedio; tramo 3 = ZONA INESTABLE (la anomalía); tramo 4 = ASEDIO. Un **modo historia** futuro es otro guion con la misma forma.
+  - **Escuadrones** (`escuadrones.py`): `lanzar_escuadron()` toma el siguiente de la cola del tramo (vuelve a empezar si se acaba), lo escala con `_cantidad()` (dificultad `reglas["escuadrones"]` y `vuelta()`) y cada miembro hace `entrar()` desde su formación. `lugares()` nunca deja a uno a menos de `LEJOS_DE_LA_NAVE` de la nave. Turno `TURNO_ESCUADRON` y se retira; roto entero (2 o más) → bonus (`_premiar_escuadron`). Suena `escuadron_llega` con paneo del lado por donde entran.
+  - **Zona despejada:** con la barra llena el tramo **se apura** (`_apurar`: turnos de `TURNO_APURADO`, los pendientes llegan ya) y el nivel sube cuando ya no queda nadie. Así cada tramo dura 15-30 s (medido con bots) aunque el divisor dé mucha energía.
+  - **Asedio** (tramo 4): empieza `ASEDIO_INICIO` después, dura `ASEDIO_DURACION`, con escuadrones de `ASEDIO_TURNO` que rotan; al terminar todos se retiran y recién ahí llega el jefe. Sin perder vidas: premio.
+  - Al cambiar de tramo: los del anterior se retiran, la anomalía del tramo 3 termina, sale el cartel `TRAMO n/4` (si se ve la franja del sector nuevo, el cartel y el primer escuadrón esperan a que termine: `anuncio_en`) y Juego le pide al fondo un `acelerar()` (las estrellas pegan un tirón: se siente que avanzás).
+  - Además: **sectores = biomas, uno por jefe** (`SECTORES`, en orden fijo), anomalías, desafíos (`disponible()` mira `tipos_del_sector()`), el **rango** y el **cierre del sector** (mientras dura no llega nadie ni se gana energía) y las ofertas de mejoras. Al llegar el jefe, los enemigos explotan y se van (ya no se guardan). `rotulo()` = "2-3" o "2-JEFE" (HUD, Pausa, Game Over). `con_escuadrones`/`con_anomalias`/`con_desafios`/`con_mejoras = False` los apagan (los usa el fixture de los tests).
+- **Dificultad:** `Partida(..., dificultad)` guarda `reglas = DIFICULTADES[dificultad]` (velocidad, cuántos trae cada escuadrón, espera de power-ups, apunte fijo, servicios de la gasolinera, vidas).
 - **Jefes** (`jefes/`, registro `TIPOS_JEFE`; sale el `"jefe"` del sector):
   - **Filosofía (pedido explícito del usuario):** las peleas son un **baile con ritmo, estilo Cuphead/Dark Souls**, no una lluvia de balas. Un ataque por vez, cada uno con **aviso → ataque a ritmo → ventana para pegarle**. Pocas balas. Cada jefe con personalidad (nombre, apodo, gestos) y su propio estilo. Si se agrega uno, seguir esto. Si un ataque pega demasiado, casi siempre es un aviso que no da tiempo: alargar el aviso.
   - **Pulso:** `cambiar_fase(fase, ms, t)` / `cambiar_fase_pulsos(fase, n, t)`, y en cada paso `self.pulso` y `self.nuevo_pulso`. **Trampa:** revisar `fin_de_fase` ANTES de `nuevo_pulso` (el paso en que termina una fase también empieza un pulso: si no, sale un disparo de más).
@@ -293,16 +310,18 @@ python herramientas/componer.py --fichas                # rehace efectos/fichas.
 - Un tema tarda ~80 s en componerse.
 
 ## Tests (`tests/`)
-- `conftest.py`: drivers dummy; fixture `app` (datos en `tmp_path`, sin mandos, reloj falso `app.reloj_falso`, teclas mantenidas en `app.teclas`); fixture `partida` (sin enemigos, power-ups, oleadas, anomalías, desafíos ni mejoras, y con la moneda lejos).
+- `conftest.py`: drivers dummy; fixture `app` (datos en `tmp_path`, sin mandos, reloj falso `app.reloj_falso`, teclas mantenidas en `app.teclas`); fixture `partida` (sin enemigos ni escuadrones, sin power-ups, anomalías, desafíos ni mejoras, y con la moneda lejos). Para probar escuadrones: `director.con_escuadrones = True` (ver `con_escuadrones()` en `test_progresion.py`).
 - `ayudas.py`: `avanzar(app, frames)`, `tecla(K)`, `boton(n)`, `jugar(partida, frames, dx, dy, dash)` (solo la lógica) e `ir_al_ajuste(app, nombre)` (en Opciones; nunca con un número fijo de flechas).
 - En los tests de sonido, el fixture `pedidos` anota cada `reproducir`/`reproducir_luego`.
 - Para probar que un test sirve, inyectar el error y ver que falle. **Trampa:** si el cambio deja el archivo del mismo tamaño y se restaura en el mismo segundo, Python usa el `.pyc` de la versión rota: después de restaurar, borrar los `__pycache__`.
 - Para ver algo visual: un script en el scratchpad con `App(carpeta_datos=<scratchpad>)` que guarde `app.pantalla` con `pygame.image.save`. Filtrar la salida con `grep -a` ("¡" hace que grep la trate como binaria).
-- Los bots de medición (créditos por sector, golpes por minuto, partida entera) viven en el scratchpad y se reescriben si faltan.
+- Los bots de medición (créditos por sector, golpes por minuto, cuánto dura cada tramo, partida entera) viven en el scratchpad y se reescriben si faltan. Para comparar con la versión anterior: `git worktree add <scratchpad>/viejo HEAD`, correr el mismo bot ahí y después `git worktree remove`.
 
 ## Pendiente (para el "triple A")
 - Lo que quedó fuera de la grilla de 2 px: los íconos de vidas y el texto MINI.
 - Modo demostración o tutorial.
 - Accesibilidad: cambiar los controles, modo para daltonismo, HUD más grande, modo asistido.
 - Planetas variados hechos por código y música que se intensifica con el nivel.
-- Contenido propuesto y no elegido: Torreta + Mina, Ladrón + Escudero, Fantasma + Barrera + Élites, Los Gemelos, fase 2 del Ojo. Desafío diario (semilla fija). Más logros (con paginado).
+- Contenido propuesto y no elegido: Torreta + Mina, Fantasma + Barrera + Élites, Los Gemelos, fase 2 del Ojo.
+- Ladrón y Escudero: falta que el usuario los pruebe jugando (F1 → ENEMIGO) y escuche sus 4 sonidos, y que dibuje sus sprites si quiere. Desafío diario (semilla fija). Más logros (con paginado).
+- La ruta de tramos y escuadrones: falta que el usuario la juegue (ritmo de cada tramo, el asedio, las flechas y el sonido `escuadron_llega`). Ideas que siguen: un mapa estelar entre sectores (la elección de misión del modo historia) y el modo historia como otro guion con diálogos.

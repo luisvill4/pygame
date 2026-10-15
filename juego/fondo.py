@@ -23,12 +23,15 @@ import pygame
 
 from juego import recursos, accesibilidad
 from juego.dibujo import en_grilla
-from juego.config import ANCHO, ALTO, ANCHO_MENU, PROFUNDIDAD, TRANSICION_SECTOR, SECTORES, PIXEL_ARTE
+from juego.config import (ANCHO, ALTO, ANCHO_MENU, PROFUNDIDAD, TRANSICION_SECTOR, SECTORES, PIXEL_ARTE,
+                          BRILLO_FONDO_JUGANDO)
 from juego.interpolacion import Interpolador
 
 MAXIMO_MOTAS = {"asteroides": 14, "brasas": 45, "esporas": 40, "panal": 24, "abismo": 70}
 HIPERESPACIO_PASOS = 90     # cuanto dura el salto al hiperespacio (1.5 s)
 HIPERESPACIO_VELOCIDAD = 14 # cuanto se aceleran las estrellas en lo mas rapido del salto
+ACELERON_PASOS = 50         # el aceleron al pasar de tramo: un salto cortito (se siente que avanzas)
+ACELERON_VELOCIDAD = 3
 TITILAR_MS, TITILAR_CADA = 90, 61   # cada estrella titila un instante cada TITILAR_CADA * TITILAR_MS ms
 
 
@@ -97,7 +100,9 @@ class Fondo:
         self.pasos = 0
         self.relampago = 0              # pasos que le quedan al destello de un relampago (brasas)
         self.ondas = []                 # radios de las ondas de gravedad (abismo)
-        self.salto = 0                  # pasos que le quedan al salto al hiperespacio
+        self.salto = 0                  # pasos que le quedan al salto al hiperespacio (o al aceleron)
+        self.salto_pasos = HIPERESPACIO_PASOS   # cuanto dura el salto en curso...
+        self.salto_velocidad = HIPERESPACIO_VELOCIDAD   # ...y que tan rapido va en lo mas rapido
         self.desplazamiento_panal = 0
         self._panal = None
 
@@ -120,12 +125,14 @@ class Fondo:
             self.motas.clear()
             self.ondas.clear()
 
-    def _imagen(self, objeto, tinte):
-        if tinte is None:
+    def _imagen(self, objeto, tinte, apagado=False):
+        # La imagen del objeto teñida del sector y, jugando, mas oscura (se arma una sola vez)
+        if tinte is None and not apagado:
             return objeto.imagen
-        clave = (id(objeto.imagen), tinte)
+        clave = (id(objeto.imagen), tinte, apagado)
         if clave not in self._tenidas:
-            self._tenidas[clave] = recursos.tenir(objeto.imagen, tinte)
+            imagen = objeto.imagen if tinte is None else recursos.tenir(objeto.imagen, tinte)
+            self._tenidas[clave] = recursos.apagar(imagen, BRILLO_FONDO_JUGANDO) if apagado else imagen
         return self._tenidas[clave]
 
     def _etapa(self):
@@ -149,14 +156,19 @@ class Fondo:
     def saltar_al_hiperespacio(self):
         # Las estrellas se estiran en rayas y pasan volando (al empezar y al salir de la
         # gasolinera). Dura HIPERESPACIO_PASOS: arranca, toma velocidad y frena
-        self.salto = HIPERESPACIO_PASOS
+        self.salto, self.salto_pasos, self.salto_velocidad = HIPERESPACIO_PASOS, HIPERESPACIO_PASOS, HIPERESPACIO_VELOCIDAD
+
+    def acelerar(self):
+        # El aceleron al pasar de tramo: lo mismo, mas corto y mas suave (no pisa a un salto)
+        if self.salto <= 0:
+            self.salto, self.salto_pasos, self.salto_velocidad = ACELERON_PASOS, ACELERON_PASOS, ACELERON_VELOCIDAD
 
     def velocidad_salto(self):
         # Cuanto mas rapido van las estrellas por el salto (0 si no hay salto)
         if self.salto <= 0:
             return 0
-        avance = 1 - self.salto / HIPERESPACIO_PASOS
-        return math.sin(math.pi * avance) * HIPERESPACIO_VELOCIDAD
+        avance = 1 - self.salto / self.salto_pasos
+        return math.sin(math.pi * avance) * self.salto_velocidad
 
     def mover(self, empuje_x=0, empuje_y=0):
         # Un paso de logica: cada capa cae a 0.6 * profundidad px, mas el empuje (paralaje)
@@ -271,7 +283,8 @@ class Fondo:
 
     # ---------- Dibujo ----------
 
-    def dibujar(self, pantalla, fraccion=1):
+    def dibujar(self, pantalla, fraccion=1, apagado=False):
+        # 'apagado': mientras se juega, nebulosas y planetas mas oscuros (BRILLO_FONDO_JUGANDO)
         etapa = self._etapa()
         color = [round(a + (b - a) * etapa) for a, b in zip(self.sector_anterior["fondo"], self.sector["fondo"])]
         # El relampago titila dos veces; con DESTELLOS REDUCIDOS es un solo resplandor quieto
@@ -288,13 +301,13 @@ class Fondo:
                 posicion = (en_grilla(objeto.x), en_grilla(objeto.y))      # (grilla de pixeles de arte)
                 if etapa < 1:
                     # Durante el cambio: los colores viejos y encima los nuevos, cada vez mas
-                    pantalla.blit(self._imagen(objeto, self.sector_anterior["tinte"]), posicion)
+                    pantalla.blit(self._imagen(objeto, self.sector_anterior["tinte"], apagado), posicion)
                     if etapa > 0:
-                        nueva = self._imagen(objeto, self.tinte).copy()
+                        nueva = self._imagen(objeto, self.tinte, apagado).copy()
                         nueva.set_alpha(int(255 * etapa))
                         pantalla.blit(nueva, posicion)
                 else:
-                    pantalla.blit(self._imagen(objeto, self.tinte), posicion)
+                    pantalla.blit(self._imagen(objeto, self.tinte, apagado), posicion)
             self._dibujar_estrellas(pantalla)
             for mota in self.motas:
                 self._dibujar_mota(pantalla, mota)

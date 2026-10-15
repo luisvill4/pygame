@@ -18,7 +18,8 @@ Para agregar uno: una clase con @registrar_desafio, su 'tipo', 'nombre', 'pista'
 'color', y los avisos que necesite (llamando a self.fallar() o self.avanzar()).
 """
 from juego.config import (CIAN, AMARILLO, ROJO, VERDE, MAGENTA, BLANCO, DESAFIO_COMBO, DESAFIO_CAZADOR,
-                          DESAFIO_INTERCEPTAR, DESBLOQUEO_ENEMIGO)
+                          DESAFIO_INTERCEPTAR)
+from juego.enemigos import TIPOS_ENEMIGO
 
 TIPOS_DESAFIO = {}          # nombre -> clase
 
@@ -147,8 +148,8 @@ class Cazador(Desafio):
 
     @classmethod
     def disponible(cls, partida):
-        # Solo si ya hay enemigos que el dash destruye (el divisor es el primero)
-        return partida.nivel >= DESBLOQUEO_ENEMIGO["divisor"]
+        # Solo si en este sector llegan enemigos que el dash destruye
+        return any(TIPOS_ENEMIGO[tipo].destruible for tipo in partida.director.tipos_del_sector())
 
     def al_destruir_enemigo(self):
         self.avanzar(self.progreso + 1)
@@ -164,8 +165,8 @@ class Interceptor(Desafio):
 
     @classmethod
     def disponible(cls, partida):
-        # Solo si ya hay embestidores
-        return partida.nivel >= DESBLOQUEO_ENEMIGO["embestidor"]
+        # Solo si en este sector llegan embestidores
+        return "embestidor" in partida.director.tipos_del_sector()
 
     def al_interceptar(self):
         self.avanzar(self.progreso + 1)

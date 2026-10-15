@@ -112,6 +112,11 @@ class Pausa(Escena):
 
     # ---------- Dibujo ----------
 
+    @staticmethod
+    def _tramo(director):
+        # "3/4" o "JEFE" (el tramo de la ruta del sector)
+        return "%d/4" % director.numero_tramo if director.numero_tramo else "JEFE"
+
     def dibujar(self, pantalla):
         pantalla.blit(self.fondo, (0, 0))
         interfaz.titulo(pantalla, "PAUSA", 64, 92, CIAN, CIAN_OSCURO)
@@ -136,7 +141,7 @@ class Pausa(Escena):
         texto(pantalla, sector["lema"], CHICA, TEXTO_SUAVE, adentro.left, adentro.top + 40, alinear="izquierda")
 
         # Los numeros, en una grilla de 3 x 2
-        datos = [("PUNTOS", dibujo.numero_arcade(partida.puntaje)), ("NIVEL", str(partida.nivel)),
+        datos = [("PUNTOS", dibujo.numero_arcade(partida.puntaje)), ("TRAMO", self._tramo(director)),
                  ("TIEMPO", reloj(partida.tiempo)), ("CREDITOS", str(partida.creditos)),
                  ("PERFECTOS", str(partida.estadisticas.perfectos)), ("MEJOR COMBO", str(partida.mejor_combo))]
         ancho_columna = adentro.width // 3

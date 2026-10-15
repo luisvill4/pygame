@@ -89,7 +89,7 @@ ARMONICOS = set(
        "mejora_elegida", "eco", "bonus", "aturdido", "vulnerable", "desafio_nuevo", "desafio_cumplido",
        "oleada_superada", "logro", "nave_nueva", "bala_rota", "aparece", "retirada", "oro_llega",
        "ui_aceptar", "ui_volver", "ui_pestana", "ui_valor_sube", "ui_valor_baja", "ui_llave_si", "ui_llave_no",
-       "carta_rara", "hangar_nave", "contador_fin", "taller",
+       "carta_rara", "hangar_nave", "contador_fin", "taller", "moneda_recuperada", "escudo_bloquea",
        # los que se repiten todo el tiempo (y su tension la da el ritmo, no las notas)
        "compas", "compas_acento", "combo_cortado", "mina_tic", "pw_acaba", "pw_fin", "dash_vacio",
        "enjambre_picada"] + _familia("rebote", 4))
@@ -231,6 +231,7 @@ CATALOGO = _armar(
 
     # ---------- Enemigos y proyectiles ----------
     _uno("aparece", EFECTOS, DETALLE, voces=2, enfriamiento=120),
+    _uno("escuadron_llega", EFECTOS, PELIGRO, voces=2, enfriamiento=250),
     {"enemigo_roto": Efecto(_variantes("enemigo_roto", 3), EFECTOS, ACCION, voces=3)},
     _uno("aturdido", EFECTOS, DETALLE, voces=1),
     _escala("rebote", 4, EFECTOS, DETALLE, voces=1, enfriamiento=200),
@@ -246,6 +247,10 @@ CATALOGO = _armar(
     _uno("retirada", EFECTOS, DETALLE, voces=1, enfriamiento=300),
     _uno("mina_tic", EFECTOS, PELIGRO, voces=2),
     _uno("mina_estalla", EFECTOS, PELIGRO, voces=2),
+    _uno("ladron_roba", EFECTOS, PELIGRO, voces=1),
+    _uno("ladron_escapa", EFECTOS, PELIGRO, voces=1),
+    _uno("moneda_recuperada", EFECTOS, ACCION, voces=1),
+    _uno("escudo_bloquea", EFECTOS, ACCION, voces=2, enfriamiento=80),
 
     # ---------- Oleadas, anomalias, desafios y carteles ----------
     _uno("oleada", EFECTOS, PELIGRO, voces=1, paneo=False),

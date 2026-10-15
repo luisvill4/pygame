@@ -89,6 +89,14 @@ def tenir(imagen, color):
     return copia
 
 
+def apagar(imagen, brillo):
+    # Copia mas oscura (brillo de 0 a 1), sin tocar la transparencia
+    copia = imagen.copy()
+    nivel = round(255 * brillo)
+    copia.fill((nivel, nivel, nivel), special_flags=pygame.BLEND_RGB_MULT)
+    return copia
+
+
 def blanquear(imagen):
     # Copia toda blanca (para el destello al recibir un golpe)
     copia = imagen.copy()

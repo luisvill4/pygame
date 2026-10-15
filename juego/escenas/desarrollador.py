@@ -176,7 +176,7 @@ class Desarrollador(Escena):
         self.app.avisar("POWER-UP: " + powerup.nombre)
 
     def _limpiar(self):
-        # Los enemigos explotan y se van (el director manda refuerzos al rato, como siempre)
+        # Los enemigos explotan y se van (despues llegan los escuadrones que siguen, como siempre)
         partida = self.partida
         for enemigo in list(partida.enemigos):
             centro_x, centro_y = enemigo.centro()

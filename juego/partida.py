@@ -14,7 +14,8 @@ Reglas importantes:
 - Todo daño a la nave pasa por danar_jugador().
 - Todos los puntos pasan por sumar_puntos() (aplica DOBLE y detecta el record).
 - Toda la energia pasa por ganar_energia(): monedas, dash perfectos, enemigos destruidos,
-  desafios y oleadas llenan la barra; llena, se sube de nivel.
+  escuadrones, desafios y el asedio llenan la barra; llena, se sube de nivel (en el asedio,
+  el nivel espera a que termine: revisar_energia).
 - Los creditos (la plata de la gasolinera) pasan por ganar_creditos() y gastar_creditos().
   Los dan las monedas; no son puntos (gastarlos no baja el puntaje).
 - Dash perfecto: destruir con el dash a un enemigo destruible o interceptar a uno en pleno
@@ -25,8 +26,14 @@ Reglas importantes:
   las consultan con self.mejora("tipo").
 - Modo desarrollador (escenas/desarrollador.py): si se uso, la partida no guarda record ni
   logros (modo_desarrollador), y con 'invencible' nada le hace daño.
-- Los avisos de arriba ("NIVEL 7", "¡OLEADA!"...) pasan por avisar(): salen de a uno, en
-  una cola (avisos.py).
+- Los avisos de arriba ("TRAMO 2/4", "¡ASEDIO SUPERADO!"...) pasan por avisar(): salen de a
+  uno, en una cola (avisos.py).
+- Los enemigos llegan en escuadrones (progresion.py): un enemigo que te choca, o que se rompe
+  con el hielo sin ser destruible, se retira (se va volando) en vez de reaparecer.
+- La moneda robada (enemigos/ladron.py): robar_moneda, recuperar_moneda, moneda_escapada y
+  soltar_moneda. Mientras un ladron la lleva, el reloj del combo espera.
+- Un enemigo con defensa (bloquea_dash: el escudo del escudero) hace rebotar el dash y
+  frena las ondas y el ECO que le llegan de frente.
 """
 import math
 import random
@@ -44,7 +51,7 @@ from juego.config import (ANCHO, COMBO_TIEMPO, COMBO_MAXIMO, MS_POR_FRAME, ENERG
                           ATURDIDO_INTERCEPTAR, MAGENTA, CREDITOS_POR_MONEDA, ECO_RETRASO, BUFFER_DASH,
                           IMPACTO_PASOS, CAMARA_LENTA_JEFE, LATIDO_MS, AVISO_ULTIMA_VIDA,
                           DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
-                          ESCARCHA, EMBESTIDA, ARCOIRIS, AVISO_NIVEL, AVISO_RECORD)
+                          ESCARCHA, EMBESTIDA, ARCOIRIS, AVISO_RECORD, LADRON_BONUS, VIOLETA)
 from juego.avisos import Aviso, ColaDeAvisos
 from juego.nave import Nave
 from juego.moneda import Moneda
@@ -60,7 +67,8 @@ from juego.logros import revisar_logros
 
 
 class Partida:
-    def __init__(self, efectos, sonidos, entrada, records, opciones, dificultad="NORMAL", progreso=None):
+    def __init__(self, efectos, sonidos, entrada, records, opciones, dificultad="NORMAL", progreso=None,
+                 modo="arcade"):
         # Servicios que usa (los crea la App y se comparten)
         self.efectos = efectos
         self.sonidos = sonidos
@@ -70,6 +78,7 @@ class Partida:
         # Dificultad: sus reglas (vidas, velocidad, presupuesto...) y su propio record
         self.dificultad = dificultad
         self.reglas = DIFICULTADES[dificultad]
+        self.modo = modo                # el guion que se juega (guiones.py): "arcade"
         self.puntaje_maximo = records.maximo(dificultad)
 
         # Reloj y control
@@ -134,11 +143,10 @@ class Partida:
         self.bonus_jefe = 0
         self.balas = []
 
-        # Enemigos (durante la pelea con el jefe se guardan aparte). Cuales y cuantos
-        # los decide el director (presupuesto, sectores y oleadas: ver progresion.py)
+        # Enemigos: quienes, cuando y como llegan lo decide el director (tramos, escuadrones
+        # y el asedio: ver progresion.py)
         self.enemigos = []
-        self.enemigos_guardados = []
-        self.director = Director(self)
+        self.director = Director(self, modo)
         self.director.al_empezar()
 
     # ================================== #
@@ -211,8 +219,11 @@ class Partida:
         base = RECARGA_RAPIDA if self.activo("recarga") else DASH_RECARGA
         return base * (1 - MEJORA_RECARGA) ** self.mejora("recarga")
 
-    def puede_destruir(self, enemigo):
-        # ¿El dash lo destruye? Los 'destruibles' siempre; con la mejora FILO, todos
+    def puede_destruir(self, enemigo, desde=None):
+        # ¿El dash lo destruye? Los 'destruibles' siempre; con la mejora FILO, todos. Pero si el
+        # golpe llega 'desde' (x, y) contra su defensa (el escudo del escudero), no
+        if desde is not None and enemigo.bloquea_dash(*desde):
+            return False
         return enemigo.destruible or self.mejora("filo") > 0
 
     # ================================== #
@@ -240,15 +251,30 @@ class Partida:
             return
         self.energia += cantidad
         self.tiempo_energia = self.tiempo
+        self.revisar_energia()
+
+    def barra_llena_esperando(self):
+        # La barra esta llena pero el nivel espera (el asedio): el HUD lo muestra
+        return self.director.retiene_el_nivel() and self.energia >= self.energia_necesaria()
+
+    def revisar_energia(self):
+        # ¿La barra esta llena? Se sube de nivel... salvo en el asedio: ahi la barra queda
+        # llena esperando, y el Director vuelve a preguntar cuando termina
         necesaria = self.energia_necesaria()
-        if self.energia < necesaria:
+        if self.energia < necesaria or not self.puede_ganar_energia():
+            return
+        if self.director.retiene_el_nivel():
+            self.energia = necesaria
             return
         sobra = self.energia - necesaria
+        # La barra se vacia ANTES de subir: lo que se gane durante la subida (un desafio que
+        # se cumple cuando llega el jefe) no puede saltear otro nivel
+        self.energia = 0
         self.subir_nivel()
         if self.jefe is not None:
             self.energia = 0                    # despues del jefe se empieza con la barra vacia
         else:
-            self.energia = min(sobra, self.energia_necesaria() - 1)
+            self.energia = min(self.energia + sobra, self.energia_necesaria() - 1)
 
     def ganar_creditos(self, cantidad):
         # Todos los creditos pasan por aca (hoy solo los dan las monedas)
@@ -268,20 +294,18 @@ class Partida:
         # urgentes (una amenaza) pasan primero (ver avisos.py)
         self.avisos.agregar(aviso, self.tiempo, urgente)
 
-    def subir_nivel(self):
+    def subir_nivel(self, anunciar=True):
+        # Un nivel mas = el tramo siguiente de la ruta (el Director lo anuncia con su cartel).
+        # 'anunciar' = False: el primer nivel de un sector nuevo (ya sale el cartel del sector)
         self.nivel += 1
         self.tiempo_nivel = self.tiempo
-        # El aviso cuenta cuanto falta para el jefe (en su nivel no hace falta: llega el jefe)
-        faltan = JEFE_CADA_NIVELES - self.nivel % JEFE_CADA_NIVELES
-        if faltan < JEFE_CADA_NIVELES:
-            proximo = "PROXIMO NIVEL: ¡JEFE!" if faltan == 1 else "JEFE EN " + str(faltan) + " NIVELES"
-            self.avisar(Aviso("¡SUBISTE!", "NIVEL " + str(self.nivel), proximo, AMARILLO, AVISO_NIVEL))
-        if self.nivel % JEFE_CADA_NIVELES:
-            self.sonidos.reproducir("nivel")        # (en el nivel del jefe suena la alerta)
-        self.entrada.vibrar("subir_nivel")
-        nave_x, nave_y = self.nave.centro()
-        self.efectos.anillo(nave_x, nave_y, ORO, 32, 6)
-        self.director.al_subir_nivel()      # sector nuevo cada tanto y mas enemigos
+        if anunciar:
+            if self.nivel % JEFE_CADA_NIVELES:
+                self.sonidos.reproducir("nivel")        # (en el nivel del jefe suena la alerta)
+            self.entrada.vibrar("subir_nivel")
+            nave_x, nave_y = self.nave.centro()
+            self.efectos.anillo(nave_x, nave_y, ORO, 32, 6)
+        self.director.al_subir_nivel()      # el tramo nuevo (o, en su nivel, el jefe)
         if self.nivel % JEFE_CADA_NIVELES == 0:
             self.iniciar_jefe()
 
@@ -385,19 +409,18 @@ class Partida:
         self.camara_lenta = CAMARA_LENTA_JEFE
 
     def iniciar_jefe(self, tipo=None):
-        # Los enemigos explotan y se guardan hasta que venzas al jefe del sector
-        # ('tipo' elige otro jefe: lo usa el modo desarrollador)
+        # Los enemigos que quedan explotan: el jefe pelea solo. Despues del jefe empieza el
+        # sector siguiente, con su propio guion ('tipo' elige otro jefe: el modo desarrollador)
         if tipo is None:
             tipo = self.director.jefe_del_sector()
-        self.director.al_empezar_jefe()     # si habia una oleada, se corta
+        self.director.al_empezar_jefe()     # si habia un asedio o una anomalia, se cortan
         self.avisos.vaciar()                # la presentacion del jefe ocupa la pantalla
         self.jefe = crear_jefe(tipo, self)
         self.balas.clear()
-        for enemigo in self.enemigos:
+        for enemigo in list(self.enemigos):
             centro_x, centro_y = enemigo.centro()
             self.efectos.explosion(centro_x, centro_y, EMBESTIDA, 20, 4, 3)
-        self.enemigos_guardados.extend(self.enemigos)
-        self.enemigos.clear()
+            self.quitar_enemigo(enemigo)    # (un ladron suelta la moneda)
         self.efectos.sacudir(20)
         self.entrada.vibrar("jefe_llega")        # un latido: llego el jefe
         self.sonidos.reproducir("alerta")       # (la musica se calla: ver Juego.musica)
@@ -409,7 +432,7 @@ class Partida:
         self.segmentos_sonados = 0
 
     def jefe_vencido(self):
-        # Gran explosion y bonus de puntos (los enemigos vuelven cuando se va el cartel)
+        # Gran explosion y bonus de puntos (el sector nuevo empieza cuando se va el cartel)
         centro_x, centro_y = self.jefe.centro()
         self.jefe.al_vencerlo(self)
         self.jefe.explotar(self)
@@ -469,12 +492,17 @@ class Partida:
         self.en_dash_antes = en_dash
         self.ecos = [eco for eco in self.ecos if eco.actualizar(self)]
 
-        # El combo se corta si pasa mucho tiempo sin monedas
+        # El combo se corta si pasa mucho tiempo sin monedas. Mientras un ladron se lleva la
+        # moneda, el reloj del combo espera (si no, perseguirlo no serviria de nada)
+        if self.moneda.robada_por is not None:
+            self.ultima_moneda += MS_POR_FRAME
         if self.combo > 0 and self.tiempo - self.ultima_moneda > self.tiempo_combo():
             if self.multiplicador_combo() > 1:
                 self.sonidos.reproducir("combo_cortado")
             self.combo = 0
-        if self.activo("iman"):
+        if self.moneda.robada_por is not None:
+            pass                # (el iman no se la puede sacar al ladron)
+        elif self.activo("iman"):
             self.moneda.atraer(self.nave, self.efectos)
         elif self.mejora("atraccion"):
             self.moneda.atraer(self.nave, self.efectos, MEJORA_ATRACCION[self.mejora("atraccion") - 1], 4)
@@ -482,9 +510,8 @@ class Partida:
         self._revisar_moneda()
         self._actualizar_powerups()
         self._avisar_powerups()
-        self.director.actualizar()          # oleadas, anomalias, desafios y rango
+        self.director.actualizar()          # escuadrones, asedio, anomalias, desafios y rango
         self.avisos.actualizar(self.tiempo)
-        self._devolver_enemigos()
         self._actualizar_enemigos()
         if self.jefe is not None and not self.termino:
             self._actualizar_jefe()
@@ -588,7 +615,7 @@ class Partida:
             centro_x, centro_y = enemigo.centro()
             if math.hypot(centro_x - x, centro_y - y) > radio + enemigo.tamano / 2:
                 continue
-            if self.puede_destruir(enemigo):
+            if self.puede_destruir(enemigo, (x, y)):
                 self.destruir_con_dash(enemigo)
             else:
                 enemigo.empujar(self, x, y, EMPUJE_ONDA, ATURDIDO_ONDA)
@@ -651,8 +678,13 @@ class Partida:
         self.sonidos.reproducir("pw_escudo", nave_x)
 
     def _revisar_moneda(self):
-        if not self.nave.caja_recoger().colliderect(self.moneda.caja()):
-            return
+        # (la robada no se puede agarrar: hay que alcanzar al ladron con el dash)
+        if self.moneda.robada_por is None and self.nave.caja_recoger().colliderect(self.moneda.caja()):
+            self._recoger_moneda()
+
+    def _recoger_moneda(self, bonus=0, cartel=""):
+        # Cobrar la moneda: combo, puntos, creditos y energia. 'bonus' y 'cartel': la que se
+        # le recupera a un ladron (ver recuperar_moneda)
         ahora = self.tiempo
         self.estadisticas.monedas += 1
         multiplicador_antes = self.multiplicador_combo()
@@ -662,7 +694,7 @@ class Partida:
             self.combo = 1
         self.ultima_moneda = ahora
         self.mejor_combo = max(self.mejor_combo, self.combo)
-        ganados = self.sumar_puntos(self.multiplicador_combo() * self.director.multiplicador_monedas())
+        ganados = self.sumar_puntos(self.multiplicador_combo() * self.director.multiplicador_monedas() + bonus)
         # Creditos: tambien con el combo (jugar bien te hace mas rico), pero no con DOBLE
         self.ganar_creditos(CREDITOS_POR_MONEDA * self.multiplicador_combo() * self.director.multiplicador_monedas())
         centro_x, centro_y = self.moneda.centro()
@@ -670,7 +702,7 @@ class Partida:
             self.efectos.explosion(centro_x, centro_y, ARCOIRIS, 20, 5, 3)
         else:
             self.efectos.explosion(centro_x, centro_y, ORO, 14, 4, 3)
-        self.efectos.texto_flotante("+" + str(ganados), centro_x, self.moneda.y - 6, AMARILLO)
+        self.efectos.texto_flotante(cartel + "+" + str(ganados), centro_x, self.moneda.y - 6, AMARILLO)
         # La moneda sube de tono con el multiplicador (el oido "lee" el combo)
         self.sonidos.reproducir("moneda_%d" % self.multiplicador_combo(), centro_x)
         if self.director.multiplicador_monedas() > 1:
@@ -745,24 +777,14 @@ class Partida:
         self.ultimo_powerup = elegido.tipo
         return elegido
 
-    def _devolver_enemigos(self):
-        # Despues del jefe, los enemigos vuelven cuando se cierra el sector (cuando se van
-        # los carteles de "¡JEFE VENCIDO!" y del rango)
-        if self.jefe is not None or not self.enemigos_guardados:
-            return
-        if self.director.cerrando_sector():
-            return
-        for enemigo in self.enemigos_guardados:
-            enemigo.reaparecer(self)
-            self.enemigos.append(enemigo)
-        self.enemigos_guardados.clear()
-        self.director.al_volver_del_jefe()      # y se completa el presupuesto del nivel
-
     def _actualizar_enemigos(self):
         ahora = self.tiempo
         congelados = self.activo("hielo")
-        for enemigo in self.enemigos:
-            enemigo.actualizar(self, congelados)
+        for enemigo in list(self.enemigos):         # (una copia: un ladron que escapa sale del juego)
+            if enemigo in self.enemigos:
+                enemigo.actualizar(self, congelados)
+        if self.moneda.robada_por is not None:
+            self.moneda.seguir_al_ladron()
 
         nave = self.nave
         caja_nave = nave.caja_recoger()
@@ -785,12 +807,15 @@ class Partida:
                 if enemigo.destruible:
                     self.destruir_enemigo(enemigo, con_dash=False)
                 else:
-                    enemigo.reaparecer(self)
+                    enemigo.retirarse(self)     # se va (no se puede romper)
                 # La energia va al final: si llena la barra y llega el jefe, los enemigos se
                 # guardan, y este ya tiene que estar fuera (si no, "revive" despues del jefe)
                 self.ganar_energia(ENERGIA_ENEMIGO)
             elif congelados or enemigo.aturdido(ahora):
                 continue        # (congelado o aturdido no lastima)
+            elif (nave.en_dash(ahora) and caja_nave.colliderect(enemigo.caja())
+                  and enemigo.bloquea_dash(*nave.centro())):
+                self._rebotar_en_escudo(enemigo)
             elif self.puede_destruir(enemigo) and nave.en_dash(ahora) and caja_nave.colliderect(enemigo.caja()):
                 # El perfecto es solo para los que el dash rompe de por si (con FILO se
                 # destruyen todos, pero esos no cuentan)
@@ -809,7 +834,7 @@ class Partida:
                     self.efectos.explosion(golpe_x, golpe_y, [(40, 40, 60), enemigo.color], 16, 4, 3)
                     self.destruir_enemigo(enemigo, con_dash=False)
                 else:
-                    enemigo.reaparecer(self)
+                    enemigo.retirarse(self)     # te pego y se va (como en los juegos de naves)
 
     def _interceptar(self, enemigo):
         # Dash contra un enemigo en pleno ataque (el embestidor cargando): lo frena en seco,
@@ -831,6 +856,55 @@ class Partida:
             self.efectos.texto_flotante("¡INTERCEPTADO! +" + str(ganados), golpe_x, golpe_y - 30, MAGENTA)
         else:
             self._dash_perfecto(golpe_x, golpe_y, "¡INTERCEPTADO!", INTERCEPTAR_PUNTOS)
+
+    def _rebotar_en_escudo(self, enemigo):
+        # Dash contra una defensa (el escudo del escudero de frente): la nave rebota como contra
+        # un jefe y nadie sufre nada
+        chispa_x, chispa_y = enemigo.punto_de_bloqueo()
+        self._rebotar_en(*enemigo.centro())
+        enemigo.al_bloquear(self)
+        self.efectos.explosion(chispa_x, chispa_y, [(90, 50, 0), enemigo.color, BLANCO], 14, 5, 2)
+        self.efectos.onda_de_choque(chispa_x, chispa_y, 40, BLANCO, 12)
+        self.efectos.sacudir(5)
+        self.sonidos.reproducir("escudo_bloquea", chispa_x)
+        self.entrada.vibrar("bloqueo")
+        self.congelar_frames = max(self.congelar_frames, 2)
+
+    def robar_moneda(self, ladron):
+        # Un ladron agarro la moneda: se la lleva encima (ver Moneda.seguir_al_ladron)
+        self.moneda.robada_por = ladron
+        centro_x, centro_y = self.moneda.centro()
+        self.efectos.explosion(centro_x, centro_y, [(40, 20, 70), VIOLETA, AMARILLO], 10, 3, 2)
+        self.efectos.texto_flotante("¡ROBADA!", centro_x, centro_y - 30, VIOLETA)
+        self.sonidos.reproducir("ladron_roba", centro_x)
+
+    def recuperar_moneda(self, ladron):
+        # Alcanzaste al ladron: la moneda se cobra en el momento, con bonus, y el combo sigue
+        self.moneda.robada_por = None
+        self.sonidos.reproducir("moneda_recuperada", self.moneda.centro()[0])
+        self.estadisticas.recuperadas += 1
+        self._recoger_moneda(LADRON_BONUS, "¡RECUPERADA! ")
+
+    def moneda_escapada(self, ladron):
+        # El ladron salio de la pantalla con la moneda: se corta el combo y la moneda aparece
+        # en otro lugar. El ladron se va (cuenta como que se escapo de su escuadron)
+        self.moneda.robada_por = None
+        self.combo = 0
+        self.sonidos.reproducir("ladron_escapa", max(0, min(ladron.centro()[0], ANCHO)))
+        self.entrada.vibrar("robo_escapa")
+        nave_x, nave_y = self.nave.centro()
+        self.efectos.texto_flotante("¡SE LLEVO LA MONEDA!", nave_x, nave_y - 40, VIOLETA)
+        self.moneda.mover_a_lugar_nuevo(self)
+        if ladron.escuadron is not None:
+            ladron.escuadron.escaparon += 1
+        self.quitar_enemigo(ladron)
+
+    def soltar_moneda(self):
+        # El ladron sale del juego por otra cosa (se retira, llega el jefe...): la
+        # moneda vuelve a otro lugar sin castigo
+        if self.moneda.robada_por is not None:
+            self.moneda.robada_por = None
+            self.moneda.mover_a_lugar_nuevo(self)
 
     def destruir_con_dash(self, enemigo):
         # El dash destruye a los enemigos 'destruibles': puntos, chispas, y el dash se recarga un poco
@@ -856,7 +930,7 @@ class Partida:
         self.quitar_enemigo(enemigo)
 
     def quitar_enemigo(self, enemigo):
-        # Todo enemigo que sale del juego pasa por aca (destruido, fin de oleada, cambio de sector)
+        # Todo enemigo que sale del juego pasa por aca (destruido, retirado, llega el jefe)
         if enemigo in self.enemigos:
             self.enemigos.remove(enemigo)
         enemigo.al_quitar(self)
@@ -966,11 +1040,15 @@ class Partida:
         impactos.peligro(pantalla, self)
 
     def _dibujar_todo(self, pantalla, con_nave):
-        self.moneda.dibujar(pantalla)
+        robada = self.moneda.robada_por is not None
+        if not robada:
+            self.moneda.dibujar(pantalla)
         if self.capsula is not None:
             self.capsula.dibujar(pantalla)
         for enemigo in self.enemigos:
             enemigo.dibujar(pantalla, self)
+        if robada:
+            self.moneda.dibujar(pantalla)       # encima del ladron que se la lleva
         if self.jefe is not None:
             self.jefe.dibujar(pantalla, self)
         dibujar_balas(pantalla, self.balas)

@@ -38,6 +38,7 @@ class Moneda:
     def __init__(self):
         # Empieza en el centro de la pantalla; (x, y) es su esquina de arriba a la izquierda
         self.x, self.y = CENTRO_X, 300
+        self.robada_por = None      # el ladron que se la lleva (None = esta libre; ver enemigos/ladron.py)
 
     def centro(self):
         return self.x + TAMANO / 2, self.y + TAMANO / 2
@@ -47,6 +48,11 @@ class Moneda:
 
     def mover_a_lugar_nuevo(self, partida):
         self.x, self.y = lugar_para_moneda(partida)
+
+    def seguir_al_ladron(self):
+        # Robada: va encima de la cabeza del ladron, para que se vea que se la lleva
+        ladron_x, _ = self.robada_por.centro()
+        self.x, self.y = ladron_x - TAMANO / 2, self.robada_por.y - TAMANO - 2
 
     def atraer(self, nave, efectos, alcance=250, rapidez=6):
         # Iman (y la mejora ATRACCION): si esta cerca, vuela hacia la nave
