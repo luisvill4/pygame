@@ -1,7 +1,7 @@
 """
 Objetivos: lo que pide cada tramo para pasar al siguiente (como las misiones de Metal Slug).
 
-Cada tramo del guion (guiones.py) trae su objetivo, ligado a la idea del tramo: en
+Cada tramo de la ruta (rutas.py) trae su objetivo, ligado a la idea del tramo: en
 BLANCO FACIL hay que romper divisores, en CARGA frenar embestidas, en el ASEDIO aguantar.
 Al cumplirlo, los enemigos que quedan se retiran y, con la zona despejada, empieza el
 tramo siguiente. Los objetivos no se fallan: si algo se escapa, llega otro escuadron.

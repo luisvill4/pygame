@@ -92,13 +92,16 @@ class TablaRecords:
 
 class Progreso:
     # Lo que se gana jugando y queda entre partidas. En el archivo:
-    #   {"logros": ["primer_jefe", ...], "nave": "CIAN", "partidas": 12}
+    #   {"logros": ["primer_jefe", ...], "nave": "CIAN", "partidas": 12,
+    #    "misiones": [1, 2], "fragmentos": ["F01", ...]}      (las dos ultimas: el modo historia)
 
     def __init__(self, archivo):
         self.archivo = archivo
         self.logros = set()             # ids de los logros desbloqueados (ver logros.py)
         self.nave = NAVES[0][0]         # nombre de la nave elegida
         self.partidas = 0               # partidas terminadas
+        self.misiones = set()           # modo historia: las misiones cumplidas (1 a 5)
+        self.fragmentos = set()         # modo historia: los fragmentos del Archivo encontrados
         self._cargar()
 
     def _cargar(self):
@@ -107,6 +110,8 @@ class Progreso:
                 datos = json.load(abierto)
             self.logros = {str(logro) for logro in datos.get("logros", [])}
             self.partidas = max(0, int(datos.get("partidas", 0)))
+            self.misiones = {int(numero) for numero in datos.get("misiones", [])}
+            self.fragmentos = {str(fragmento) for fragmento in datos.get("fragmentos", [])}
             if datos.get("nave") in [nombre for nombre, _, _ in self.naves_disponibles()]:
                 self.nave = datos["nave"]
         except FileNotFoundError:
@@ -116,7 +121,20 @@ class Progreso:
 
     def guardar(self):
         _escribir_json(self.archivo, {"logros": sorted(self.logros), "nave": self.nave,
-                                      "partidas": self.partidas})
+                                      "partidas": self.partidas, "misiones": sorted(self.misiones),
+                                      "fragmentos": sorted(self.fragmentos)})
+
+    def cumplir_mision(self, numero):
+        self.misiones.add(numero)
+        self.guardar()
+
+    def encontrar_fragmento(self, id_fragmento):
+        # Devuelve True si es nuevo (lo encontrado, encontrado queda: aunque despues pierdas)
+        if id_fragmento in self.fragmentos:
+            return False
+        self.fragmentos.add(id_fragmento)
+        self.guardar()
+        return True
 
     def desbloquear(self, id_logro):
         self.logros.add(id_logro)

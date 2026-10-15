@@ -9,7 +9,7 @@ turno, los que quedan se retiran volando. Si los eliminas a todos, hay bonus.
 Formaciones (patron Registry, como los enemigos): cada una es una funcion con el
 decorador @formacion("nombre") que recibe cuantos son y donde esta la nave, y devuelve
 un par (desde, hasta) por enemigo: desde = un punto afuera de la pantalla, hasta = su
-lugar adentro. Para agregar una, escribir la funcion; los guiones la usan por su nombre.
+lugar adentro. Para agregar una, escribir la funcion; las rutas la usan por su nombre.
 
 Por donde entran: siempre lejos de la nave (por el borde mas lejano), y ninguno termina
 de entrar a menos de LEJOS_DE_LA_NAVE px de ella: asi nunca te aparece un enemigo encima.

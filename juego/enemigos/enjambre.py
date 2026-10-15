@@ -8,7 +8,7 @@ Enjambre: ENJAMBRE_CANTIDAD drones chiquitos que vuelan juntos, en formacion.
 - El dash destruye los drones de a uno. Si destruis el enjambre entero con el dash,
   hay un bonus. Si un dron te choca, explota (se pierde).
 
-En los guiones, un "enjambre" es una bandada entera (entra volando en su formacion).
+En las rutas, un "enjambre" es una bandada entera (entra volando en su formacion).
 Sprite (opcional): enjambre.png, 2 cuadros de 20x20.
 """
 import math

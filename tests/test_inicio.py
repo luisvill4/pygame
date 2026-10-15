@@ -33,7 +33,7 @@ def test_el_menu_es_vertical_y_da_la_vuelta(app):
     inicio = app.escena
     tecla(pygame.K_DOWN)
     avanzar(app)
-    assert MENU[inicio.opcion] == "LOGROS"
+    assert MENU[inicio.opcion] == "HISTORIA"
     tecla(pygame.K_UP)
     avanzar(app)
     tecla(pygame.K_UP)

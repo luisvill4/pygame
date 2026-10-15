@@ -32,6 +32,10 @@ Reglas importantes:
   con el hielo sin ser destruible, se retira (se va volando) en vez de reaparecer.
 - La moneda robada (enemigos/ladron.py): robar_moneda, recuperar_moneda, moneda_escapada y
   soltar_moneda. Mientras un ladron la lleva, el reloj del combo espera.
+- El MODO (modos.py: ModoArcade o ModoHistoria) decide lo que cambia de uno a otro: donde
+  empieza, que ruta sigue, que pasa despues del jefe. La Partida le avisa lo que pasa y le
+  pide actualizar y dibujar lo suyo (la historia: sus secretos). Si el modo dice que la
+  partida se cumplio (historia: vencio al jefe de la mision), 'cumplida' es True.
 - Un enemigo con defensa (bloquea_dash: el escudo del escudero) hace rebotar el dash y
   frena las ondas y el ECO que le llegan de frente.
 """
@@ -52,6 +56,8 @@ from juego.config import (ANCHO, COMBO_TIEMPO, COMBO_MAXIMO, MS_POR_FRAME,
                           DIFICULTADES, AMARILLO, BLANCO, CIAN, ROJO, HIELO, ORO, FUEGO, ENERGIA,
                           ESCARCHA, EMBESTIDA, ARCOIRIS, AVISO_RECORD, LADRON_BONUS, VIOLETA)
 from juego.avisos import Aviso, ColaDeAvisos
+from juego.radio import Radio
+from juego.arcade.modo import ModoArcade
 from juego.nave import Nave
 from juego.moneda import Moneda
 from juego.jefes import crear_jefe
@@ -67,7 +73,7 @@ from juego.logros import revisar_logros
 
 class Partida:
     def __init__(self, efectos, sonidos, entrada, records, opciones, dificultad="NORMAL", progreso=None,
-                 modo="arcade"):
+                 modo=None):
         # Servicios que usa (los crea la App y se comparten)
         self.efectos = efectos
         self.sonidos = sonidos
@@ -77,7 +83,9 @@ class Partida:
         # Dificultad: sus reglas (vidas, velocidad, presupuesto...) y su propio record
         self.dificultad = dificultad
         self.reglas = DIFICULTADES[dificultad]
-        self.modo = modo                # el guion que se juega (guiones.py): "arcade"
+        self.modo = modo or ModoArcade()    # el modo de juego (modos.py): sus reglas y lo suyo
+        self.cumplida = False           # el modo dice que se cumplio (historia: vencio al jefe)
+        self.radio = Radio()            # los mensajes de abajo (en el arcade nadie habla)
         self.puntaje_maximo = records.maximo(dificultad)
 
         # Reloj y control
@@ -143,7 +151,8 @@ class Partida:
         # Enemigos: quienes, cuando y como llegan lo decide el director (tramos, escuadrones
         # y el asedio: ver progresion.py)
         self.enemigos = []
-        self.director = Director(self, modo)
+        self.modo.empezar(self)             # (el nivel del primer sector de su ruta, y lo suyo)
+        self.director = Director(self)
         self.director.al_empezar()
 
     # ================================== #
@@ -419,6 +428,7 @@ class Partida:
             objetos.append(self.capsula)
         if self.jefe is not None:
             objetos.extend(self.jefe.objetos_que_se_mueven())
+        objetos.extend(self.modo.objetos_que_se_mueven())
         return objetos
 
     def guardar_posiciones(self):
@@ -469,6 +479,9 @@ class Partida:
         self._avisar_powerups()
         self.director.actualizar()          # escuadrones, asedio, anomalias, desafios y rango
         self.avisos.actualizar(self.tiempo)
+        if self.radio.actualizar(self.tiempo) is not None:
+            self.sonidos.reproducir("teclear")      # el clic de la radio
+        self.modo.actualizar()
         self._actualizar_enemigos()
         if self.jefe is not None and not self.termino:
             self._actualizar_jefe()
@@ -993,6 +1006,7 @@ class Partida:
         impactos.peligro(pantalla, self)
 
     def _dibujar_todo(self, pantalla, con_nave):
+        self.modo.dibujar(pantalla)         # lo del modo (las reliquias), debajo de todo
         robada = self.moneda.robada_por is not None
         if not robada:
             self.moneda.dibujar(pantalla)

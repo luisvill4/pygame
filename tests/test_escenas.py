@@ -8,9 +8,9 @@ from juego.escenas.listo import Listo
 from juego.escenas.juego import Juego
 from juego.escenas.pausa import Pausa
 from juego.escenas.explosion import Explosion
-from juego.escenas.iniciales import Iniciales
-from juego.escenas.fin import Fin
-from juego.escenas.dificultad import Dificultad
+from juego.escenas.arcade.iniciales import Iniciales
+from juego.escenas.arcade.fin import Fin
+from juego.escenas.arcade.dificultad import Dificultad
 from tests.ayudas import avanzar, tecla, boton, ir_al_ajuste
 
 
@@ -29,7 +29,7 @@ def empezar(app):
 def test_inicio_opciones_y_volver(app):
     avanzar(app, 3)
     assert isinstance(app.escena, Inicio)
-    tecla(pygame.K_UP)                      # da la vuelta: JUGAR -> SALIR -> OPCIONES
+    tecla(pygame.K_UP)                      # da la vuelta: ARCADE -> SALIR -> OPCIONES
     avanzar(app)
     tecla(pygame.K_UP)
     tecla(pygame.K_RETURN)
@@ -45,6 +45,8 @@ def test_inicio_logros_y_elegir_nave(app):
     from juego.config import NAVES
     app.progreso.desbloquear(NAVES[1][2])           # el logro de la segunda nave
     avanzar(app, 3)
+    tecla(pygame.K_DOWN)                    # HISTORIA
+    avanzar(app)
     tecla(pygame.K_DOWN)                    # LOGROS
     tecla(pygame.K_RETURN)
     avanzar(app)

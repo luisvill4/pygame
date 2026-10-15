@@ -498,6 +498,9 @@ Más `trueno`, el trueno lejano del relámpago.
 | D20 | Llega el escuadrón siguiente del tramo | `Director._escuadrones` | — | E01b | P2 |
 | D21 | ¡OBJETIVO CUMPLIDO! (el del tramo) | `Director._festejar_objetivo` | — | `bonus` (provisorio: podría tener uno propio) | P2 |
 | D22 | El paso se abre (el objetivo no se cumplió en 90 s) | `Director._abrir_el_paso` | — | `anomalia_fin` | P3 |
+| H01 | (Historia) Sale un mensaje de radio | `Partida.actualizar` (cuando la radio empieza uno) | — | `teclear` (provisorio: un clic de radio propio) | P3 |
+| H02 | (Historia) Encontrás un fragmento del Archivo | `Relato.encontrar` | — | `logro` (provisorio: tendría que sonar a misterio, no a premio) | P2 |
+| H03 | (Historia) El texto de un diálogo se escribe | `Dialogo.actualizar` | — | `teclear`, cada 3 letras | P3 |
 
 ### 4.9 Carteles y HUD
 | Código | Situación | Dónde | Hoy | Propuesta | Prio | Anti-saturación |

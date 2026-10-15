@@ -1,5 +1,5 @@
 """
-Gasolinera espacial: la parada despues de cada jefe (lo que se vende esta en tienda.py).
+Gasolinera espacial: la parada despues de cada jefe (lo que se vende esta en arcade/tienda.py).
 
 Usa todo el ancho:
 - Arriba, los creditos (cuentan hacia abajo al gastar), el nombre y a donde vas.
@@ -29,7 +29,7 @@ from juego.efectos import Efectos
 from juego.entrada import ACEPTAR, VOLVER, IZQUIERDA, DERECHA
 from juego.escenas.base import Escena
 from juego.sonido import SILENCIO
-from juego.tienda import Tienda
+from juego.arcade.tienda import Tienda
 from juego.config import SECTORES
 
 PASOS_SIN_ELEGIR = 30       # pasos (medio segundo) en que se ignoran las teclas

@@ -7,7 +7,7 @@ import pygame
 from juego.config import NAVES, NOMBRE_PROGRESO
 from juego.guardado import Progreso
 from juego.logros import LOGROS, LOGROS_POR_ID, revisar_logros
-from juego.escenas.fin import Fin
+from juego.escenas.arcade.fin import Fin
 from juego.escenas.inicio import Inicio
 from tests.ayudas import jugar, avanzar, tecla
 

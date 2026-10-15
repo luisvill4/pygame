@@ -10,8 +10,8 @@ from juego.config import (PRECIO_CARTA, PRECIO_POR_NIVEL, PRECIO_RARA, PRECIO_PO
 from juego import dibujo
 from juego.dibujo import MINI, CHICA
 from juego.mejoras import TIPOS_MEJORA
-from juego.tienda import Tienda, Carta, SERVICIOS, redondear
-from juego.escenas.gasolinera import Gasolinera, PASOS_SIN_ELEGIR, ANCHO_CARTA, ANCHO_DESCRIPCION
+from juego.arcade.tienda import Tienda, Carta, SERVICIOS, redondear
+from juego.escenas.arcade.gasolinera import Gasolinera, PASOS_SIN_ELEGIR, ANCHO_CARTA, ANCHO_DESCRIPCION
 from juego.escenas.juego import Juego
 from tests.ayudas import jugar, avanzar, tecla, empezar_partida
 

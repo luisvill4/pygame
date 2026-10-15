@@ -15,8 +15,9 @@ from juego.escenas.base import Escena
 from juego.escenas.desarrollador import Desarrollador
 from juego.escenas.pausa import Pausa
 from juego.escenas.explosion import Explosion
-from juego.escenas.gasolinera import Gasolinera
+from juego.escenas.arcade.gasolinera import Gasolinera
 from juego.escenas.taller import Taller
+from juego.escenas.pasajes import pasajes_de
 
 
 def musica_del_sector(partida):
@@ -116,6 +117,8 @@ class Juego(Escena):
 
         if partida.termino:
             self.app.cambiar_escena(Explosion(self.app, partida), transicion=False)
+        elif partida.cumplida:
+            pasajes_de(partida).al_cumplir(self.app, partida)     # (el modo decide que sigue)
         elif partida.director.ofertas:
             # Hay cartas para elegir: se abre el Taller con la imagen del juego de fondo
             self.app.cambiar_escena(Taller(self.app, self, self.captura_del_mundo(partida)))

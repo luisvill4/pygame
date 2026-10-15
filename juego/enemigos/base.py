@@ -10,7 +10,7 @@ para agregar un enemigo nuevo NO hay que tocar ningun otro archivo:
     2. Ponerle @registrar_enemigo, un 'tipo' unico, un 'color', 'nombre' y 'pista'.
     3. Escribir mover(): como cambia su velocidad en cada paso.
     4. Importarlo en enemigos/__init__.py.
-    5. Ponerlo en los tramos de guiones.py (cuantos, con que formacion y en que sector).
+    5. Ponerlo en los tramos de rutas.py (cuantos, con que formacion y en que sector).
     (Opcional) sprites/mi_enemigo.png: 2 cuadros de 'tamano' x 'tamano' (40 por defecto).
                Si no esta, se dibuja uno de respaldo.
 

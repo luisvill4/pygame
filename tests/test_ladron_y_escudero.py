@@ -8,7 +8,7 @@ from juego.config import (COMBO_TIEMPO, LADRON_BONUS, LADRON_PUNTOS, ESCUDERO_PU
                           DASH_PERFECTO_PUNTOS, ANCHO, ALTO, DIFICULTADES,
                           ENEMIGO_VELOCIDAD_MAX)
 from juego.enemigos import TIPOS_ENEMIGO, crear_enemigo
-from juego.guiones import GUION_ARCADE
+from juego.rutas import RUTAS
 from tests.ayudas import jugar
 
 
@@ -255,7 +255,7 @@ def test_las_ondas_de_frente_no_lo_rompen(partida):
 @pytest.mark.parametrize("tipo, sector", [("ladron", 3), ("escudero", 4)])
 def test_aparecen_al_empezar_su_sector_con_su_ficha(partida, tipo, sector):
     # Es el primer escuadron del tramo 1 de su sector, y antes no aparece en ningun lado
-    antes = {t for ruta in GUION_ARCADE[:sector - 1] for tramo in ruta for t, _, _ in tramo["escuadrones"]}
+    antes = {t for ruta in RUTAS[:sector - 1] for tramo in ruta for t, _, _ in tramo["escuadrones"]}
     assert tipo not in antes
     director = partida.director
     director.con_escuadrones = True

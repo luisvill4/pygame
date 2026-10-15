@@ -157,7 +157,7 @@ def test_la_pausa_suena_al_entrar_y_al_salir(app, partida, pedidos):
 
 
 def test_la_gasolinera_cobra_y_niega(app, partida, pedidos):
-    from juego.escenas.gasolinera import Gasolinera, PASOS_SIN_ELEGIR
+    from juego.escenas.arcade.gasolinera import Gasolinera, PASOS_SIN_ELEGIR
     partida.creditos = 0
     tienda = Gasolinera(app, app.escena)
     app.cambiar_escena(tienda)
@@ -190,7 +190,7 @@ def test_el_dash_sin_recarga_suena_a_vacio(partida, pedidos):
 
 
 def test_el_game_over_cuenta_el_puntaje(app, partida, pedidos):
-    from juego.escenas.fin import Fin, MS_CONTADOR
+    from juego.escenas.arcade.fin import Fin, MS_CONTADOR
     partida.puntaje = 500
     app.cambiar_escena(Fin(app, partida, fila_nueva=-1))
     avanzar(app, int(MS_CONTADOR / MS_POR_FRAME) + 10)

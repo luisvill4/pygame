@@ -7,6 +7,7 @@ Tres tamaños, cada uno en su lugar (asi nunca se pisan):
     ficha_*(...)        tarjetas chicas a los costados: enemigo nuevo (izquierda) y desafio
                         (derecha). Si el aviso de arriba es ancho, bajan para no tocarlo
     logro(...)          el logro desbloqueado: abajo al centro, se abre desde el trofeo
+    radio(...)          el mensaje de radio del modo historia: abajo al centro, con retrato
     jefe_vencido(...)   los MOMENTOS: una franja de lado a lado, como la de la llegada del
     sector_nuevo(...)   jefe (el jefe llega y se va con el mismo lenguaje)
     rango(...)          el resultado del sector: un panel con las estrellas y la medalla
@@ -24,6 +25,7 @@ import pygame
 from juego import dibujo, recursos, accesibilidad
 from juego.dibujo import MINI, CHICA, MEDIA, GRANDE, TITULO
 from juego.interfaz import mezclar, esquinas, separador
+from juego.historia.personajes import PERSONAJES, dibujar_retrato
 from juego.config import (ANCHO, CENTRO_X, FONDO, PANEL_FONDO, CONTORNO, BLANCO, AMARILLO, GRIS, ROJO, CIAN, VERDE,
                           MAGENTA, TEXTO, TEXTO_SUAVE, LINEA_APAGADA, NAVES, CARTEL_JEFE, CARTEL_RANGO,
                           CARTEL_SECTOR, RANGO_SELLO)
@@ -473,3 +475,41 @@ def _medalla(pantalla, rango, transcurrido, adentro):
     texto(pantalla, letra, tamano, color, medalla.centerx + 4, medalla.centery + 4)
     if rango["puntos"] and desde > 300:
         texto(pantalla, "+" + str(rango["puntos"]) + " PUNTOS", CHICA, AMARILLO, centro_x, medalla.bottom + 18)
+
+
+# ---------- La radio (modo historia) ----------
+
+RADIO = pygame.Rect(CENTRO_X - 320, 418, 640, 100)     # abajo al centro, arriba de la barra del jefe
+RETRATO_RADIO = 6                                       # lado de cada pixel del retrato (12 x 6 = 72 px)
+ANCHO_TEXTO_RADIO = RADIO.width - 12 * RETRATO_RADIO - 52
+MS_POR_LETRA_RADIO = 22                                 # el texto se escribe solo, como un teletipo
+ENTRA_RADIO = 180
+
+
+def lineas_radio(mensaje):
+    # Los renglones de un mensaje en la caja (tiene lugar para 3)
+    return dibujo.partir_lineas(mensaje, CHICA, ANCHO_TEXTO_RADIO)
+
+
+def radio(pantalla, mensaje, transcurrido, restante):
+    # La caja de la radio: retrato a la izquierda, el nombre en una pestañita de su color y el
+    # texto que se escribe solo. Se abre y se cierra estirandose desde el centro
+    nombre, color = PERSONAJES[mensaje.personaje]
+    abierto = apertura(transcurrido, restante, ENTRA_RADIO, ENTRA_RADIO)
+    ancho = dibujo.en_grilla(RADIO.width * abierto)
+    if ancho < 16:
+        return
+    caja = pygame.Rect(dibujo.en_grilla(CENTRO_X - ancho // 2), RADIO.top, ancho, RADIO.height)
+    fondo(pantalla, caja)
+    esquinas(pantalla, caja, color)
+    if abierto < 1:
+        return
+    dibujar_retrato(pantalla, mensaje.personaje, caja.left + 14, caja.top + 14, RETRATO_RADIO)
+    texto_x = caja.left + 12 * RETRATO_RADIO + 32
+    etiqueta(pantalla, nombre, texto_x, caja.top, color)
+    letras = int((transcurrido - ENTRA_RADIO) / MS_POR_LETRA_RADIO)
+    for i, renglon in enumerate(lineas_radio(mensaje.texto)):
+        if letras <= 0:
+            break
+        texto(pantalla, renglon[:letras], CHICA, TEXTO, texto_x, caja.top + 34 + i * 24, alinear="izquierda")
+        letras -= len(renglon) + 1

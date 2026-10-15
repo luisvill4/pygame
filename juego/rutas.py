@@ -1,6 +1,7 @@
 """
-Guiones: la ruta de cada sector, tramo por tramo, escrita a mano (como las fases de un
-juego de naves o los niveles de Mega Man). Aca van SOLO datos.
+Rutas: la de cada sector, tramo por tramo, escrita a mano (como las fases de un juego de
+naves o los niveles de Mega Man). Aca van SOLO datos. Las usan los dos modos: el arcade
+las recorre en orden y cada mision de la historia usa la de su sector (o trae la suya).
 
 Cada sector tiene 4 TRAMOS y despues el jefe: un tramo por nivel (niveles 1-4, el jefe en
 el 5; niveles 6-9, el jefe en el 10...). Cada tramo dice:
@@ -13,7 +14,7 @@ el 5; niveles 6-9, el jefe en el 10...). Cada tramo dice:
     asedio        (opcional) el tramo es un ASEDIO: hay que aguantar (ver progresion.py)
 Las formaciones (por donde entran) estan en escuadrones.py.
 
-Por que un guion y no enemigos al azar: antes la dificultad crecia sumando enemigos, que
+Por que una ruta escrita y no enemigos al azar: antes la dificultad crecia sumando enemigos, que
 aparecian en cualquier lado y no se iban nunca, y la pantalla se "ensuciaba". Asi cada
 tramo tiene su idea (presentar un enemigo, encerrarte, una lluvia...) y el siguiente se
 siente distinto, no solo mas lleno. Las reglas para escribir uno:
@@ -22,14 +23,15 @@ siente distinto, no solo mas lleno. Las reglas para escribir uno:
     - El tramo 4 es el asedio: lo que ya conoces, de todos lados a la vez.
     - El objetivo sale de la idea del tramo y se tiene que poder cumplir con lo que trae:
       si pide romper divisores, tiene que haber escuadrones de divisores.
-Un modo historia puede tener su propio guion con la misma forma (GUIONES["historia"]).
+Una mision de la historia puede traer su propia ruta con la misma forma ('tramos' en su
+clase: ver historia/mision.py).
 """
 
 # El tramo 3 de cada sector (el de la anomalia) y el 4 (el asedio) se llaman igual en todos
 INESTABLE = "ZONA INESTABLE"
 ASEDIO = ("asedio",)        # el objetivo del asedio: aguantar hasta que termine
 
-GUION_ARCADE = [
+RUTAS = [                   # una por sector, en el orden de SECTORES (config.py)
     # Sector 1: CINTURON EXTERIOR (el Ojo). Se aprende a esquivar y despues a romper
     [
         {"nombre": "PATRULLA", "objetivo": ("monedas", 10), "a_la_vez": 1,
@@ -94,9 +96,8 @@ GUION_ARCADE = [
     ],
 ]
 
-GUIONES = {"arcade": GUION_ARCADE}
 
 
-def tipos_del_guion(guion):
-    # Todos los tipos de enemigo que aparecen en un guion
-    return {tipo for sector in guion for tramo in sector for tipo, _, _ in tramo["escuadrones"]}
+def tipos_de_las_rutas(rutas):
+    # Todos los tipos de enemigo que aparecen en unas rutas
+    return {tipo for sector in rutas for tramo in sector for tipo, _, _ in tramo["escuadrones"]}

@@ -2,7 +2,7 @@
 Director de la progresion: decide QUIEN viene, CUANDO y COMO. (Los juegos le dicen
 "director" a esta parte: dirige la tension.)
 
-- Ruta: cada sector tiene 4 TRAMOS y el jefe, uno por nivel (guiones.py). Cada tramo trae
+- Ruta: cada sector tiene 4 TRAMOS y el jefe, uno por nivel (rutas.py). Cada tramo trae
   un OBJETIVO (objetivos.py: juntar monedas, romper divisores, frenar embestidas...). Al
   cumplirlo dejan de llegar escuadrones, los que quedan se retiran y, con la zona despejada,
   empieza el tramo siguiente con su cartel. Asi se siente que avanzas por lo que hiciste.
@@ -19,9 +19,13 @@ Director de la progresion: decide QUIEN viene, CUANDO y COMO. (Los juegos le dic
 - Desafios: un reto opcional por sector (desafios.py).
 - Rango: al vencer al jefe, una nota de S a C para el sector (rango.py). Mientras se ve
   el cartel, el sector se esta "cerrando": todavia no llega nadie.
-- Mejoras: en el nivel MEJORA_PRIMER_NIVEL deja 3 cartas gratis en 'ofertas' (mejoras.py)
-  y la escena Juego abre el Taller. Al cerrar cada sector, en cambio, se para en la
-  GASOLINERA ('gasolinera' = True): ahi las cartas se compran con creditos (tienda.py).
+- Mejoras: cuando el modo dice (abre_el_taller) deja 3 cartas gratis en 'ofertas'
+  (mejoras.py) y la escena Juego abre el Taller. En el arcade, al cerrar cada sector se para
+  en la GASOLINERA ('gasolinera' = True): ahi las cartas se compran (arcade/tienda.py).
+- Lo que cambia segun el modo de juego (modos.py) se lo pregunta a partida.modo: en que
+  sector empieza y que ruta sigue, cuando abre el Taller y llega el desafio, y si despues
+  del jefe sigue la ruta (arcade) o la partida se cumple (historia). Y le avisa cuando
+  empieza un tramo, cuando llega o cae el jefe y cuando juntas una moneda.
 
 La Partida le avisa lo que pasa (al_subir_nivel, al_recibir_golpe, al_usar_dash...) y
 le pide actualizar() en cada paso.
@@ -30,8 +34,8 @@ import math
 import random
 
 from juego.config import (ANCHO, SECTORES, CARTEL_JEFE, CARTEL_SECTOR, AMARILLO, ROJO, VERDE, JEFE_CADA_NIVELES, ANOMALIA_NIVEL,
-                          ANOMALIA_ESPERA, ANOMALIA_PROPIA, DESAFIO_DESDE_NIVEL, DESAFIO_ESPERA, DESAFIO_PUNTOS,
-                          CARTEL_RANGO, RANGO_SELLO, MEJORA_PRIMER_NIVEL, AVISO_ASEDIO, AVISO_ANOMALIA,
+                          ANOMALIA_ESPERA, ANOMALIA_PROPIA, DESAFIO_ESPERA, DESAFIO_PUNTOS,
+                          CARTEL_RANGO, RANGO_SELLO, AVISO_ASEDIO, AVISO_ANOMALIA,
                           AVISO_TRAMO, MS_POR_FRAME, AVISO_ESCUADRON, ESCALONADO, TURNO_ESCUADRON, RESPIRO_ESCUADRON,
                           INICIO_TRAMO, ESCUADRON_PUNTOS, VUELTA_CANTIDAD, VUELTA_OBJETIVO, ASEDIO_DURACION,
                           ASEDIO_INICIO, ASEDIO_RESPIRO, ASEDIO_TURNO, ASEDIO_PUNTOS, OBJETIVO_PUNTOS,
@@ -39,7 +43,6 @@ from juego.config import (ANCHO, SECTORES, CARTEL_JEFE, CARTEL_SECTOR, AMARILLO,
 from juego.avisos import Aviso
 from juego.enemigos import crear_enemigos, TIPOS_ENEMIGO
 from juego.escuadrones import Escuadron, lugares
-from juego.guiones import GUIONES
 from juego.objetivos import crear_objetivo
 from juego.anomalias import TIPOS_ANOMALIA, crear_anomalia
 from juego.desafios import TIPOS_DESAFIO
@@ -50,11 +53,11 @@ TRAMOS = JEFE_CADA_NIVELES - 1      # tramos de cada sector (el nivel que sigue 
 
 
 class Director:
-    def __init__(self, partida, guion="arcade"):
+    def __init__(self, partida):
         self.partida = partida
-        self.guion = GUIONES[guion]
-        self.sector = SECTORES[0]           # el primero es siempre el Cinturon
-        self.numero_sector = 1
+        self.numero_sector = partida.modo.primer_sector()     # (el arcade empieza siempre en el Cinturon)
+        self.sector = SECTORES[self.numero_sector - 1]
+        self.fin_de_la_partida = math.inf   # cuando se cumple la partida (si el modo no sigue despues del jefe)
         self.tiempo_cartel_sector = -10000
         # El tramo en curso (None = no hay: el jefe o el cierre del sector)
         self.tramo = None
@@ -106,8 +109,8 @@ class Director:
     # ---------- Consultas ----------
 
     def tramos_del_sector(self):
-        # Los 4 tramos del sector actual (despues del ultimo sector, el guion vuelve a empezar)
-        return self.guion[(self.numero_sector - 1) % len(self.guion)]
+        # Los 4 tramos del sector actual: los da el modo (rutas.py, o los de la mision)
+        return self.partida.modo.ruta(self.numero_sector)
 
     def tipos_del_sector(self):
         # Los enemigos que trae este sector (para los desafios: INTERCEPTOR pide embestidores)
@@ -149,9 +152,9 @@ class Director:
         partida = self.partida
         if partida.nivel % JEFE_CADA_NIVELES:       # (en el nivel del jefe, el jefe: lo trae la Partida)
             self.empezar_tramo()
-        if partida.nivel == DESAFIO_DESDE_NIVEL and self.numero_sector == 1:
+        if partida.modo.propone_desafio(self):
             self.proximo_desafio = partida.tiempo + DESAFIO_ESPERA
-        if partida.nivel == MEJORA_PRIMER_NIVEL:
+        if partida.modo.abre_el_taller(self):
             self.ofrecer_mejoras()
 
     def empezar_tramo(self):
@@ -181,6 +184,7 @@ class Director:
             self.proxima_anomalia = partida.tiempo + ANOMALIA_ESPERA
         if self.anuncio_en <= partida.tiempo:
             self._anunciar_tramo()
+        partida.modo.al_empezar_tramo(self.numero_tramo)
 
     def _anunciar_tramo(self):
         # "TRAMO 2/4 - BLANCO FACIL" (el asedio, con cinta de peligro)
@@ -393,6 +397,7 @@ class Director:
         self.proxima_anomalia = math.inf
         self.proximo_desafio = math.inf
         self.bitacora.inicio_jefe = self.partida.tiempo
+        self.partida.modo.al_llegar_jefe()
         if self.desafio_en_curso():
             self.desafio.al_llegar_el_jefe()
             self.revisar_desafio()
@@ -413,6 +418,10 @@ class Director:
         self.tiempo_cartel_rango = partida.tiempo + CARTEL_JEFE
         self.rango_pagado = False
         self.fin_del_cierre = self.tiempo_cartel_rango + CARTEL_RANGO
+        partida.modo.al_vencer_jefe(bitacora.golpes)
+        if not partida.modo.sigue_despues_del_jefe():
+            self.fin_de_la_partida = self.fin_del_cierre    # (la historia: se cumple la mision)
+            return
         self.cambiar_sector()
         self.tiempo_cartel_sector = self.fin_del_cierre
         # El sector nuevo empieza con la bitacora en blanco y, al rato, un desafio nuevo
@@ -457,6 +466,7 @@ class Director:
 
     def al_recoger_moneda(self, combo):
         self.bitacora.mejor_combo = max(self.bitacora.mejor_combo, combo)
+        self.partida.modo.al_recoger_moneda()
         if self._objetivo_en_curso():
             antes = self.objetivo.progreso
             self.objetivo.al_recoger_moneda(combo)
@@ -507,6 +517,8 @@ class Director:
         partida = self.partida
         if self.sector_por_empezar and not self.cerrando_sector():
             self._empezar_sector()
+        if partida.tiempo >= self.fin_de_la_partida:
+            partida.cumplida = True
         if partida.tiempo >= self.anuncio_en and self.tramo is not None:
             self._anunciar_tramo()
         if self.en_asedio and partida.tiempo >= self.asedio_hasta:

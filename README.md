@@ -30,6 +30,24 @@ Al abrir, primero sale una advertencia de fotosensibilidad (con cómo reducir lo
 
 Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA); cada una tiene su propia tabla de récords. En FÁCIL y NORMAL el embestidor deja de seguirte con la mira un momento antes de embestir (la línea roja deja de parpadear): ahí es cuando hay que correrse. En DIFÍCIL y PESADILLA te sigue hasta el último instante.
 
+### Dos modos: ARCADE e HISTORIA
+- **ARCADE:** la ruta sin fin por los cinco sectores, con récords por dificultad. Todo lo que
+  sigue en esta guía.
+- **HISTORIA (beta): *La Marea*.** Una galaxia viene en curso de choque y no hay forma de
+  salvarse, hasta que aparece un compás escondido en las ondas gravitacionales. La piloto
+  **Alba** sale a seguirlo, sector por sector. Cada sector es una **misión** con su diálogo
+  antes y después, y durante el juego te habla la radio (Inés, desde la base) sin pausar nada.
+  - En el **mapa estelar** elegís la misión. Se puede jugar la primera, las cumplidas y la que
+    sigue a una cumplida.
+  - Cada misión esconde **fragmentos** de una historia más grande. Nunca están a simple vista:
+    hay que jugar distinto para encontrarlos.
+  - Lo encontrado queda en el **Archivo** (tecla O o botón VISTA en el mapa), aunque después
+    pierdas. El Archivo dice cuántos hay en cada misión, no dónde están.
+  - Si la nave explota, Inés te saca de ahí y volvés al mapa. En la historia no hay récords.
+
+  Toda la historia, sus secretos y cómo escribir más está en `HISTORIA.md` (**ojo: tiene
+  spoilers**).
+
 ### La ruta: sectores, tramos y escuadrones
 Cada **sector** es una ruta de **4 tramos** y su **jefe**, como las fases de un juego de naves. Abajo a la derecha está el mapa: **2-3** quiere decir sector 2, tramo 3, y al lado va el objetivo del tramo ("DIVISORES 2/3"); abajo, un punto por tramo y la calavera del jefe al final. Lo recorrido se pinta del color del sector y el camino entre tu punto y el siguiente se llena con el objetivo.
 
@@ -189,13 +207,17 @@ juego/
   app.py                # crea todo y corre el bucle principal
   partida.py            # el estado de una partida y sus reglas
   nave.py  moneda.py  proyectiles.py
+  modos.py              # la base de los modos de juego: lo que la partida le pregunta a cada uno
   progresion.py         # el "director": tramos, escuadrones, asedio, sectores, mejoras
-  guiones.py            # la ruta de cada sector: los 4 tramos, sus objetivos y escuadrones (solo datos)
+  rutas.py              # la ruta de cada sector: los 4 tramos, sus objetivos y escuadrones (solo datos)
   objetivos.py          # lo que pide cada tramo para pasar (juntar, romper, frenar, aguantar)
   escuadrones.py        # las formaciones (por donde entran) y el Escuadron
+  radio.py              # la cola de los mensajes de radio
+  arcade/               # EL MODO ARCADE: sus reglas (modo.py) y la gasolinera (tienda.py)
+  historia/             # EL MODO HISTORIA: sus reglas (modo.py), las misiones (una por archivo
+                        # en misiones/), los secretos, los personajes y los glifos
   anomalias.py  desafios.py  rango.py   # lo que pasa en cada sector
   mejoras.py            # las cartas del Taller y de la gasolinera
-  tienda.py             # la gasolinera: que se vende, los precios y que pasa al comprar
   estadisticas.py       # lo que pasa en la partida (para el Game Over y los logros)
   avisos.py             # la cola de avisos: los carteles de arriba salen de a uno
   carteles.py           # como se ven los carteles: avisos, fichas, logro, jefe vencido, rango, sector
@@ -204,8 +226,10 @@ juego/
   enemigos/             # un archivo por enemigo + base.py
   jefes/                # un archivo por jefe + base.py
   powerups/             # tipos.py (todos los power-ups) + base.py
-  escenas/              # una clase por pantalla: inicio, dificultad, logros, listo, juego, taller,
-                        # gasolinera, pausa, opciones, explosion, iniciales, fin
+  escenas/              # una clase por pantalla: inicio, logros, listo, juego, taller, pausa,
+                        # opciones, explosion... y las propias de cada modo en escenas/arcade/
+                        # (dificultad, gasolinera, iniciales, fin) y escenas/historia/ (mapa,
+                        # dialogo, archivo). pasajes.py: que pantalla sigue segun el modo
   entrada.py            # teclado + mando -> acciones (aceptar, dash, pausa...)
   haptica.py            # la vibracion del mando: patrones (en config.VIBRACIONES) y prioridades
   sonido.py  ventana.py  guardado.py  recursos.py
@@ -221,7 +245,8 @@ herramientas/componer.py          # el estudio: compone toda la musica y los efe
 - **`config.py` solo tiene valores.** Podés ajustar la dificultad sin miedo a romper la lógica.
 - **Escenas (patrón *State*).** Cada pantalla es una clase con `actualizar()` y `dibujar()`. La `App` llama a esos dos métodos sobre la escena actual. Para cambiar de pantalla: `self.app.cambiar_escena(OtraEscena(...))`.
 - **Registros (patrón *Registry*).** Los enemigos, jefes, power-ups, anomalías, desafíos, mejoras y formaciones se anotan solos con un decorador (`@registrar_enemigo`, `@formacion`…). El resto del juego los crea por nombre, así que **agregar uno nuevo no obliga a tocar el resto del código**.
-- **El nivel es un guion, no un sorteo.** Qué enemigos llegan, cuántos y por dónde está escrito a mano en `guiones.py` (solo datos), tramo por tramo. Antes la dificultad crecía sumando enemigos al azar que no se iban nunca y la pantalla se "ensuciaba"; ahora cada tramo tiene su idea y los grupos entran, atacan y se van. Un futuro modo historia es otro guion con la misma forma (`GUIONES["historia"]`).
+- **El nivel es una ruta escrita, no un sorteo.** Qué enemigos llegan, cuántos y por dónde está escrito a mano en `rutas.py` (solo datos), tramo por tramo. Antes la dificultad crecía sumando enemigos al azar que no se iban nunca y la pantalla se "ensuciaba"; ahora cada tramo tiene su idea y los grupos entran, atacan y se van.
+- **Modos de juego (patrón *Strategy*).** La partida no pregunta "¿es la historia?": le pregunta a su **modo** (`ModoArcade` o `ModoHistoria`) dónde empieza, qué ruta sigue y qué pasa después del jefe. El arcade y la historia viven en carpetas separadas y no se importan entre sí (hay un test que lo vigila). Un modo nuevo, como un desafío diario, es otra clase.
 - **Clases base (patrón *Template Method*).** `Enemigo`, `Jefe` y `PowerUp` resuelven todo lo común: aparecer con aviso, congelarse con el hielo, el sprite de respaldo, el HUD… Cada tipo escribe solo lo que lo hace distinto.
 - **`Partida` en vez de variables globales.** Todo el estado de una partida vive en un objeto. Empezar otra partida es crear una nueva, así no queda nada "sucio" de la anterior.
 - **Entrada por acciones.** El juego pregunta "¿se apretó DASH?", no "¿se apretó la barra espaciadora?". Así teclado y mando funcionan igual.
@@ -247,7 +272,7 @@ herramientas/componer.py          # el estudio: compone toda la musica y los efe
            ...
    ```
 2. Importalo en `juego/enemigos/__init__.py`.
-3. Ponelo en la ruta: en `juego/guiones.py`, sumá un escuadrón a algún tramo, por ejemplo `("zigzag", 2, "pinza")` (tipo, cuántos y por dónde entran), y dale un `plural` ("ZIGZAGS") por si un objetivo pide romperlos. Las formaciones están en `juego/escuadrones.py` (`flanco`, `pinza`, `lluvia`, `esquinas`, `cerco`). La regla de los guiones: un enemigo nuevo por tramo como mucho, y nunca en el asedio. La primera vez que llegue, sale solo su ficha de "NUEVO ENEMIGO".
+3. Ponelo en la ruta: en `juego/rutas.py`, sumá un escuadrón a algún tramo, por ejemplo `("zigzag", 2, "pinza")` (tipo, cuántos y por dónde entran), y dale un `plural` ("ZIGZAGS") por si un objetivo pide romperlos. Las formaciones están en `juego/escuadrones.py` (`flanco`, `pinza`, `lluvia`, `esquinas`, `cerco`). La regla de las rutas: un enemigo nuevo por tramo como mucho, y nunca en el asedio. La primera vez que llegue, sale solo su ficha de "NUEVO ENEMIGO".
 4. (Opcional) `sprites/zigzag.png`: 2 cuadros de 40x40. Si no está, se dibuja uno de respaldo con su color.
 
 Si necesita algo al aparecer, usá `al_aparecer()`; para dibujarse distinto, `dibujar_cuerpo()`. Mirá `embestidor.py` como ejemplo completo.
@@ -286,14 +311,24 @@ El HUD, la caída y el panel de la pantalla de inicio lo muestran solos.
 En `juego/mejoras.py`, una clase que herede de `Mejora`, con `@registrar_mejora`, `tipo`, `nombre` (hasta 12 letras), `descripcion` (líneas de hasta 22), `color`, un `icono` de 7x7 (pixel art con "X") y `maximo`. Si cambia algo una sola vez, escribí `al_elegir()` (como `Corazon`); si no, preguntá `partida.mejora("mi_tipo")` donde tenga efecto (devuelve cuántas veces la elegiste). Con `peso` < 1 sale menos (y la carta dice RARA). Aparece sola en el Taller y en la gasolinera (con su precio calculado).
 
 ### Un servicio de la gasolinera
-En `juego/tienda.py`, una clase que herede de `Articulo` con `tipo`, `nombre`, `descripcion`, `color` e `icono`, y sus métodos `precio(tienda)`, `al_comprar(tienda)` y, si no siempre tiene sentido, `disponible(partida)`. Anotala en `SERVICIOS` y sumá su `tipo` a `"servicios"` en las dificultades de `config.py` que la vendan.
+En `juego/arcade/tienda.py`, una clase que herede de `Articulo` con `tipo`, `nombre`, `descripcion`, `color` e `icono`, y sus métodos `precio(tienda)`, `al_comprar(tienda)` y, si no siempre tiene sentido, `disponible(partida)`. Anotala en `SERVICIOS` y sumá su `tipo` a `"servicios"` en las dificultades de `config.py` que la vendan.
 
 ### Un tramo o una formación
-Los tramos de cada sector están en `juego/guiones.py`: cada uno tiene `nombre` (16 letras como mucho), `objetivo` (por ejemplo `("romper", 3, "divisor")`), `a_la_vez` (cuántos escuadrones a la vez) y la lista de `escuadrones` `(tipo, cuántos, formación)`. Las reglas para escribirlos están arriba del archivo, y `tests/test_progresion.py` y `tests/test_objetivos.py` las comprueban (por ejemplo, que si el objetivo pide romper divisores, el tramo traiga divisores).
+Los tramos de cada sector están en `juego/rutas.py`: cada uno tiene `nombre` (16 letras como mucho), `objetivo` (por ejemplo `("romper", 3, "divisor")`), `a_la_vez` (cuántos escuadrones a la vez) y la lista de `escuadrones` `(tipo, cuántos, formación)`. Las reglas para escribirlos están arriba del archivo, y `tests/test_progresion.py` y `tests/test_objetivos.py` las comprueban (por ejemplo, que si el objetivo pide romper divisores, el tramo traiga divisores).
 
 Un tipo de objetivo nuevo es una clase en `juego/objetivos.py` con `@registrar_objetivo`, un `tipo`, `texto()` (el cartel), `etiqueta()` (el HUD) y los avisos que escucha (`al_recoger_moneda`, `al_romper`, `al_interceptar`, `al_perfecto`, `al_terminar_asedio`), igual que los desafíos.
 
 Una formación nueva es una función en `juego/escuadrones.py` con `@formacion("nombre")`: recibe cuántos son y dónde está la nave, y devuelve un par `(desde, hasta)` por enemigo (desde afuera de la pantalla hasta su lugar). Ninguno termina de entrar cerca de la nave: `lugares()` lo corre solo.
+
+### Una misión de la historia
+Copiá un archivo de `juego/historia/misiones/` (por ejemplo `m1_la_senal.py`), cambiale el `numero`, el `titulo`, el `sector` y los textos, e importalo en `juego/historia/misiones/__init__.py`. Aparece sola en el mapa estelar y en el Archivo. Todo es datos:
+- `antes` y `despues`: el diálogo, como `[("ines", "TEXTO"), ("alba", "TEXTO")]` (los personajes están en `juego/historia/personajes.py`).
+- `radio`: lo que se dice durante la misión, en los momentos `"tramo_1"` a `"tramo_4"` y `"jefe"`.
+- `fragmentos`: lo que se guarda en el Archivo, `Fragmento("F12", "NOMBRE", ["PARRAFO", ...], reaccion=[...])`.
+- `secretos`: cómo se encuentra cada fragmento, `("moneda_grabada", "F12", {"monedas": 20})`.
+- `tramos` (opcional): su propia ruta, con la forma de `rutas.py`.
+
+Los textos van en mayúsculas y sin vocales con tilde. `tests/test_historia.py` revisa solo que todo esté bien escrito y entre en su caja. **Un tipo de secreto nuevo** es una clase en `juego/historia/secretos.py` con `@registrar_secreto` (mirá los que hay). Antes de escribir, leé las reglas de `HISTORIA.md`.
 
 ### Un logro
 En `juego/logros.py`, sumá un `Logro(id, nombre, descripcion, condicion)` a `LOGROS`. La condición recibe la partida y devuelve True cuando se cumplió (usá `partida.estadisticas`). Para que dé una nave, agregala a `NAVES` en `config.py` con el id del logro.

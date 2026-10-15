@@ -5,7 +5,7 @@ import pygame
 import pytest
 
 from juego.config import DIFICULTADES, ORDEN_DIFICULTADES, ESPERA_POWERUP
-from juego.escenas.dificultad import Dificultad, PASOS_ANIMACION
+from juego.escenas.arcade.dificultad import Dificultad, PASOS_ANIMACION
 from juego.escenas.inicio import Inicio
 from juego.escenas.listo import Listo
 from tests.ayudas import avanzar, tecla

@@ -17,6 +17,7 @@ class Estadisticas:
         self.interceptados = 0      # embestidores frenados con el dash
         self.recuperadas = 0        # monedas recuperadas de un ladron
         self.escuadrones = 0        # escuadrones eliminados enteros
+        self.fragmentos = 0         # modo historia: fragmentos del Archivo encontrados en esta partida
         self.powerups = 0           # power-ups recogidos
         self.desafios = 0           # desafios cumplidos
         self.sectores_limpios = 0   # sectores cerrados sin recibir un golpe

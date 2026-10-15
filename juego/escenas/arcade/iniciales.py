@@ -8,7 +8,7 @@ from juego.config import (CENTRO_X, FONDO, MAGENTA, AMARILLO, CIAN, BLANCO, ALFA
 from juego.entrada import ARRIBA, ABAJO, IZQUIERDA, DERECHA, ACEPTAR
 from juego.escenas.base import Escena
 from juego.sonido import SILENCIO
-from juego.escenas.fin import Fin
+from juego.escenas.arcade.fin import Fin
 
 
 PANEL = pygame.Rect(CENTRO_X - 280, 132, 560, 336)

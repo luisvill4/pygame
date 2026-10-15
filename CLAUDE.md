@@ -1,6 +1,6 @@
 # Caza Monedas (Pygame)
 
-Juego arcade 2D hecho con Pygame: una nave recoge monedas, esquiva enemigos y pelea contra jefes. El código está en el paquete `juego/`; `main.py` solo lo arranca. `README.md` es la guía para el usuario (y explica cómo agregar enemigos, jefes y power-ups). El sonido tiene sus propios documentos: `MAPA_DE_AUDIO.md` (qué suena en cada evento) y `LISTA_DE_SONIDOS.md` (la partitura de cada sonido, la base musical y el registro de avances).
+Juego arcade 2D hecho con Pygame: una nave recoge monedas, esquiva enemigos y pelea contra jefes. Tiene dos modos: **ARCADE** (la ruta sin fin, con récords) e **HISTORIA** (*La Marea*, en beta). El código está en el paquete `juego/`; `main.py` solo lo arranca. `README.md` es la guía para el usuario (y explica cómo agregar enemigos, jefes y power-ups). **`HISTORIA.md` es la biblia del modo historia** (la verdad de fondo, personajes, misiones, catálogo de secretos y cómo escribirlos): leerla antes de tocar cualquier texto o secreto. El sonido tiene sus propios documentos: `MAPA_DE_AUDIO.md` (qué suena en cada evento) y `LISTA_DE_SONIDOS.md` (la partitura de cada sonido, la base musical y el registro de avances).
 
 ## Cómo ejecutar y probar
 ```
@@ -16,6 +16,7 @@ python -m pytest        # ~500 tests, 70-150 s, sin ventana
 - **El usuario está aprendiendo.** Eligió una arquitectura "modular con clases": clases base, registros y escenas, **sin** type hints, dataclasses ni bus de eventos. Mantener ese nivel. Nombres claros, métodos cortos y comentarios que explican el "por qué" y los patrones (State, Registry, Template Method).
 - Cualquier número que el usuario pueda querer tocar va en `config.py` ("Reglas del juego" o `DURACION`).
 - Dependencias sin ciclos: `config` ← `recursos`/`dibujo` ← entidades ← `partida` ← escenas ← `app`. Las entidades reciben `partida` como parámetro (no la importan).
+- **El arcade y la historia están separados** (pedido del usuario): `juego/arcade/` y `escenas/arcade/` no importan nada de la historia, y al revés; la lógica de los modos no importa pantallas. `tests/test_modos.py` lo comprueba. Lo compartido (partida, Director, rutas, enemigos, jefes, HUD...) no pregunta "¿es la historia?": le pregunta al **modo** (`partida.modo`).
 - Quiere que todo "parezca un triple A" sin perder la esencia retro: ante un cambio visual, mostrar capturas.
 
 ## Estructura
@@ -27,18 +28,29 @@ juego/
   interpolacion.py      # Interpolador: dibujar en posiciones intermedias entre pasos de logica
   reloj.py              # LimitadorFPS
   partida.py            # Partida: todo el estado de una partida y sus reglas
+  modos.py              # Modo: la base de los modos de juego (Strategy): lo que la partida le pregunta
   progresion.py         # Director: tramos, escuadrones, asedio, sectores, anomalias, desafios, rango
-  guiones.py            # SOLO datos: la ruta de cada sector (4 tramos con su objetivo y sus escuadrones)
+  rutas.py              # SOLO datos: la ruta de cada sector (4 tramos con su objetivo y sus escuadrones)
   objetivos.py          # lo que pide cada tramo para pasar (registro: monedas, romper, interceptar, perfectos, asedio)
   escuadrones.py        # las formaciones (@formacion: flanco, pinza, lluvia, esquinas, cerco) y Escuadron
-  anomalias.py  desafios.py  mejoras.py  rango.py  tienda.py  estadisticas.py  logros.py  eco.py
+  radio.py              # la cola de mensajes de radio (la usa la historia; existe en toda partida)
+  anomalias.py  desafios.py  mejoras.py  rango.py  estadisticas.py  logros.py  eco.py
+  arcade/               # EL MODO ARCADE: modo.py (ModoArcade) · tienda.py (la gasolinera)
+  historia/             # EL MODO HISTORIA ("La Marea", ver HISTORIA.md):
+    modo.py             #   ModoHistoria: las reglas de una mision, la radio y los secretos mientras jugas
+    mision.py           #   Mision (base) + Fragmento + registro (@registrar_mision, misiones_en_orden)
+    misiones/           #   UNA MISION POR ARCHIVO: m1_la_senal.py ... m5_el_fin_de_la_luz.py
+    secretos.py         #   tipos de secreto (registro): moneda_grabada, restos, jefe_sin_golpes
+    reliquias.py  personajes.py  glifos.py   # objetos secretos · quien habla y sus retratos · la escritura
   nave.py  moneda.py  proyectiles.py
   enemigos/  base.py (Enemigo + registro) · perseguidor · rebotador · embestidor · divisor · enjambre · abeja
              · ladron · escudero
   jefes/     base.py (Jefe + registro + pulso) · partes.py · ojo · fortaleza · serpiente · colmena · singularidad
   powerups/  base.py (PowerUp, Capsula, registro) · tipos.py (en el orden del HUD)
-  escenas/   base.py · presentacion · inicio · dificultad · logros · opciones · listo · juego · taller
-             · gasolinera · pausa · desarrollador · explosion · iniciales · fin
+  escenas/   base.py · presentacion · inicio · logros · opciones · listo · juego · taller · pausa
+             · desarrollador · explosion · pasajes.py (que pantalla sigue segun el modo)
+             arcade/   dificultad · gasolinera · iniciales · fin · pasajes
+             historia/ mapa · dialogo · archivo · pasajes
   entrada.py  haptica.py  sonido.py  ventana.py  guardado.py  recursos.py
   dibujo.py  efectos.py  fondo.py  hud.py
   accesibilidad.py      # temblor, destellos y CRT: los efectos le preguntan aca
@@ -56,7 +68,7 @@ efectos/                # todo el sonido, en OGG, por familia (la del modulo del
     moneda_1/           #   un efecto ARMONICO va en su carpeta, un archivo por color (moneda_1_fa.ogg...)
 records.json            # top 5 por dificultad: {"FACIL": [{"nombre", "puntos"}...], ...}
 config.json             # las opciones (guardado.Opciones)
-progreso.json           # {"logros": [ids], "nave": "CIAN", "partidas": n}
+progreso.json           # {"logros": [ids], "nave": "CIAN", "partidas": n, "misiones": [1, 2], "fragmentos": ["F01"]}
 ```
 Las rutas pasan por `config.ruta()`, relativas a la carpeta raíz.
 
@@ -150,13 +162,16 @@ Las variantes (congelado, golpe, brillo) se generan solas: no hace falta dibujar
 - `App` crea una vez los servicios: `ventana`, `opciones`, `sonidos`, `records`, `progreso`, `entrada`, `fondo`, `efectos` y `pantalla` (el lienzo). Atajos globales (`App._atajos()`): M silencia, F11 pantalla completa.
 - `App(carpeta_datos=..., usar_mandos=..., presentacion=...)`: los tests usan `presentacion=False` y reemplazan `App.ahora()` (el reloj real).
 - Cada escena hereda de `escenas/base.Escena`: `actualizar` cambia el estado o pasa a otra escena con `self.app.cambiar_escena(...)`; `dibujar` solo dibuja; `al_cerrar()` si se cierra la ventana; `tiempo_en_escena()` con el reloj real; `musica` y `ambiente` (ver "Sonido"). Escenas que guardan otra para volver a la misma instancia: `Opciones(volver_a=...)`, `Pausa(escena_juego, captura)`.
-- **Flujo:** `Presentacion → Inicio → (Dificultad | Logros | Opciones)`, `Dificultad → Listo → Juego ⇄ Pausa ⇄ Opciones`, `Juego ⇄ Taller`, `Juego ⇄ Gasolinera`, `Juego ⇄ Desarrollador` (F1), `Juego → Explosion → Iniciales (si entra al top 5) → Fin → Listo` (ENTER) o `→ Inicio` (ESC).
+- **Flujo:** `Presentacion → Inicio → (ARCADE: Dificultad | HISTORIA: Mapa | Logros | Opciones)`, `Mapa ⇄ Archivo`, `Mapa → Dialogo (antes) → Listo → Juego → (jefe vencido) Dialogo (después) → Mapa` y `Juego → Explosion → Dialogo (Inés te saca) → Mapa`, `Dificultad → Listo → Juego ⇄ Pausa ⇄ Opciones`, `Juego ⇄ Taller`, `Juego ⇄ Gasolinera`, `Juego ⇄ Desarrollador` (F1), `Juego → Explosion → Iniciales (si entra al top 5) → Fin → Listo` (ENTER) o `→ Inicio` (ESC).
 - Lo que no se deduce fácil del código de cada escena:
   - **Presentación:** el usuario eligió **sin tarjeta de estudio** y **con advertencia de fotosensibilidad**. Se saltea con cualquier tecla (`entrada.algo_apretado`). Mientras dura, prepara los giros de la nave.
   - **Inicio:** `test_inicio.py` comprueba que todo entre (power-ups, pestañas, descripciones del menú de ≤ 25 letras).
   - **Taller:** cartas gratis, solo en el nivel `MEJORA_PRIMER_NIVEL`. Lo abre Juego cuando `director.ofertas` no está vacía. El tiempo de la partida no corre.
-  - **Gasolinera** (`tienda.py`): la parada después de cada jefe. **Todo se paga** con créditos (elección del usuario: sin carta de regalo). Qué servicios vende depende de la dificultad (`reglas["servicios"]`). Precios en config (`PRECIO_*`, con inflación por sector). Las descripciones de las cartas se leen unidas: si una línea termina una frase, lleva punto.
+  - **Gasolinera** (`arcade/tienda.py`, solo en el arcade): la parada después de cada jefe. **Todo se paga** con créditos (elección del usuario: sin carta de regalo). Qué servicios vende depende de la dificultad (`reglas["servicios"]`). Precios en config (`PRECIO_*`, con inflación por sector). Las descripciones de las cartas se leen unidas: si una línea termina una frase, lleva punto.
   - **Pausa:** VOLVER AL MENU pregunta (NO por defecto) y no guarda récord.
+  - **Inicio:** el menú es ARCADE, HISTORIA, LOGROS, OPCIONES, SALIR (ARCADE primero: los tests que arrancan una partida aprietan ENTER en la primera opción).
+  - **Dialogo:** recibe los renglones y `al_terminar` (quien la abre decide qué sigue: así no depende de ninguna escena). Música `SILENCIO` y el ambiente del sector (`app.fondo.sector`).
+  - **Mapa:** las misiones salen del registro; despega con `ModoHistoria(numero)`. Importa `Inicio` adentro del método (Inicio importa Mapa). Los pasajes de la historia (al cumplir y al morir) están en `escenas/historia/pasajes.py`.
   - **Modo desarrollador** (F1, solo si `config.MODO_DESARROLLADOR`): poner jefes, enemigos, power-ups y anomalías, invencible, gasolinera de prueba. Al usar algo, `partida.modo_desarrollador = True`: sin logros ni récord, y "MODO DEV" en el HUD. Las listas salen de los registros: un tipo nuevo aparece solo.
 - **Hit-stop:** mientras `partida.congelar_frames > 0`, Juego y Explosion no actualizan ni dibujan (salvo el cuadro de impacto del golpe final). Después del golpe final, `partida.camara_lenta`. **Trampa:** la App borra las acciones en cada paso, así que durante el hit-stop Juego guarda el dash y la pausa (`dash_pendiente`, `pausa_pendiente`): si no, se perdían al encadenar perfectos.
 
@@ -166,6 +181,11 @@ Las variantes (congelado, golpe, brillo) se generan solas: no hace falta dibujar
 - **Subir de nivel = cumplir el OBJETIVO del tramo y despejar la zona** (decisión del usuario: el objetivo reemplazó a la barra de energía, que ya no existe; con la barra, al llenarse, los enemigos se iban apenas llegaban). Lo decide el Director (`_revisar_objetivo`, en cada paso) y llama a `subir_nivel()`. La Partida solo avisa: `director.al_recoger_moneda`, `al_romper(enemigo)` (dash, onda o congelado; no el dron que te choca), `al_perfecto`, `al_interceptar`. Nada cuenta con el jefe ni en el cierre del sector. Después del jefe, al terminar el cierre, el Director pasa solo al primer nivel del sector nuevo (`subir_nivel(anunciar=False)`).
 - **Dash perfecto** (pedido del usuario: atravesar cualquier cosa era fácil para farmear): solo cuenta si el dash **rompe un enemigo `destruible`** o **intercepta** uno (`interceptable()`: el embestidor cargando). Una vez por dash. Otro perfecto antes de `CADENA_PERFECTOS` sube la cadena.
 - **Créditos** (la plata de la gasolinera) no son puntos: gastarlos no baja el puntaje.
+- **Modos de juego (patrón Strategy, `modos.py`):** `Partida(..., modo=...)` y `App.nueva_partida(modo=...)` reciben un `ModoArcade()` (por defecto) o un `ModoHistoria(numero)`. El modo responde las reglas que cambian (`primer_sector`, `ruta`, `abre_el_taller`, `propone_desafio`, `sigue_despues_del_jefe`, `encabezado`, `guarda_records`), recibe los avisos (`al_empezar_tramo`, `al_llegar_jefe`, `al_vencer_jefe`, `al_recoger_moneda`) y actualiza y dibuja lo suyo. `modo.empezar(partida)` va antes del Director (pone el nivel del primer sector). Si el modo no sigue después del jefe, al terminar el cierre `partida.cumplida = True`. **Qué pantalla sigue** al morir o al cumplir lo deciden los **pasajes** del modo (`escenas/pasajes.py` → `escenas/<modo>/pasajes.py`: `al_morir`, `al_cumplir`). Un modo nuevo (desafío diario, tutorial): una clase que herede de `Modo` y sus pasajes.
+- **Modo historia:** una partida es una misión: empieza en su sector, sigue su ruta (`Mision.tramos` o la del sector), el Taller abre en el tramo `MEJORA_TRAMO_HISTORIA`, el desafío en el tramo 2, termina al vencer al jefe y no guarda récord. `partida.radio` (la cola) existe siempre; en el arcade nadie habla.
+- **Misiones estandarizadas (Registry + datos):** una clase por archivo en `historia/misiones/`, con `@registrar_mision` y casi todo datos: `numero`, `titulo`, `sector`, `tramos`, `antes`, `despues`, `radio` (momentos `tramo_1..4` y `jefe`), `fragmentos` (`Fragmento(id, nombre, texto, glifo, reaccion, oculto)`) y `secretos`. El mapa, el Archivo y los tests las leen del registro: una misión nueva aparece sola. `test_historia.py` comprueba el estándar (números seguidos, momentos de radio que existen, fragmentos sin repetir, cada secreto da un fragmento de su misión, textos que entran).
+- **Los secretos** (decisiones del usuario: todo se resuelve dentro del juego, nunca a simple vista, todo tiene su porqué; la verdad de fondo es un bucle: "los Cantores somos nosotros"): las misiones los declaran como datos, `("moneda_grabada", "F01", {"monedas": 15})`, y cada **tipo** es una clase en `historia/secretos.py` (Registry + Template Method, como los objetivos) que escucha los avisos y suelta reliquias. El `ModoHistoria` crea uno nuevo por partida. Lo encontrado se guarda **al instante** en `progreso.fragmentos` (aunque después pierdas) y se cuenta por la radio (`Fragmento.reaccion`), sin cartel de "¡SECRETO!". Hoy hay tres en la misión 1; el resto está diseñado en `HISTORIA.md`.
+- **Textos de la historia:** en mayúsculas y sin vocales mayúsculas con tilde (Ñ ¡ ¿ sí). `test_historia.py` comprueba que cada texto entre en su caja (diálogo ≤ 4 renglones, radio ≤ 3, nombres del Archivo en su lista).
 - **Mejoras:** `mejora(tipo)` dice cuántas veces se eligió; cada regla que depende de una mejora la consulta ahí (`vel_max`, `recarga_dash`, `tiempo_combo`, `puede_destruir`...). `sumar_mejora` es la regla; `elegir_mejora` es la del Taller. ESCUDO ROCE se recarga con perfectos sin escudo puesto y dura hasta el golpe (antes duraba 8 s y el usuario sentía que funcionaba una vez). DOBLE DASH es rara y desde el sector 3 (con dos dash era muy fácil).
 - **Orden de `actualizar`:** tiempo → nave → ecos → corte del combo → imán → moneda → power-ups → director → enemigos → jefe (o balas sueltas) → efectos → logros (cada 30 pasos).
 
@@ -194,7 +214,7 @@ Las variantes (congelado, golpe, brillo) se generan solas: no hace falta dibujar
   - **Aturdido:** quieto y sin lastimar (ondas, ECO, intercepción). El rebotador reescribe `empujar()` (si no, quedaba quieto para siempre).
   - El embestidor fija la mira un rato antes de embestir según la dificultad (`reglas["apunte_fijo"]`, pedido del usuario): la línea deja de parpadear y es la señal para correrse.
 - **Director** (`progresion.py`). El rediseño "que se sienta progresión, no una pantalla sucia" (pedido del usuario, inspirado en Metal Slug y los juegos de naves):
-  - **Ruta:** cada sector = 4 **tramos** + jefe, un tramo por nivel (`numero_tramo` = `(nivel - 1) % 5 + 1`; 0 = jefe o cierre). El guion (`guiones.py`; `Partida(..., modo="arcade")` → `GUIONES[modo]`) dice por tramo `nombre`, `objetivo` (`("romper", 3, "divisor")`), `a_la_vez` y la lista de `escuadrones` `(tipo, cuantos, formacion)`. Reglas de un guion (las comprueban `test_progresion.py` y `test_objetivos.py`): un enemigo nuevo por tramo como mucho y nunca en el asedio; el objetivo se tiene que poder cumplir con lo que trae el tramo; tramo 3 = ZONA INESTABLE (la anomalía); tramo 4 = ASEDIO (objetivo `("asedio",)`). Un **modo historia** futuro es otro guion con la misma forma.
+  - **Ruta:** cada sector = 4 **tramos** + jefe, un tramo por nivel (`numero_tramo` = `(nivel - 1) % 5 + 1`; 0 = jefe o cierre). La ruta (`rutas.py`; el modo la elige con `modo.ruta(numero_sector)`) dice por tramo `nombre`, `objetivo` (`("romper", 3, "divisor")`), `a_la_vez` y la lista de `escuadrones` `(tipo, cuantos, formacion)`. Reglas de una ruta (las comprueban `test_progresion.py` y `test_objetivos.py`): un enemigo nuevo por tramo como mucho y nunca en el asedio; el objetivo se tiene que poder cumplir con lo que trae el tramo; tramo 3 = ZONA INESTABLE (la anomalía); tramo 4 = ASEDIO (objetivo `("asedio",)`). Una misión de la historia puede traer su propia ruta con la misma forma (`Mision.tramos`).
   - **Escuadrones** (`escuadrones.py`): `lanzar_escuadron()` toma el siguiente de la cola del tramo (vuelve a empezar si se acaba), lo escala con `_cantidad()` (dificultad `reglas["escuadrones"]` y `vuelta()`) y cada miembro hace `entrar()` desde su formación. `lugares()` nunca deja a uno a menos de `LEJOS_DE_LA_NAVE` de la nave. Turno `TURNO_ESCUADRON` y se retira; roto entero (2 o más) → bonus (`_premiar_escuadron`). Suena `escuadron_llega` con paneo del lado por donde entran.
   - **Objetivos** (`objetivos.py`, Registry + Template Method como los desafíos; `crear_objetivo(datos, factor)`, la meta crece `VUELTA_OBJETIVO` por vuelta). Cumplido: festejo (`OBJETIVO_PUNTOS` × sector; el asedio tiene el suyo), no llegan más escuadrones y `despedir_escuadrones()`: se van, pero **el que ya entró se queda al menos `PERMANENCIA_MINIMA`** (pedido del usuario: "apenas llegan se van"; medido con un bot: antes 62-75 % de los que se retiraban se iban antes de 5 s, ahora 8-16 %, casi todos por chocar). Con la zona despejada (no queda ningún escuadrón) sube el nivel. **Válvula:** si en `PACIENCIA_OBJETIVO` no se cumple, "EL PASO SE ABRE" sin premio (un bot que no intercepta quedaba trabado para siempre en CARGA). `cumplir_objetivo()` lo da por cumplido (tests).
   - **Trampa:** no volver a acortar turnos al acercarse el final del tramo o del asedio: eso era lo que hacía que los enemigos se fueran apenas llegaban. Un escuadrón del asedio tiene su `ASEDIO_TURNO` entero.
@@ -248,12 +268,13 @@ Todo el audio pasa por `juego/sonido.py` (el servicio `app.sonidos`). **Todo sal
 
 | Escena | `musica` |
 |---|---|
-| Inicio, Dificultad, Logros | `"menu"` |
+| Inicio, Dificultad, Logros, Mapa | `"menu"` |
+| Dialogo (historia) | `SILENCIO` (con el ambiente del sector de la misión) |
 | Listo | `SILENCIO` en el READY? y la del sector desde el GO! |
 | Juego | con jefe: `SILENCIO` en la ¡ALERTA!, `"jefe_<tipo>"` (o `"jefe"`) después y `SILENCIO` desde el golpe final. `SILENCIO` en el cierre del sector. `"tension"` en el nivel antes del jefe. Si no, la del sector (`"juego"`, `"juego_2"`...) |
 | Gasolinera | `"gasolinera"` |
 | Iniciales / Fin | `"iniciales"` / `"fin"` |
-| Pausa, Opciones, Taller, Desarrollador, Explosion | `None` |
+| Pausa, Opciones, Taller, Desarrollador, Explosion, Archivo | `None` |
 
 El ambiente: el del sector en Juego y Listo (`SILENCIO` en la pelea, el cierre y al morir), `SILENCIO` en los menús, la Gasolinera y el Game Over, y `None` en Pausa, Opciones, Taller y Desarrollador. Si cambia qué suena en una escena, sumar un caso a `tests/test_musica.py` y actualizar esta tabla.
 
@@ -324,5 +345,6 @@ python herramientas/componer.py --fichas                # rehace efectos/fichas.
 - Accesibilidad: cambiar los controles, modo para daltonismo, HUD más grande, modo asistido.
 - Planetas variados hechos por código y música que se intensifica con el nivel.
 - Contenido propuesto y no elegido: Torreta + Mina, Fantasma + Barrera + Élites, Los Gemelos, fase 2 del Ojo.
+- Modo historia (beta): falta que el usuario lo juegue y opine de la historia, los diálogos y los secretos. Lo que sigue según `HISTORIA.md`: los secretos F04-F11 (con el decodificador de glifos y la Bitácora sin fecha), la misión oculta de los restos de la Errante en el mapa, un sonido propio para encontrar un fragmento (hoy `logro`) y que cada misión tenga su propia ruta (`Mision.tramos`; hoy usan la de su sector).
 - Ladrón y Escudero: falta que el usuario los pruebe jugando (F1 → ENEMIGO) y escuche sus 4 sonidos, y que dibuje sus sprites si quiere. Desafío diario (semilla fija). Más logros (con paginado).
 - La ruta de tramos, escuadrones y objetivos: falta que el usuario la juegue (ritmo y dificultad de cada objetivo, el asedio, las flechas y el sonido `escuadron_llega`). El festejo del objetivo usa `bonus`: se podría componer un sonido propio. Ideas que siguen: un mapa estelar entre sectores (la elección de misión del modo historia) y el modo historia como otro guion con diálogos.

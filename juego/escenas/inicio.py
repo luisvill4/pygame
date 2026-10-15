@@ -3,7 +3,7 @@ Pantalla de inicio (usa todo el ancho 16:9):
 
 - Arriba, una franja con los logros, el record y la dificultad.
 - A la izquierda el logo (con un brillo que lo recorre cada tanto), el lema y el menu
-  JUGAR / LOGROS / OPCIONES / SALIR: ARRIBA/ABAJO elige (la nave es el cursor y se
+  ARCADE / HISTORIA / LOGROS / OPCIONES / SALIR: ARRIBA/ABAJO elige (la nave es el cursor y se
   desliza) y debajo se explica la opcion elegida.
 - A la derecha la nave grande volando y un panel con tres paginas (COMO JUGAR,
   POWER-UPS, RECORDS): cambian solas cada PAGINA_MS o con LB/RB (Q/E) o IZQ/DER.
@@ -24,17 +24,19 @@ from juego.entrada import ACEPTAR, IZQUIERDA, DERECHA, ARRIBA, ABAJO, PESTANA_AN
 from juego.escenas.base import Escena
 from juego.sonido import SILENCIO
 from juego.escenas.opciones import Opciones
-from juego.escenas.dificultad import Dificultad
+from juego.escenas.arcade.dificultad import Dificultad
 from juego.escenas.logros import Logros
+from juego.escenas.historia.mapa import Mapa
 from juego.enemigos import TIPOS_ENEMIGO
 from juego.moneda import imagen_moneda
 from juego.powerups import TIPOS_POWERUP
 from juego.logros import LOGROS
 from juego.carteles import TROFEO
 
-MENU = ["JUGAR", "LOGROS", "OPCIONES", "SALIR"]
+MENU = ["ARCADE", "HISTORIA", "LOGROS", "OPCIONES", "SALIR"]
 DESCRIPCION_MENU = {        # (hasta 25 letras: entran en un renglon)
-    "JUGAR": "EMPEZAR UNA PARTIDA",
+    "ARCADE": "LA RUTA SIN FIN Y RECORDS",
+    "HISTORIA": "LA MAREA. SEGUI EL COMPAS",
     "LOGROS": "LOGROS Y HANGAR DE NAVES",
     "OPCIONES": "VIDEO, SONIDO Y MAS",
     "SALIR": "CERRAR EL JUEGO",
@@ -44,7 +46,7 @@ PAGINA_MS = 7000            # cada cuanto cambia sola la pagina del panel
 
 # Disposicion
 IZQUIERDA_X = 64            # el logo y el menu
-MENU_X, MENU_Y, ALTO_FILA = 112, 290, 50
+MENU_X, MENU_Y, ALTO_FILA = 112, 286, 44
 PANEL = pygame.Rect(514, 228, 504, 312)
 BARRA_PESTANAS = pygame.Rect(PANEL.left + 14, PANEL.top + 14, PANEL.width - 28, 28)
 CONTENIDO = pygame.Rect(PANEL.left + 18, PANEL.top + 64, PANEL.width - 36, PANEL.bottom - PANEL.top - 76)
@@ -100,8 +102,10 @@ class Inicio(Escena):
         if entrada.pulso(ACEPTAR):
             elegida = MENU[self.opcion]
             self.app.sonidos.reproducir("ui_apagar" if elegida == "SALIR" else "ui_aceptar")
-            if elegida == "JUGAR":
+            if elegida == "ARCADE":
                 self.app.cambiar_escena(Dificultad(self.app, volver_a=self))
+            elif elegida == "HISTORIA":
+                self.app.cambiar_escena(Mapa(self.app))
             elif elegida == "LOGROS":
                 self.app.cambiar_escena(Logros(self.app, volver_a=self))
             elif elegida == "OPCIONES":

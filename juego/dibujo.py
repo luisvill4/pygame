@@ -244,6 +244,12 @@ def pixel_art(pantalla, filas, centro_x, centro_y, color, tamano_pixel=4):
                                       tamano_pixel, tamano_pixel))
 
 
+def reloj(ms):
+    # 754000 -> "12:34" (el tiempo de una partida)
+    segundos = int(ms) // 1000
+    return str(segundos // 60) + ":" + str(segundos % 60).zfill(2)
+
+
 def en_grilla(valor):
     # El valor llevado a la grilla de pixeles de arte (PIXEL_ARTE): para que todo calce
     return math.floor(valor) // PIXEL_ARTE * PIXEL_ARTE

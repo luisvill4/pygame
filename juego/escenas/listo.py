@@ -1,7 +1,7 @@
 """READY? GO!: se ve la partida quieta durante 1.6 s antes de empezar."""
 from juego import dibujo, interfaz, carteles
 from juego.dibujo import CHICA, TITULO
-from juego.config import CENTRO_X, AMARILLO, MAGENTA, VERDE, CIAN, CONTORNO, DIFICULTADES, TEXTO_SUAVE
+from juego.config import CENTRO_X, AMARILLO, MAGENTA, VERDE, CIAN, CONTORNO
 from juego.escenas.base import Escena
 from juego.sonido import SILENCIO
 from juego.escenas.juego import Juego, musica_del_sector
@@ -47,10 +47,8 @@ class Listo(Escena):
         if franja is None or alto < 120:
             return
         director = self.partida.director
-        dificultad = self.partida.dificultad
-        interfaz.renglon(pantalla, [("SECTOR " + str(director.numero_sector) + "  ", TEXTO_SUAVE),
-                                    (director.sector["nombre"], director.sector["color"]), ("   ", TEXTO_SUAVE),
-                                    (dificultad, DIFICULTADES[dificultad]["color"])], CHICA, CENTRO_X, franja.top + 18)
+        # El renglon de arriba lo arma el modo (el sector, o la mision en la historia)
+        interfaz.renglon(pantalla, self.partida.modo.encabezado(director), CHICA, CENTRO_X, franja.top + 18)
         if listo:
             dibujo.texto_3d(pantalla, "GO!", TITULO, VERDE, (0, 90, 40), 312, 6, CONTORNO)
         elif dibujo.parpadeo(150):

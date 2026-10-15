@@ -87,6 +87,9 @@ def dibujar(pantalla, partida):
     if director.desafio is not None and t - director.tiempo_cartel_desafio < DURACION_FICHA:
         _cartel(pantalla, partida, "desafio", carteles.ficha_desafio, director.desafio,
                 t - director.tiempo_cartel_desafio, pancarta)
+    mensaje = partida.radio.actual
+    if mensaje is not None and t < mensaje.hasta:
+        _cartel(pantalla, partida, "radio", carteles.radio, mensaje, t - mensaje.desde, mensaje.hasta - t)
     for logro, desde in partida.fichas_logro:
         if 0 <= t - desde < DURACION_FICHA:
             _cartel(pantalla, partida, "logro", carteles.logro, logro, t - desde)

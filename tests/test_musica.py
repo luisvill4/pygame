@@ -54,8 +54,8 @@ def test_ready_en_silencio_y_la_musica_entra_en_el_go(app):
 
 
 def test_iniciales_y_game_over_tienen_su_musica(app):
-    from juego.escenas.iniciales import Iniciales
-    from juego.escenas.fin import Fin
+    from juego.escenas.arcade.iniciales import Iniciales
+    from juego.escenas.arcade.fin import Fin
     partida = empezar_partida(app)
     app.cambiar_escena(Iniciales(app, partida))
     avanzar(app)
@@ -130,3 +130,20 @@ def test_cada_jefe_tiene_su_tema_y_el_ojo_el_de_siempre(app):
         avanzar(app, int(MS_ALERTA / MS_POR_FRAME) + 2)
         assert app.sonidos.actual == ("jefe" if tipo == "ojo" else "jefe_" + tipo)
         partida.jefe = None
+
+
+def test_el_modo_historia_mapa_con_la_del_menu_y_el_dialogo_en_silencio(app):
+    # El mapa sigue con la del menu; el dialogo de antes de la mision va sin musica, con el
+    # ambiente del sector de la mision (las voces y el lugar); despues, la del juego
+    from juego.config import SECTORES
+    from juego.escenas.historia.mapa import Mapa
+    from juego.escenas.historia.dialogo import Dialogo
+    tecla(pygame.K_DOWN)            # HISTORIA
+    avanzar(app)
+    tecla(pygame.K_RETURN)
+    avanzar(app)
+    assert isinstance(app.escena, Mapa) and app.sonidos.actual == "menu"
+    tecla(pygame.K_RETURN)          # la mision 1
+    avanzar(app, 2)                 # (el tema se pide antes de cada paso)
+    assert isinstance(app.escena, Dialogo)
+    assert app.sonidos.actual == SILENCIO and app.escena.ambiente == SECTORES[0]["ambiente"]

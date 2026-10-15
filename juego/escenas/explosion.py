@@ -11,8 +11,7 @@ from juego.dibujo import GRANDE
 from juego.config import ROJO, CONTORNO
 from juego.escenas.base import Escena
 from juego.sonido import SILENCIO
-from juego.escenas.iniciales import Iniciales
-from juego.escenas.fin import Fin
+from juego.escenas.pasajes import pasajes_de
 
 
 CAMARA_LENTA = 600          # ms en que las particulas van a la mitad de velocidad
@@ -45,12 +44,9 @@ class Explosion(Escena):
         if self.tiempo_en_escena() > 1500:
             self.app.efectos.reiniciar()
             self.app.sonidos.reproducir("game_over")
-            # Con el modo desarrollador no se guarda el record (seria trampa)
-            con_trampa = self.partida.modo_desarrollador
-            if not con_trampa and self.app.records.entra(self.partida.puntaje, self.partida.dificultad):
-                self.app.cambiar_escena(Iniciales(self.app, self.partida))
-            else:
-                self.app.cambiar_escena(Fin(self.app, self.partida, fila_nueva=-1))
+            # Que sigue lo decide el modo: el arcade, las iniciales o el Game Over; la
+            # historia, Ines te saca y se vuelve al mapa (escenas/pasajes.py)
+            pasajes_de(self.partida).al_morir(self.app, self.partida)
 
     def dibujar(self, pantalla):
         if self.saltar_dibujo:

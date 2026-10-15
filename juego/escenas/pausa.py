@@ -17,7 +17,7 @@ from juego.entrada import PAUSA, VOLVER, OPCIONES, ACEPTAR, ARRIBA, ABAJO, IZQUI
 from juego.escenas.base import Escena
 from juego.escenas.opciones import Opciones
 from juego.escenas.inicio import Inicio
-from juego.escenas.fin import reloj
+from juego.dibujo import reloj
 from juego.mejoras import TIPOS_MEJORA
 
 FILAS_PAUSA = ["CONTINUAR", "OPCIONES", "VOLVER AL MENU"]

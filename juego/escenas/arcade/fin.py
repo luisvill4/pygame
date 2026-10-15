@@ -12,6 +12,7 @@ import random
 import pygame
 
 from juego import dibujo, interfaz
+from juego.dibujo import reloj
 from juego.dibujo import texto, MINI, CHICA, MEDIA, GRANDE, TITULO
 from juego.config import (ANCHO, CENTRO_X, FONDO, ROJO, AMARILLO, CIAN, MAGENTA, BLANCO, FUEGO, ORO, ESCARCHA,
                           ENERGIA, CORAZON, SECTORES, DIFICULTADES, FILAS_RECORDS, CONTORNO, TEXTO_SUAVE,
@@ -29,12 +30,6 @@ MS_POR_FILA = 120           # despues, las estadisticas salen de a una
 RESULTADO = pygame.Rect(48, 140, 330, 400)
 ESTADISTICAS = pygame.Rect(398, 140, 300, 400)
 RECORDS = pygame.Rect(718, 140, ANCHO - 766, 400)
-
-
-def reloj(ms):
-    # 754000 -> "12:34"
-    segundos = int(ms) // 1000
-    return str(segundos // 60) + ":" + str(segundos % 60).zfill(2)
 
 
 class Fin(Escena):

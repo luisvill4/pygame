@@ -8,7 +8,7 @@ from juego.config import (ANCHO, ALTO, JEFE_CADA_NIVELES, MS_POR_FRAME, AVISO_ES
                           OBJETIVO_PUNTOS, PACIENCIA_OBJETIVO, PERMANENCIA_MINIMA, SECTORES)
 from juego.desafios import TIPOS_DESAFIO
 from juego.enemigos import TIPOS_ENEMIGO, crear_enemigo
-from juego.guiones import GUION_ARCADE
+from juego.rutas import RUTAS
 from juego.objetivos import TIPOS_OBJETIVO, crear_objetivo
 from tests.ayudas import jugar
 
@@ -30,7 +30,7 @@ def con_escuadrones(partida):
 
 def test_cada_tramo_tiene_un_objetivo_que_se_puede_cumplir():
     # Si pide romper divisores, el tramo trae divisores (si no, no se podria pasar nunca)
-    for sector in GUION_ARCADE:
+    for sector in RUTAS:
         for tramo in sector:
             tipos = {tipo for tipo, _, _ in tramo["escuadrones"]}
             objetivo = crear_objetivo(tramo["objetivo"])
@@ -46,7 +46,7 @@ def test_cada_tramo_tiene_un_objetivo_que_se_puede_cumplir():
 
 def test_los_objetivos_entran_en_el_cartel_y_en_el_hud():
     # El cartel tiene lugar para 32 letras; el renglon del HUD, para 15 (aun en la segunda vuelta)
-    for sector in GUION_ARCADE:
+    for sector in RUTAS:
         for tramo in sector:
             objetivo = crear_objetivo(tramo["objetivo"], 1.5)
             objetivo.progreso = objetivo.meta

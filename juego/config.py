@@ -217,7 +217,7 @@ MEJORA_MOTOR = 0.12             # MOTOR: esta parte mas de velocidad (por nivel)
 MEJORA_ECO = [0.25, 0.45]       # ECO: chances de que un dash deje una copia que lo repite
 FENIX_INVULNERABLE = 2500       # FENIX: ms sin recibir daño al volver
 # Gasolinera: despues de cada jefe se para a cargar combustible y a comprar con los
-# CREDITOS que dan las monedas (ver tienda.py y escenas/gasolinera.py). Las cartas del
+# CREDITOS que dan las monedas (ver arcade/tienda.py y escenas/arcade/gasolinera.py). Las cartas del
 # nivel 3 siguen siendo gratis (el Taller): la gasolinera es la unica que cobra.
 # Los creditos no son puntos: gastarlos no baja el puntaje (los records no cambian)
 CREDITOS_POR_MONEDA = 1         # por el multiplicador del combo (con x5, 5 por moneda)
@@ -242,7 +242,7 @@ DISTANCIA_APARICION = 300       # los enemigos aparecen a mas de esta distancia 
 ENEMIGO_VELOCIDAD_MAX = 4.2     # los que te persiguen nunca van mas rapido que esto (la nave va a 5):
                                 # asi siempre se puede escapar. Los ataques con aviso (embestidas, picadas) si
 
-# Tramos y escuadrones (ver guiones.py y escuadrones.py). Cada sector es una ruta de 4 TRAMOS
+# Tramos y escuadrones (ver rutas.py y escuadrones.py). Cada sector es una ruta de 4 TRAMOS
 # y el jefe (un tramo por nivel). En cada tramo los enemigos llegan en ESCUADRONES: se avisa
 # con una flecha en el borde, entran volando en formacion, atacan un rato y se RETIRAN. Asi
 # la pantalla nunca se llena de enemigos viejos: lo que cambia de un tramo a otro es QUIEN
@@ -256,7 +256,7 @@ PERMANENCIA_MINIMA = 6000       # ms que se queda como minimo un escuadron que y
 RESPIRO_ESCUADRON = 1500        # ms entre que se va (o cae) un escuadron y llega el siguiente
 INICIO_TRAMO = 1500             # ms desde que empieza un tramo hasta que llega su primer escuadron
 ESCUADRON_PUNTOS = 4            # bonus por cada miembro al eliminar un escuadron entero
-# Objetivos: cada tramo pide algo para pasar al siguiente (ver objetivos.py y guiones.py). Al
+# Objetivos: cada tramo pide algo para pasar al siguiente (ver objetivos.py y rutas.py). Al
 # cumplirlo los enemigos que quedan se retiran y, con la zona despejada, empieza el tramo siguiente
 OBJETIVO_PUNTOS = 20            # premio por cumplir el objetivo, por el numero de sector
 VUELTA_OBJETIVO = 0.5           # en cada vuelta a los sectores, los objetivos piden esta parte mas
@@ -293,6 +293,18 @@ ESCUDERO_VELOCIDAD = 1.3
 ESCUDERO_GIRO = 1.6             # grados por paso que gira el escudo (la nave lo puede rodear)
 ESCUDERO_ARCO = 140             # grados que cubre el escudo (centrados en hacia donde mira)
 ESCUDERO_PUNTOS = 6             # por romperlo con el dash
+
+# Modo historia (ver HISTORIA.md y juego/historia/): cada mision es la ruta de un sector
+MEJORA_TRAMO_HISTORIA = 3       # en cada mision, el Taller (una carta gratis) abre en este tramo
+DIALOGO_LETRAS_POR_PASO = 0.75  # que tan rapido se escribe el texto de un dialogo (letras por paso)
+RADIO_MS_MINIMO = 2400          # lo minimo que se ve un mensaje de radio...
+RADIO_MS_POR_LETRA = 60         # ...o esto por cada letra, si es mas largo
+RADIO_DEMORA_TRAMO = 2600       # ms despues de empezar un tramo (que no pise su cartel)
+RADIO_DEMORA_JEFE = 4500        # ms despues de que llega el jefe (que no pise su presentacion)
+MONEDA_GRABADA_MONEDAS = 15     # secreto F01: monedas que hay que juntar antes de que aparezca...
+MONEDA_GRABADA_DURA = 6000      # ...y cuanto dura antes de apagarse
+RESTOS_ESPERA = 6000            # secreto F02: ms desde que empieza el tramo 3 hasta que cruzan los restos...
+RESTOS_VELOCIDAD = 0.6          # ...y a cuantos px por paso cruzan (tardan ~30 s)
 
 # Asedio: el ultimo tramo de cada sector, antes del jefe. Llegan escuadrones de todos lados
 # y hay que aguantar. Mientras dura, la barra de nivel se puede llenar pero el nivel espera:
@@ -445,7 +457,7 @@ MODO_DESARROLLADOR = True       # False lo apaga (por ejemplo, para pasarle el j
 #   espera_powerup: multiplica la espera entre power-ups (mas = caen menos seguido)
 #   apunte_fijo:    ms antes de embestir en que el embestidor deja de seguirte con la mira:
 #                   embiste hacia donde estabas un momento antes (0 = te sigue hasta el final)
-#   servicios:      lo que vende la gasolinera ademas de las cartas (ver tienda.py)
+#   servicios:      lo que vende la gasolinera ademas de las cartas (ver arcade/tienda.py)
 ORDEN_DIFICULTADES = ["FACIL", "NORMAL", "DIFICIL", "PESADILLA"]
 DIFICULTADES = {
     "FACIL": {"color": VERDE, "paleta": TREBOL, "calaveras": 1, "vidas": 5, "velocidad": 0.8,
@@ -472,7 +484,7 @@ DIFICULTADES = {
 #   fondo:     el color del espacio
 #   ambiente:  las particulas del fondo (ver fondo.py): asteroides, brasas, esporas, panal o abismo
 #   estrellas: cuanto de rojo, verde y azul tienen las estrellas (1 = blancas)
-#   lema:      la frase del cartel al llegar (los enemigos de cada tramo estan en guiones.py)
+#   lema:      la frase del cartel al llegar (los enemigos de cada tramo estan en rutas.py)
 #   anomalia:  la que suele llegar a mitad del sector (ANOMALIA_PROPIA; None = una al azar)
 # Ningun color del fondo pasa de ~110 por canal, para que no se confunda con enemigos
 SECTORES = [

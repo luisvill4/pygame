@@ -8,12 +8,12 @@ from juego.config import (ANCHO, RANGO_EMBESTIDOR, DISTANCIA_APARICION, DIFICULT
 from juego import recursos
 from juego.enemigos import TIPOS_ENEMIGO, crear_enemigo
 from juego.enemigos.rebotador import CHOQUE, PEGADO
-from juego.guiones import GUION_ARCADE, tipos_del_guion
+from juego.rutas import RUTAS, tipos_de_las_rutas
 from tests.ayudas import jugar
 
 
 def test_todos_los_tipos_del_guion_existen():
-    assert tipos_del_guion(GUION_ARCADE) <= set(TIPOS_ENEMIGO)
+    assert tipos_de_las_rutas(RUTAS) <= set(TIPOS_ENEMIGO)
 
 
 def test_enemigo_que_no_existe_avisa_claro(partida):

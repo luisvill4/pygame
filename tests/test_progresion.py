@@ -9,7 +9,7 @@ from juego.config import (SECTORES, CARTEL_JEFE, CARTEL_RANGO, CARTEL_SECTOR, MS
                           ASEDIO_DURACION, ASEDIO_INICIO, DIFICULTADES, PERMANENCIA_MINIMA)
 from juego.enemigos import TIPOS_ENEMIGO
 from juego.escuadrones import FORMACIONES, lugares
-from juego.guiones import GUION_ARCADE, tipos_del_guion
+from juego.rutas import RUTAS, tipos_de_las_rutas
 from tests.ayudas import jugar
 
 PASOS_ENTRADA = int((AVISO_ESCUADRON + ENTRADA_ESCUADRON + 600) / MS_POR_FRAME)   # (+ el escalonado)
@@ -36,14 +36,14 @@ def vencer_y_cerrar(partida):
 # ---------- El guion ----------
 
 def test_el_guion_arcade_tiene_una_ruta_por_sector():
-    assert len(GUION_ARCADE) == len(SECTORES)
-    for sector in GUION_ARCADE:
+    assert len(RUTAS) == len(SECTORES)
+    for sector in RUTAS:
         assert len(sector) == JEFE_CADA_NIVELES - 1             # 4 tramos y el jefe
         assert [tramo.get("asedio", False) for tramo in sector] == [False, False, False, True]
 
 
 def test_el_guion_usa_enemigos_y_formaciones_que_existen():
-    for sector in GUION_ARCADE:
+    for sector in RUTAS:
         for tramo in sector:
             assert len(tramo["nombre"]) <= 16       # (entra en el cartel; el objetivo: test_objetivos.py)
             for tipo, cantidad, formacion in tramo["escuadrones"]:
@@ -55,12 +55,12 @@ def test_todos_los_enemigos_aparecen_en_el_guion():
     # (los hijos del divisor y las abejas de la Colmena no llegan solos)
     sueltos = {tipo for tipo, clase in TIPOS_ENEMIGO.items()
                if not clase.esbirro and not tipo.startswith("divisor_")}
-    assert tipos_del_guion(GUION_ARCADE) == sueltos
+    assert tipos_de_las_rutas(RUTAS) == sueltos
 
 
 def test_un_enemigo_nuevo_por_tramo_y_nunca_en_el_asedio():
     vistos = set()
-    for sector in GUION_ARCADE:
+    for sector in RUTAS:
         for tramo in sector:
             nuevos = {tipo for tipo, _, _ in tramo["escuadrones"]} - vistos
             assert len(nuevos) <= 1, tramo["nombre"]
@@ -89,7 +89,7 @@ def test_la_partida_empieza_en_el_tramo_1_del_cinturon(app):
     director = app.escena.partida.director
     assert director.sector is SECTORES[0]
     assert director.numero_tramo == 1
-    assert director.tramo is GUION_ARCADE[0][0]
+    assert director.tramo is RUTAS[0][0]
     assert app.escena.partida.enemigos == []        # el primer escuadron llega al rato
     assert director.proximo_escuadron == INICIO_TRAMO
 
@@ -98,9 +98,9 @@ def test_cada_nivel_es_el_tramo_siguiente_con_su_cartel(partida):
     director = partida.director
     partida.avisos.vaciar()                     # (el cartel del tramo 1)
     partida.subir_nivel()
-    assert director.numero_tramo == 2 and director.tramo is GUION_ARCADE[0][1]
+    assert director.numero_tramo == 2 and director.tramo is RUTAS[0][1]
     assert partida.avisos.actual.etiqueta == "TRAMO 2/4"
-    assert partida.avisos.actual.titulo == GUION_ARCADE[0][1]["nombre"]
+    assert partida.avisos.actual.titulo == RUTAS[0][1]["nombre"]
 
 
 def test_al_cambiar_de_tramo_los_escuadrones_se_retiran(partida):
@@ -289,7 +289,7 @@ def test_despues_del_jefe_empieza_el_tramo_1_del_sector_nuevo(partida):
     assert partida.nivel == 5                   # mientras se cierra el sector, nada
     jugar(partida, int((CARTEL_JEFE + CARTEL_RANGO) / MS_POR_FRAME))
     assert partida.nivel == 6
-    assert director.numero_tramo == 1 and director.tramo is GUION_ARCADE[1][0]
+    assert director.numero_tramo == 1 and director.tramo is RUTAS[1][0]
     # Primero la franja del sector nuevo; el cartel del tramo 1 espera a que termine
     assert partida.avisos.actual is None
     jugar(partida, int(CARTEL_SECTOR / MS_POR_FRAME) + 2)

@@ -7,8 +7,8 @@ from juego.dibujo import CHICA, MEDIA
 from juego.escenas import desarrollador, juego as escena_juego
 from juego.escenas.desarrollador import Desarrollador, ELEGIBLES, FILAS, nombre_de
 from juego.escenas.explosion import Explosion
-from juego.escenas.fin import Fin
-from juego.escenas.iniciales import Iniciales
+from juego.escenas.arcade.fin import Fin
+from juego.escenas.arcade.iniciales import Iniciales
 from juego.escenas.juego import Juego
 from tests.ayudas import avanzar, tecla, empezar_partida
 

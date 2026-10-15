@@ -28,6 +28,7 @@ from juego.fondo import Fondo
 from juego.efectos import Efectos
 from juego.transicion import Transicion
 from juego.partida import Partida
+from juego.arcade.modo import ModoArcade
 from juego.escenas.inicio import Inicio
 from juego.escenas.presentacion import Presentacion
 from juego.escenas.listo import Listo
@@ -91,14 +92,16 @@ class App:
             self.sonidos.reproducir("ui_transicion")
         self.escena = escena
 
-    def nueva_partida(self, dificultad=None):
-        # Deja todo como al principio y muestra "READY?" (sin dificultad: la ultima elegida)
+    def nueva_partida(self, dificultad=None, modo=None):
+        # Deja todo como al principio y muestra "READY?" (sin dificultad: la ultima elegida).
+        # 'modo': ModoArcade (por defecto) o ModoHistoria(numero de mision) (ver modos.py)
         dificultad = dificultad or self.opciones.dificultad
+        modo = modo or ModoArcade()
         self.efectos.reiniciar()
-        self.fondo.ir_a_sector(SECTORES[0], instantaneo=True)      # vuelve al primer sector
+        self.fondo.ir_a_sector(SECTORES[modo.primer_sector() - 1], instantaneo=True)     # donde empieza
         self.fondo.saltar_al_hiperespacio()                         # y llega volando
         partida = Partida(self.efectos, self.sonidos, self.entrada, self.records, self.opciones, dificultad,
-                          self.progreso)
+                          self.progreso, modo=modo)
         self.sonidos.reproducir("ui_empezar")
         self.sonidos.reproducir("hiperespacio")         # (el fondo llega volando)
         self.cambiar_escena(Listo(self, partida))      # Listo pide la musica del juego (en el GO)

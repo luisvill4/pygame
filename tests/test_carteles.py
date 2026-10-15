@@ -10,7 +10,7 @@ from juego.carteles import (medidas_pancarta, caja_pancarta, ANCHO_PANCARTA, ENT
 from juego.config import (ANCHO, ALTO, AMARILLO, ROJO, CIAN, PIXEL_ARTE, JEFE_CADA_NIVELES, CARTEL_JEFE,
                           CARTEL_RANGO, MS_POR_FRAME)
 from juego.desafios import TIPOS_DESAFIO
-from juego.guiones import GUION_ARCADE
+from juego.rutas import RUTAS
 from juego.objetivos import crear_objetivo
 from juego.logros import LOGROS
 from tests.ayudas import jugar
@@ -73,7 +73,7 @@ def test_la_anomalia_no_espera_al_aviso_del_tramo(partida):
 
 def test_todo_entra_en_los_avisos():
     textos = [(clase.nombre, clase.pista) for clase in TIPOS_ANOMALIA.values()]
-    textos += [(tramo["nombre"], crear_objetivo(tramo["objetivo"], 1.5).texto()) for ruta in GUION_ARCADE
+    textos += [(tramo["nombre"], crear_objetivo(tramo["objetivo"], 1.5).texto()) for ruta in RUTAS
                for tramo in ruta]
     textos += [("¡ASEDIO SUPERADO!", "+9999 PUNTOS Y UN POWER-UP"), ("¡NUEVO RECORD!", "SUPERASTE 999999")]
     minimo, maximo = ANCHO_PANCARTA
