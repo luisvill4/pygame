@@ -503,6 +503,9 @@ Más `trueno`, el trueno lejano del relámpago.
 | H03 | (Historia) El texto de un diálogo se escribe | `Dialogo.actualizar` | — | `teclear`, cada 3 letras | P3 |
 | H04 | (Historia) Quieta en la niebla, se oye el compás (secreto F06) | `QuietoEnLaAnomalia.actualizar` | — | `onda_corta` / `onda_larga`, uno por pulso de A-L-B-A, con paneo | P2 |
 | H05 | (Historia) La pantalla final | `Final.musica` | — | `"fin"` en el final de siempre; `"iniciales"` (Do mayor) en el verdadero | P2 |
+| H06 | (Historia) La Alondra sale de viaje en la galaxia | `Galaxia._viajar` | — | `nave_dash_1` (provisorio: un salto propio, largo, con el reloj corriendo) | P3 |
+| H07 | (Historia) Instalar algo en el hangar / no alcanzan las piezas | `Hangar.actualizar` | — | `mejora_elegida` / `dash_vacio` | P3 |
+| H08 | (Historia) Se despeja un sistema libre con eco | `pasajes._sistema_despejado` | — | `fragmento` | P2 |
 
 ### 4.9 Carteles y HUD
 | Código | Situación | Dónde | Hoy | Propuesta | Prio | Anti-saturación |

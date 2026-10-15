@@ -136,14 +136,15 @@ def test_el_modo_historia_mapa_con_la_del_menu_y_el_dialogo_en_silencio(app):
     # El mapa sigue con la del menu; el dialogo de antes de la mision va sin musica, con el
     # ambiente del sector de la mision (las voces y el lugar); despues, la del juego
     from juego.config import SECTORES
-    from juego.escenas.historia.mapa import Mapa
+    from juego.escenas.historia.galaxia import Galaxia, VIAJE_PASOS
     from juego.escenas.historia.dialogo import Dialogo
     tecla(pygame.K_DOWN)            # HISTORIA
     avanzar(app)
     tecla(pygame.K_RETURN)
     avanzar(app)
-    assert isinstance(app.escena, Mapa) and app.sonidos.actual == "menu"
-    tecla(pygame.K_RETURN)          # la mision 1
-    avanzar(app, 2)                 # (el tema se pide antes de cada paso)
+    assert isinstance(app.escena, Galaxia) and app.sonidos.actual == "menu"
+    app.escena.elegida = "M1"
+    tecla(pygame.K_RETURN)          # viaja a la mision 1
+    avanzar(app, VIAJE_PASOS + 2)   # (el tema se pide antes de cada paso)
     assert isinstance(app.escena, Dialogo)
     assert app.sonidos.actual == SILENCIO and app.escena.ambiente == SECTORES[0]["ambiente"]

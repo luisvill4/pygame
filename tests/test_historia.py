@@ -27,7 +27,8 @@ from juego.historia.reliquias import MonedaGrabada, Restos, Baliza
 from juego.historia import fichas
 from juego.escenas.historia.archivo import Archivo, LISTA, DETALLE, COLUMNA_NOMBRE, PESTANAS, ALTO_GLIFO, acomodar
 from juego.escenas.historia.dialogo import Dialogo, ANCHO_TEXTO
-from juego.escenas.historia.mapa import Mapa
+from juego.escenas.historia.galaxia import Galaxia, VIAJE_PASOS
+from juego.historia.galaxia import ANCHO_GALAXIA, ALTO_GALAXIA
 from juego.escenas.historia.final import Final
 from juego.escenas.juego import Juego
 from juego.escenas.listo import Listo
@@ -67,7 +68,7 @@ def test_las_misiones_van_en_orden_y_cada_una_en_un_sector_y_un_lugar():
         assert clase.titulo and clase.antes and clase.despues
         assert 1 <= clase.sector <= len(SECTORES)
         x, y = clase.lugar
-        assert 40 <= x <= ANCHO - 40 and 120 <= y <= 330, clase.titulo     # (arriba del informe)
+        assert 40 <= x <= ANCHO_GALAXIA - 40 and 40 <= y <= ALTO_GALAXIA - 40, clase.titulo   # (en la galaxia)
         if clase.oculta:
             assert clase.requisitos and set(clase.requisitos) <= set(ids_de_fragmentos())
             assert clase.rama_de in [otra.numero for otra in misiones]
@@ -229,15 +230,24 @@ def ir_al_mapa(app):
     avanzar(app)
     tecla(pygame.K_RETURN)
     avanzar(app)
-    assert isinstance(app.escena, Mapa)
+    assert isinstance(app.escena, Galaxia)
     return app.escena
+
+
+def viajar(app, galaxia, id_sistema):
+    # Elegir un sistema en la galaxia y viajar (el vuelo dura VIAJE_PASOS)
+    galaxia.elegida = id_sistema
+    tecla(pygame.K_RETURN)
+    avanzar(app, VIAJE_PASOS + 2)
 
 
 def test_del_inicio_al_mapa_al_dialogo_y_a_la_mision(app):
     mapa = ir_al_mapa(app)
-    assert mapa.elegida == 1
-    tecla(pygame.K_RETURN)
+    assert mapa.elegida == "UMBRAL"             # la Alondra sale de casa
+    tecla(pygame.K_RIGHT)
     avanzar(app)
+    assert mapa.elegida == "M1"                 # (a la derecha, la mas cercana)
+    viajar(app, mapa, "M1")
     assert isinstance(app.escena, Dialogo)
     tecla(pygame.K_ESCAPE)              # saltear el dialogo
     avanzar(app)
@@ -252,27 +262,18 @@ def test_del_inicio_al_mapa_al_dialogo_y_a_la_mision(app):
 
 def test_una_mision_bloqueada_no_despega(app):
     mapa = ir_al_mapa(app)
-    tecla(pygame.K_RIGHT)
-    avanzar(app)
-    assert mapa.elegida == 2
-    tecla(pygame.K_RETURN)
-    avanzar(app)
-    assert app.escena is mapa
+    viajar(app, mapa, "M2")
+    assert app.escena is mapa and app.progreso.anios == 0 and app.progreso.ubicacion == "UMBRAL"
 
 
 def test_el_mapa_muestra_la_oculta_solo_con_sus_requisitos(app):
-    assert len(ir_al_mapa(app).misiones) == len([c for c in misiones_en_orden() if not c.oculta])
+    assert "M6" not in [uno.id for uno in ir_al_mapa(app).sistemas()]
     for id_ in ("F02", "F04", "F07"):
         app.progreso.encontrar_fragmento(id_)
-    mapa = Mapa(app)
-    assert len(mapa.misiones) == len(misiones_en_orden())
+    mapa = Galaxia(app)
+    assert "M6" in [uno.id for uno in mapa.sistemas()]
     app.cambiar_escena(mapa, transicion=False)
-    for _ in range(len(mapa.misiones)):
-        tecla(pygame.K_RIGHT)
-        avanzar(app)
-    assert mapa.elegida == 6
-    tecla(pygame.K_RETURN)
-    avanzar(app)
+    viajar(app, mapa, "M6")
     assert isinstance(app.escena, Dialogo)
 
 
@@ -317,7 +318,7 @@ def test_vencer_al_jefe_cumple_la_mision_y_vuelve_al_mapa(app):
     assert partida.director.sector is SECTORES[0]   # (no pasa al sector siguiente)
     tecla(pygame.K_ESCAPE)
     avanzar(app)
-    assert isinstance(app.escena, Mapa) and app.escena.elegida == 2
+    assert isinstance(app.escena, Galaxia) and app.escena.elegida == "M1"
 
 
 def test_el_dialogo_de_despues_cambia_con_lo_encontrado(app):
@@ -341,7 +342,7 @@ def test_si_la_nave_explota_ines_te_saca_y_no_hay_records(app):
     assert app.records.maximo(partida.dificultad) == 0
     tecla(pygame.K_ESCAPE)
     avanzar(app)
-    assert isinstance(app.escena, Mapa) and app.escena.elegida == 1
+    assert isinstance(app.escena, Galaxia) and app.escena.elegida == "M1"
 
 
 def test_en_la_historia_no_salen_logros(app):
@@ -379,7 +380,7 @@ def test_la_mision_sin_jefe_se_cumple_al_despejar_el_ultimo_tramo(app):
     assert isinstance(app.escena, Dialogo) and 6 in app.progreso.misiones
     tecla(pygame.K_ESCAPE)
     avanzar(app)
-    assert isinstance(app.escena, Mapa)
+    assert isinstance(app.escena, Galaxia)
 
 
 # ---------- La radio ----------
@@ -645,7 +646,7 @@ def test_despues_de_la_ultima_mision_viene_el_final(app, verdadero):
     avanzar(app, 300)                       # (se dibuja todo)
     tecla(pygame.K_RETURN)
     avanzar(app)
-    assert isinstance(app.escena, Mapa)
+    assert isinstance(app.escena, Galaxia)
 
 
 def test_el_mapa_cambia_su_frase_con_la_historia(app):
@@ -655,7 +656,7 @@ def test_el_mapa_cambia_su_frase_con_la_historia(app):
     avanzar(app)
     app.progreso.encontrar_fragmento("F11")
     avanzar(app)
-    assert isinstance(app.escena, Mapa) and mapa is app.escena
+    assert isinstance(app.escena, Galaxia) and mapa is app.escena
 
 
 # ---------- Las fichas del Archivo ----------

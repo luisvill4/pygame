@@ -18,7 +18,7 @@ class LaColmena(Mision):
     numero = 4
     titulo = "LA COLMENA"
     sector = 4
-    lugar = (750, 190)
+    lugar = (1610, 230)
 
     tramos = [
         {"nombre": "LA MURALLA", "objetivo": ("romper", 3, "escudero"), "a_la_vez": 2,
@@ -33,6 +33,7 @@ class LaColmena(Mision):
     ]
 
     antes = [
+        ("ines", "TE HABLO DESDE UNA NAVE: LA UMBRAL YA NO EXISTE. SEGUIMOS, ALBA. SEGUI.", "T6"),
         ("ines", "EL MAR DE AMBAR ES UN PANAL DEL TAMAÑO DE UN SISTEMA SOLAR. CON INSCRIPCIONES. MILLONES."),
         ("alba", "UNA BIBLIOTECA."),
         ("ines", "ESO CREO. Y SEGUN LAS BITACORAS, LA ERRANTE TAMBIEN LLEGO HASTA ACA."),

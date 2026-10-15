@@ -19,7 +19,8 @@ class ElFinDeLaLuz(Mision):
     numero = 5
     titulo = "EL FIN DE LA LUZ"
     sector = 5
-    lugar = (940, 290)
+    lugar = (2060, 350)
+    gravedad = 0.5          # al lado del agujero negro: cada visita, medio año mas en la Umbral
     final = True
 
     tramos = [
@@ -36,6 +37,7 @@ class ElFinDeLaLuz(Mision):
     ]
 
     antes = [
+        ("ines", "ALBA... LA MAREA YA LLEGO. LA UMBRAL NO EXISTE MAS. TE HABLO DESDE UNA NAVE.", "T6"),
         ("ines", "ES UN AGUJERO NEGRO, ALBA. Y EL COMPAS SALE DE ADENTRO."),
         ("alba", "LO QUE ESTA ADENTRO DE UN AGUJERO NEGRO NO SALE, INES. ES LA REGLA."),
         ("ines", "ESTE SI. Y SE ESTA ABRIENDO. LAS MONEDAS, LOS LADRONES... TODO VA HACIA AHI."),
@@ -74,9 +76,14 @@ class ElFinDeLaLuz(Mision):
         ("alba", "SI NO VUELVO..."),
         ("alba", "SEGUI LAS MONEDAS."),
         ("ines", "¿ALBA? ...¿ALBA?"),
-        ("ines", "TRES DIAS SIN SEÑAL DE LA ALONDRA. PERO EL COMPAS CAMBIO OTRA VEZ."),
-        ("ines", "AHORA TERMINA CON UNA PALABRA NUEVA. LA TRADUJE CIEN VECES."),
-        ("ines", "DICE: VENGAN."),
+        # A tiempo: hay tiempo para que todos crucen
+        ("ines", "TRES DIAS SIN SEÑAL DE LA ALONDRA. PERO EL COMPAS CAMBIO OTRA VEZ.", "!T6"),
+        ("ines", "AHORA TERMINA CON UNA PALABRA NUEVA. LA TRADUJE CIEN VECES.", "!T6"),
+        ("ines", "DICE: VENGAN.", "!T6"),
+        # Tarde: la Marea ya llego a la Umbral
+        ("ines", "LA MAREA YA ESTA ACA. LA UMBRAL SE PARTIO. QUEDAMOS POCOS, EN TRES NAVES.", "T6"),
+        ("ines", "Y EL COMPAS CAMBIO. TERMINA CON UNA PALABRA NUEVA: VENGAN.", "T6"),
+        ("ines", "LLEGAMOS TARDE PARA LOS DEMAS. PERO VAMOS.", "T6"),
         # El final verdadero: con todo encontrado, llega la Bitacora sin fecha
         ("ines", "...Y LLEGO OTRA COSA. UNA GRABACION. NO TIENE FECHA. TIENE MILLONES DE AÑOS.", "F11"),
         ("voz", "INES. SI ESCUCHAS ESTO, YA PASO. TODO.", "F11"),
@@ -86,8 +93,9 @@ class ElFinDeLaLuz(Mision):
         ("voz", "LA MAREA NO SE PUEDE FRENAR. PERO SE PUEDE CRUZAR. VENGAN TODOS.", "F11"),
         ("voz", "SEGUI LAS MONEDAS. LAS DEJAMOS NOSOTROS.", "F11"),
         ("ines", "...NOSOTROS. LOS CANTORES. SIEMPRE FUIMOS NOSOTROS.", "F11"),
-        ("ines", "ATENCION, ESTACION UMBRAL. PREPAREN TODAS LAS NAVES.", "F11"),
-        ("ines", "NOS VAMOS.", "F11"),
+        ("ines", "ATENCION, ESTACION UMBRAL. PREPAREN TODAS LAS NAVES.", "F11+!T6"),
+        ("ines", "NOS VAMOS.", "F11+!T6"),
+        ("ines", "TODOS NO, ALBA. LLEGAMOS TARDE. PERO LOS QUE QUEDAMOS... VAMOS.", "F11+T6"),
     ]
 
     fragmentos = [

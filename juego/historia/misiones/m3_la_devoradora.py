@@ -18,7 +18,7 @@ class LaDevoradora(Mision):
     numero = 3
     titulo = "LA DEVORADORA"
     sector = 3
-    lugar = (540, 280)
+    lugar = (1190, 400)
 
     tramos = [
         {"nombre": "EL SAQUEO", "objetivo": ("monedas", 10), "a_la_vez": 2,
@@ -33,6 +33,7 @@ class LaDevoradora(Mision):
     ]
 
     antes = [
+        ("ines", "PARA VOS FUERON UNAS HORAS. PARA MI, AÑOS. NO TE LO RECLAMO... PERO APURATE.", "T3+!T6"),
         ("ines", "EN EL CAMPO ESMERALDA LAS MONEDAS DESAPARECEN ANTES DE QUE LLEGUES."),
         ("alba", "¿OTRO PILOTO?"),
         ("ines", "NO HAY NADIE MAS AHI AFUERA. O NO DEBERIA HABER."),

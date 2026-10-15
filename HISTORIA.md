@@ -167,7 +167,48 @@ Cada secreto: **dónde**, **cómo se encuentra** (nunca a simple vista), **la pi
 Los fragmentos de la misión oculta tampoco aparecen en el Archivo hasta que aparece la misión
 (la cuenta de arriba sí los suma: hay más de lo que se ve).
 
-## 10. Los finales
+## 10. La galaxia y el tiempo
+
+El mapa de la historia es una **galaxia que se recorre libre** (como el mapa estelar de
+Starfield): las misiones son sistemas marcados y entre ellas hay 16 **sistemas libres**.
+
+- **La relatividad:** para Alba un viaje dura horas; en la Estación Umbral pasan **años** (viaja
+  casi a la velocidad de la luz, y cerca del Abismo la gravedad estira su tiempo todavía más:
+  cada visita ahí suma años de **dilatación**). Lo que cuenta es el reloj de la Umbral. La
+  Marea llega en el año 6.
+- **El costo:** cada viaje gasta años según la distancia; cada salida, aunque no viajes, gasta
+  un poco (nada es gratis). El camino directo de la historia cuesta ~3.8 años: sobran ~2 para
+  explorar. Explorarlo todo no se puede a tiempo: hay que elegir.
+- **La Marea se ve:** un frente rojo avanza desde la izquierda y en el año 6 se traga la Umbral.
+  Lo que traga ya no se puede visitar.
+- **Inés envejece:** cada año que pasa manda un mensaje ("para vos fueron unas horas; para mí,
+  un año"). En el año 6, la Umbral cae y ella sigue a Alba con los que pudieron subir a las naves.
+- **La historia reacciona al tiempo** (renglones con `T3`, `!T6`): Inés pide que se apure, y si
+  la misión 5 se cumple tarde, el final cambia: "Llegamos tarde para los demás. Pero vamos". La
+  pantalla final dice el año y "LLEGASTE TARDE".
+- **Con la historia terminada el reloj se detiene:** lo que quedó se puede explorar sin apuro.
+- **Cuanto más lejos, más peligro** (de 1 a 5, por la distancia a la Umbral): escuadrones más
+  grandes y más rápidos. Desde peligro 3, el último tramo es un asedio.
+- **Las recompensas:** **piezas** (las monedas de cada partida, y mucho más la primera vez que se
+  despeja un sistema, según su peligro) para el **Hangar**: mejoras para siempre de la Alondra
+  (las cartas del Taller desde el despegue y el **Impulsor**, que acorta los viajes); los
+  **ecos** (las historias de los sistemas libres) y las **puertas menores** (atajos que casi no
+  gastan tiempo: Los Gemelos ⇄ Espejo y Cíclope ⇄ Horizonte).
+
+### Los ecos
+
+| Id | Sistema | Nombre | Qué cuenta |
+|---|---|---|---|
+| E01 | Vega del Sur | La sonda | Una sonda de la Umbral grabó el compás hace cuarenta años: siempre estuvo. |
+| E02 | Kepler | La estación Kepler | Quisieron huir de la Marea a la velocidad de la luz: el tiempo los alcanzó. "No se puede escapar huyendo". |
+| E03 | Oráculo | El reloj de arena | Un púlsar marcado por los Cantores que cuenta los latidos hasta la Marea. Glifo PRONTO. |
+| E04 | Semillero | El planeta que canta | La fábrica de las monedas. Glifo HOGAR. |
+| E05 | Vigía | El vigía | Una máquina de los Cantores que espera a la Alondra, la mira y se apaga. Glifo LLEGO. |
+| E06 | Miel | Los que escaparon | Una nave generacional de hace 300 años que oyó el compás y dio la vuelta: no son los primeros en cruzar. |
+| E07 | Horizonte | La carta | Un mensaje de Inés a Mateo ("volvé") que tardó tres años en llegar y nunca lo recibió. |
+| E08 | Umbra (peligro 5) | La otra Alondra | Los restos de **la Alondra**, con millones de años de polvo y ALBA rayado en la cabina. Lo más hondo para quien llega más lejos. |
+
+## 11. Los finales
 
 Después del diálogo de la misión 5 viene la **pantalla final** (`escenas/historia/final.py`):
 
@@ -183,7 +224,7 @@ Después del diálogo de la misión 5 viene la **pantalla final** (`escenas/hist
 misión 5, "EL COMPAS DICE: VENGAN"; con la verdad, "SEGUI LAS MONEDAS". El planeta del Abismo
 late en el ritmo del compás (salvo con DESTELLOS REDUCIDOS).
 
-## 11. Reglas para escribir un secreto
+## 12. Reglas para escribir un secreto
 
 - **Nunca a simple vista.** Se encuentra jugando distinto (quieto, en orden, sin romper algo,
   siguiendo, dejando escapar), no por suerte pura.
@@ -199,7 +240,7 @@ late en el ritmo del compás (salvo con DESTELLOS REDUCIDOS).
 - **Texto en el juego:** en mayúsculas y sin vocales mayúsculas con tilde (la fuente las dibuja
   mal), frases cortas. Los tests comprueban que todo entre en su caja.
 
-## 12. Cómo está hecho (para seguir escribiendo)
+## 13. Cómo está hecho (para seguir escribiendo)
 
 Todo el modo historia vive en `juego/historia/` y sus pantallas en `juego/escenas/historia/`.
 No importa nada del arcade (y el arcade no importa nada de acá): `tests/test_modos.py` lo vigila.
@@ -216,8 +257,13 @@ En la historia no hay récords ni logros (miden el avance del arcade).
 | Quién habla (nombre, color y retrato) | `juego/historia/personajes.py` |
 | La escritura de los Cantores: traducir, escribir, el ritmo en el tiempo | `juego/historia/glifos.py` |
 | La radio (la cola de mensajes) y su caja | `juego/radio.py` y `carteles.radio()` |
-| Mapa estelar, diálogos, Archivo, final y qué pantalla sigue | `juego/escenas/historia/` (`mapa`, `dialogo`, `archivo`, `final`, `pasajes`) |
-| Lo que se guarda (misiones, fragmentos y fichas) | `progreso.json`, en `guardado.Progreso` |
+| La galaxia, el hangar, diálogos, Archivo, final y qué pantalla sigue | `juego/escenas/historia/` (`galaxia`, `hangar`, `dialogo`, `archivo`, `final`, `pasajes`) |
+| La galaxia: los sistemas, el peligro y el costo de los viajes | `juego/historia/galaxia.py` |
+| El reloj de la Umbral: años, mensajes de Inés y el frente de la Marea | `juego/historia/tiempo.py` |
+| Un sistema libre: su ruta generada y su peligro | `juego/historia/exploracion.py` (`ModoExploracion`) |
+| El hangar y las piezas | `juego/historia/hangar.py` |
+| Los ecos | `juego/historia/ecos.py` |
+| Lo que se guarda (misiones, fragmentos, fichas, años, ubicación, piezas, hangar, sistemas, puertas) | `progreso.json`, en `guardado.Progreso` |
 | Los sonidos (`fragmento`, `onda_corta`, `onda_larga`) | `herramientas/estudio/obras/efectos_director.py` |
 
 **Para escribir una misión:** copiar un archivo de `historia/misiones/`, cambiar el número, el

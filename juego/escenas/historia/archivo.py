@@ -1,11 +1,12 @@
 """
 ARCHIVO: lo que Alba e Ines saben del camino (como las terminales de Fallout).
 
-Cuatro pestañas (LB/RB o Q/E):
+Cinco pestañas (LB/RB o Q/E):
     REGISTROS     los fragmentos de la historia (los secretos de cada mision). Los que faltan
                   salen como "???" con su mision (dice cuantos hay, no donde estan); los
                   'ocultos' y los de una mision oculta ni aparecen hasta encontrarlos (pero
                   la cuenta de arriba los suma: hay mas de lo que se ve)
+    ECOS          las historias de los sistemas libres de la galaxia (historia/ecos.py)
     CRIATURAS     las fichas de los enemigos y los guardianes      (historia/fichas.py: se
     TECNOLOGIA    la Alondra y los power-ups                        anotan solas la primera
     FENOMENOS     la Marea, el compas, las monedas y las anomalias  vez que las ves)
@@ -27,10 +28,11 @@ from juego.jefes import TIPOS_JEFE
 from juego.powerups import TIPOS_POWERUP
 from juego.historia.mision import todos_los_fragmentos
 from juego.historia.glifos import CLAVE_DE_LOS_GLIFOS, traducir, dibujar_glifo
-from juego.historia import fichas
+from juego.historia import fichas, galaxia
+from juego.historia.ecos import ECOS as LOS_ECOS
 
-REGISTROS = "REGISTROS"
-PESTANAS = [REGISTROS] + fichas.SECCIONES
+REGISTROS, ECOS = "REGISTROS", "ECOS"
+PESTANAS = [REGISTROS, ECOS] + fichas.SECCIONES
 BARRA_PESTANAS = pygame.Rect(48, 96, ANCHO - 96, 28)
 LISTA = pygame.Rect(48, 140, 430, 400)
 DETALLE = pygame.Rect(502, 140, ANCHO - 550, 400)
@@ -70,7 +72,17 @@ class Archivo(Escena):
     def entradas(self):
         if PESTANAS[self.pestana] == REGISTROS:
             return self._registros()
+        if PESTANAS[self.pestana] == ECOS:
+            return self._ecos()
         return self._fichas(PESTANAS[self.pestana])
+
+    def _ecos(self):
+        # Dice en que sistema esta (con el reloj corriendo, saber a donde ir importa)
+        donde = {uno.eco: uno.nombre for uno in galaxia.SISTEMAS if uno.eco}
+        encontrados = self.app.progreso.fragmentos
+        return [Entrada(eco.id, eco.nombre, eco.texto, eco.glifo, "",
+                        "ESTA EN EL SISTEMA %s. DESPEJALO." % donde[eco.id], eco.id in encontrados)
+                for eco in LOS_ECOS]
 
     def _registros(self):
         # Los ocultos y los de una mision que todavia no aparecio en el mapa no se muestran
@@ -117,7 +129,7 @@ class Archivo(Escena):
         interfaz.titulo(pantalla, "ARCHIVO", 48, 60, VIOLETA, interfaz.mezclar(VIOLETA, FONDO, 0.6),
                         tamano=GRANDE)
         entradas = self.entradas()
-        nombre = "FRAGMENTOS" if PESTANAS[self.pestana] == REGISTROS else "FICHAS"
+        nombre = {REGISTROS: "FRAGMENTOS", ECOS: "ECOS"}.get(PESTANAS[self.pestana], "FICHAS")
         encontradas = len([e for e in entradas if e.encontrada])
         total = len(todos_los_fragmentos()) if PESTANAS[self.pestana] == REGISTROS else len(entradas)
         texto(pantalla, "%s %d/%d" % (nombre, encontradas, total), CHICA, TEXTO_SUAVE, ANCHO - 48, 60,

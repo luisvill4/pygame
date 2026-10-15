@@ -1,47 +1,76 @@
 """
-Los pasajes del modo historia (ver escenas/pasajes.py):
-    al_cumplir      vencio al jefe (o despejo la ruta): se guarda la mision cumplida, el dialogo
-                    de despues y al mapa. Despues de la mision final, antes, la pantalla final
-    al_morir        la nave exploto: Ines te saca de ahi y al mapa (lo encontrado queda guardado)
-    ir_al_mapa      volver al mapa estelar, con una mision elegida
-Los dialogos se filtran con lo encontrado (los renglones con condicion: historia/mision.py).
+Los pasajes del modo historia (ver escenas/pasajes.py). Todos vuelven a la GALAXIA:
+    al_cumplir      una mision: se guarda cumplida, el dialogo de despues y a la galaxia (despues de
+                    la mision final, antes, la pantalla final). Un sistema libre: piezas, su eco y
+                    su puerta menor (si tiene), contado por Ines
+    al_morir        la nave exploto: Ines te saca de ahi (con la mitad de las piezas)
+En los dos casos los creditos de la partida se vuelven piezas para el hangar (historia/hangar.py).
+Los dialogos se filtran con lo encontrado y los años (los renglones con condicion: mision.py).
 """
 from juego.config import SECTORES, ROJO
 from juego.escenas.historia.dialogo import Dialogo
-from juego.escenas.historia.mapa import Mapa
+from juego.escenas.historia.galaxia import Galaxia
 from juego.escenas.historia.final import Final
-from juego.historia.mision import filtrar, misiones_en_orden
+from juego.historia.mision import filtrar
+from juego.historia.exploracion import ModoExploracion
+from juego.historia import hangar, galaxia
+from juego.historia.ecos import POR_ID as ECOS
 
 RESCATE = [("ines", "¡ALBA! ¿ME ESCUCHAS? ...TE TENGO. TE SACO DE AHI."),
            ("ines", "DESCANSA. LA MAREA NO ESPERA, PERO VOS TAMPOCO TE RENDIS.")]
 
 
-def ir_al_mapa(app, elegida=None):
-    app.cambiar_escena(Mapa(app, elegida))
-
-
-def la_que_sigue(app, numero):
-    # La siguiente que se ve en el mapa (o la misma, si es la ultima)
-    visibles = [clase.numero for clase in misiones_en_orden() if clase.visible(app.progreso)]
-    despues = [otro for otro in visibles if otro > numero]
-    return despues[0] if despues else numero
+def ir_a_la_galaxia(app, elegida=None):
+    app.cambiar_escena(Galaxia(app, elegida))
 
 
 def al_cumplir(app, partida):
+    app.sonidos.parar_loops()
+    if isinstance(partida.modo, ModoExploracion):
+        _sistema_despejado(app, partida)
+        return
     mision = partida.modo.mision
     progreso = app.progreso
     progreso.cumplir_mision(mision.numero)
-    app.sonidos.parar_loops()
-    renglones = filtrar(mision.despues, progreso.fragmentos)
+    hangar.cobrar(progreso, partida, cumplida=True)
+    renglones = filtrar(mision.despues, progreso.fragmentos, progreso.anios)
+    id_sistema = "M%d" % mision.numero
     if mision.final:
-        siguiente = lambda: app.cambiar_escena(Final(app, lambda: ir_al_mapa(app, mision.numero)))
+        siguiente = lambda: app.cambiar_escena(Final(app, lambda: ir_a_la_galaxia(app, id_sistema)))
     else:
-        siguiente = lambda: ir_al_mapa(app, la_que_sigue(app, mision.numero))
+        siguiente = lambda: ir_a_la_galaxia(app, id_sistema)
     app.cambiar_escena(Dialogo(app, renglones, siguiente, "MISION %d CUMPLIDA" % mision.numero, mision.titulo,
                                SECTORES[mision.sector - 1]["color"]))
 
 
+def _sistema_despejado(app, partida):
+    # Las piezas; la primera vez, su eco y su puerta menor. Lo cuenta Ines
+    progreso = app.progreso
+    modo = partida.modo
+    uno = modo.sistema
+    primera = uno.id not in progreso.sistemas
+    piezas = hangar.cobrar(progreso, partida, cumplida=True, peligro=modo.peligro if primera else 0)
+    renglones = [("ines", "SISTEMA DESPEJADO. TRAES %d PIEZAS PARA EL HANGAR." % piezas)]
+    progreso.sistemas.add(uno.id)
+    if uno.eco and progreso.encontrar_fragmento(uno.eco):
+        partida.sonidos.reproducir("fragmento")
+        renglones += filtrar(ECOS[uno.eco].reaccion, progreso.fragmentos, progreso.anios)
+        renglones.append(("ines", "LO GUARDO EN EL ARCHIVO, CON LOS ECOS."))
+    if primera and uno.puerta:
+        progreso.puertas.add(uno.id)
+        otro = galaxia.sistema(uno.puerta)
+        renglones.append(("alba", "ACA HAY UNA PUERTA MENOR. LLEVA DERECHO A %s." % otro.nombre))
+        renglones.append(("ines", "UN ATAJO. CRUZARLA CASI NO GASTA TIEMPO."))
+    progreso.guardar()
+    app.cambiar_escena(Dialogo(app, renglones, lambda: ir_a_la_galaxia(app, uno.id), "SISTEMA DESPEJADO",
+                               uno.nombre, uno.bioma["color"]))
+
+
 def al_morir(app, partida):
-    numero = partida.modo.mision.numero
-    app.cambiar_escena(Dialogo(app, RESCATE, lambda: ir_al_mapa(app, numero), "MISION %d" % numero, "FALLIDA",
-                               ROJO))
+    hangar.cobrar(app.progreso, partida, cumplida=False)
+    modo = partida.modo
+    if isinstance(modo, ModoExploracion):
+        id_sistema, rotulo = modo.sistema.id, modo.sistema.nombre
+    else:
+        id_sistema, rotulo = "M%d" % modo.mision.numero, "MISION %d" % modo.mision.numero
+    app.cambiar_escena(Dialogo(app, RESCATE, lambda: ir_a_la_galaxia(app, id_sistema), rotulo, "FALLIDA", ROJO))

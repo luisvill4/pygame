@@ -1,7 +1,8 @@
 """
 FINAL: la pantalla despues del dialogo de la ultima mision (Mision.final).
 
-Hay dos finales, segun lo encontrado (HISTORIA.md):
+Hay dos finales, segun lo encontrado (HISTORIA.md), y los dos cambian si se llego TARDE (la
+Marea ya se trago la Umbral: tiempo.py):
     - el de siempre: "LA MAREA - FIN", con la musica del Game Over (melancolica) y la cuenta
       de lo que encontraste ("TODAVIA HAY COSAS QUE NO ENCONTRASTE");
     - el verdadero (con la Bitacora sin fecha): "EL PRINCIPIO", con la musica en mayor y el
@@ -16,7 +17,7 @@ from juego.entrada import ACEPTAR
 from juego.escenas.base import Escena
 from juego.historia.mision import misiones_en_orden, ids_de_fragmentos
 from juego.historia.glifos import escribir, dibujar_glifo, ritmo
-from juego.historia import fichas
+from juego.historia import fichas, tiempo
 from juego.sonido import SILENCIO
 
 VERDAD = "F11"              # el fragmento que abre el final verdadero (la Bitacora sin fecha)
@@ -31,6 +32,7 @@ class Final(Escena):
         super().__init__(app)
         self.al_terminar = al_terminar
         self.verdadero = VERDAD in app.progreso.fragmentos
+        self.tarde = tiempo.tarde(app.progreso)
         self.pasos = 0
 
     @property
@@ -56,7 +58,10 @@ class Final(Escena):
         self.dibujar_fondo(pantalla)
         lineas = self.lineas_visibles()
         color = AMARILLO if self.verdadero else ROJO
-        texto(pantalla, "LA MAREA", MEDIA, TEXTO_SUAVE, CENTRO_X, 96)
+        texto(pantalla, "LA MAREA", MEDIA, TEXTO_SUAVE, CENTRO_X, 72)
+        anio = "AÑO %.1f EN LA UMBRAL" % self.app.progreso.anios
+        texto(pantalla, anio + ("  -  LLEGASTE TARDE" if self.tarde else ""), CHICA, ROJO if self.tarde else TEXTO_SUAVE,
+              CENTRO_X, 104)
         if lineas >= 1:
             dibujo.texto_3d(pantalla, "EL PRINCIPIO" if self.verdadero else "FIN", TITULO, color,
                             interfaz.mezclar(color, FONDO, 0.6), 150)
@@ -67,6 +72,8 @@ class Final(Escena):
         if lineas >= 4:
             if self.verdadero:
                 frase, color_frase = "LOS CANTORES SOMOS NOSOTROS.", VIOLETA
+            elif self.tarde:
+                frase, color_frase = "LA MAREA LLEGO PRIMERO. PERO ALGUNOS CRUZARON.", ROJO
             elif self._todo_encontrado():
                 frase, color_frase = "LA PUERTA SIGUE ABIERTA. ¿VOLVES A CRUZARLA?", TEXTO_SUAVE
             else:

@@ -1,1 +1,1 @@
-"""Las pantallas propias del modo historia: el mapa estelar, el dialogo y el archivo."""
+"""Las pantallas propias del modo historia: la galaxia, el hangar, el dialogo, el archivo y el final."""

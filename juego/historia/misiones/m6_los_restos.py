@@ -1,7 +1,7 @@
 """
 Mision 6 (oculta): LOS RESTOS
 
-Aparece en el mapa estelar al encontrar las tres bitacoras de la Errante (F02, F04 y F07):
+Aparece en la galaxia al encontrar las tres bitacoras de la Errante (F02, F04 y F07):
 con ellas Ines calcula donde se partio la nave. Una mision tranquila, sin jefe, al borde
 del Abismo: los rebotadores (capsulas de memoria) repiten el ultimo segundo de la Errante y
 la radio de los restos todavia reproduce el diario de Mateo.
@@ -19,7 +19,8 @@ class LosRestos(Mision):
     numero = 6
     titulo = "LOS RESTOS"
     sector = 5
-    lugar = (1010, 190)
+    lugar = (2230, 190)
+    gravedad = 0.3
     jefe = False
     oculta = True
     requisitos = ["F02", "F04", "F07"]

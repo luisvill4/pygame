@@ -26,7 +26,7 @@ from juego.sonido import SILENCIO
 from juego.escenas.opciones import Opciones
 from juego.escenas.arcade.dificultad import Dificultad
 from juego.escenas.logros import Logros
-from juego.escenas.historia.mapa import Mapa
+from juego.escenas.historia.galaxia import Galaxia
 from juego.enemigos import TIPOS_ENEMIGO
 from juego.moneda import imagen_moneda
 from juego.powerups import TIPOS_POWERUP
@@ -105,7 +105,7 @@ class Inicio(Escena):
             if elegida == "ARCADE":
                 self.app.cambiar_escena(Dificultad(self.app, volver_a=self))
             elif elegida == "HISTORIA":
-                self.app.cambiar_escena(Mapa(self.app))
+                self.app.cambiar_escena(Galaxia(self.app))
             elif elegida == "LOGROS":
                 self.app.cambiar_escena(Logros(self.app, volver_a=self))
             elif elegida == "OPCIONES":

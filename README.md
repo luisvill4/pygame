@@ -37,8 +37,13 @@ Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA
   salvarse, hasta que aparece un compás escondido en las ondas gravitacionales. La piloto
   **Alba** sale a seguirlo, sector por sector. Cada sector es una **misión** con su diálogo
   antes y después, y durante el juego te habla la radio (Inés, desde la base) sin pausar nada.
-  - En el **mapa estelar** elegís la misión. Se puede jugar la primera, las cumplidas y la que
-    sigue a una cumplida.
+  - La **galaxia** se recorre libre, como el mapa de Starfield: las misiones están marcadas y
+    entre ellas hay sistemas para explorar. Cuanto más lejos de casa, más peligro (y más piezas).
+  - **El tiempo es relativo:** para Alba un viaje son horas, pero en la Estación Umbral pasan
+    años, y la Marea llega en el año 6 (se ve avanzar en el mapa). Cerca del Abismo el tiempo se
+    estira todavía más. Explorarlo todo no se puede: si llegás tarde, la historia cambia.
+  - Las **piezas** compran mejoras para siempre en el **Hangar** (P en la galaxia), como el
+    Impulsor, que acorta los viajes. Algunos sistemas guardan **ecos** y **puertas menores**.
   - Cada misión esconde **fragmentos** de una historia más grande. Nunca están a simple vista:
     hay que jugar distinto para encontrarlos (quieto, en orden, sin romper algo, siguiendo...).
     La radio a veces da una pista. Y los diálogos cambian según lo que encontraste.
@@ -326,7 +331,7 @@ Un tipo de objetivo nuevo es una clase en `juego/objetivos.py` con `@registrar_o
 Una formación nueva es una función en `juego/escuadrones.py` con `@formacion("nombre")`: recibe cuántos son y dónde está la nave, y devuelve un par `(desde, hasta)` por enemigo (desde afuera de la pantalla hasta su lugar). Ninguno termina de entrar cerca de la nave: `lugares()` lo corre solo.
 
 ### Una misión de la historia
-Copiá un archivo de `juego/historia/misiones/` (por ejemplo `m1_la_senal.py`), cambiale el `numero`, el `titulo`, el `sector`, el `lugar` (dónde va en el mapa) y los textos, e importalo en `juego/historia/misiones/__init__.py`. Aparece sola en el mapa estelar y en el Archivo. Todo es datos:
+Copiá un archivo de `juego/historia/misiones/` (por ejemplo `m1_la_senal.py`), cambiale el `numero`, el `titulo`, el `sector`, el `lugar` (dónde va en el mapa) y los textos, e importalo en `juego/historia/misiones/__init__.py`. Aparece sola en la galaxia y en el Archivo. Todo es datos:
 - `antes` y `despues`: el diálogo, como `[("ines", "TEXTO"), ("alba", "TEXTO")]` (los personajes están en `juego/historia/personajes.py`). Un renglón puede llevar una condición: `("ines", "TEXTO", "F01")` solo sale si encontraste F01, y con `"!F01"` solo si no.
 - `radio`: lo que se dice durante la misión, en los momentos `"tramo_1"` a `"tramo_4"` y `"jefe"`.
 - `fragmentos`: lo que se guarda en el Archivo, `Fragmento("F14", "NOMBRE", ["PARRAFO", ...], reaccion=[...])`.

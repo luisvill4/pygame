@@ -10,5 +10,5 @@ escribirlos) esta en HISTORIA.md: leerla antes de tocar textos o secretos.
     personajes.py   quien habla (nombre y color) y sus retratos
     glifos.py       la escritura de los Cantores y su traduccion
 
-Sus pantallas estan en escenas/historia/ (mapa estelar, dialogo y archivo).
+Sus pantallas estan en escenas/historia/ (la galaxia, el hangar, el dialogo, el archivo y el final).
 """

@@ -21,7 +21,7 @@ from juego.modos import Modo
 from juego.rutas import RUTAS
 from juego.historia.mision import mision, buscar_fragmento, filtrar
 from juego.historia.secretos import crear_secreto
-from juego.historia import fichas
+from juego.historia import fichas, hangar, ecos
 from juego.historia import misiones  # noqa: F401  (registra todas las misiones)
 
 MIRAR_CADA = 30             # cada cuantos pasos se fija que hay en pantalla (para las fichas)
@@ -43,6 +43,8 @@ class ModoHistoria(Modo):
         self.pasos = 0
         for id_ficha in fichas.BASICAS:
             self.anotar(id_ficha)
+        if partida.progreso is not None:
+            hangar.instalar(partida, partida.progreso)      # lo comprado en el hangar, desde el despegue
 
     # ---------- Reglas ----------
 
@@ -158,7 +160,13 @@ class ModoHistoria(Modo):
             partida.progreso.encontrar_fragmento(id_fragmento)
         partida.estadisticas.fragmentos += 1
         partida.sonidos.reproducir("fragmento")
-        partida.radio.decir(filtrar(buscar_fragmento(id_fragmento).reaccion, self.lo_encontrado()), partida.tiempo)
+        fragmento = ecos.POR_ID.get(id_fragmento) or buscar_fragmento(id_fragmento)
+        partida.radio.decir(filtrar(fragmento.reaccion, self.lo_encontrado(), self.anios()), partida.tiempo)
+
+    def anios(self):
+        # Los años de la Umbral (para los renglones con "T6")
+        progreso = self.partida.progreso
+        return progreso.anios if progreso is not None else 0
 
     def anotar(self, id_ficha):
         progreso = self.partida.progreso
@@ -166,5 +174,5 @@ class ModoHistoria(Modo):
             progreso.anotar_ficha(id_ficha)
 
     def decir(self, momento, demora=0):
-        renglones = filtrar(self.mision.radio.get(momento, []), self.lo_encontrado())
+        renglones = filtrar(self.mision.radio.get(momento, []), self.lo_encontrado(), self.anios())
         self.partida.radio.decir(renglones, self.partida.tiempo, demora)

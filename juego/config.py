@@ -313,6 +313,22 @@ SEGUIR_DISTANCIA = 170          # secreto del cartero: a cuantos px como mucho h
 SEGUIR_MINIMO = 1200            # ...y cuanto tiempo, como minimo, hasta que se escape (ms)
 GOLPE_DESDE_MARGEN = 45         # secreto de la brujula: cuantos grados de margen tiene el lado del golpe
 
+# La galaxia y el reloj de la Umbral (historia/galaxia.py y tiempo.py). Las distancias van en px
+# del mapa de la galaxia (2400 x 640). Para Alba un viaje son horas; en la Umbral pasan años
+MAREA_ANIOS = 6                 # años hasta que la Marea llega a la Umbral
+VIAJE_ANIOS_POR_PX = 0.0015     # años que pasan en la Umbral por cada px de viaje (el camino de la historia: ~3)
+ESTADIA_ANIOS = 0.05            # años que pasan en cada salida, aunque no viajes (nada es gratis)
+PUERTA_ANIOS = 0.05             # cruzar una puerta menor (un atajo) cuesta solo esto
+PELIGRO_CADA_PX = 440           # el peligro de un sistema sube 1 cada tantos px de la Umbral (de 1 a 5)
+MAREA_FRENTE_INICIO = -600      # donde esta el frente de la Marea al empezar (x del mapa)...
+MAREA_FRENTE_POR_ANIO = 120     # ...y cuantos px avanza por año (en MAREA_ANIOS llega a la Umbral)
+PIEZAS_POR_CREDITO = 0.1        # las monedas de cada partida de la historia se vuelven piezas a esta razon...
+PIEZAS_POR_PELIGRO = 25         # ...y despejar un sistema libre POR PRIMERA VEZ da esto por punto de peligro
+IMPULSOR_DESCUENTO = 0.12       # cada nivel del IMPULSOR (hangar) acorta los viajes esto
+# El hangar: mejoras para siempre de la Alondra (precio en piezas de cada nivel)
+HANGAR_PRECIOS = {"impulsor": [50, 100, 160], "corazon": [80, 160], "recarga": [50, 100],
+                  "combo": [40, 90], "atraccion": [30, 70], "motor": [50, 110]}
+
 # Asedio: el ultimo tramo de cada sector, antes del jefe. Llegan escuadrones de todos lados
 # y hay que aguantar. Mientras dura, la barra de nivel se puede llenar pero el nivel espera:
 # el jefe llega recien al terminar el asedio

@@ -18,7 +18,7 @@ class LaSenal(Mision):
     numero = 1
     titulo = "LA SEÑAL"
     sector = 1
-    lugar = (150, 300)
+    lugar = (380, 340)
 
     tramos = [
         {"nombre": "EL CINTURON", "objetivo": ("monedas", 10), "a_la_vez": 1,

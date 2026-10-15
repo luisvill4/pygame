@@ -18,7 +18,7 @@ class ElAcorazado(Mision):
     numero = 2
     titulo = "EL ACORAZADO"
     sector = 2
-    lugar = (340, 200)
+    lugar = (780, 220)
 
     tramos = [
         {"nombre": "LOS ARIETES", "objetivo": ("interceptar", 2), "a_la_vez": 2,

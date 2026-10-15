@@ -93,8 +93,10 @@ class TablaRecords:
 class Progreso:
     # Lo que se gana jugando y queda entre partidas. En el archivo:
     #   {"logros": ["primer_jefe", ...], "nave": "CIAN", "partidas": 12,
-    #    "misiones": [1, 2], "fragmentos": ["F01", ...], "fichas": ["enemigo:perseguidor", ...]}
-    #   (las tres ultimas: el modo historia)
+    #    "misiones": [1, 2], "fragmentos": ["F01", ...], "fichas": ["enemigo:perseguidor", ...],
+    #    "anios": 1.4, "ubicacion": "S03", "piezas": 120, "hangar": {"impulsor": 1},
+    #    "sistemas": ["S03"], "puertas": ["S04"], "mensajes": [1]}
+    #   (desde "misiones": el modo historia y su galaxia)
 
     def __init__(self, archivo):
         self.archivo = archivo
@@ -104,6 +106,13 @@ class Progreso:
         self.misiones = set()           # modo historia: las misiones cumplidas (1 a 5)
         self.fragmentos = set()         # modo historia: los fragmentos del Archivo encontrados
         self.fichas = set()             # modo historia: las fichas del Archivo (lo que ya viste)
+        self.anios = 0.0                # el reloj de la Umbral: años que pasaron (historia/tiempo.py)
+        self.ubicacion = "UMBRAL"       # en que sistema de la galaxia esta la Alondra
+        self.piezas = 0                 # para el hangar (historia/hangar.py)
+        self.hangar = {}                # instalacion -> nivel
+        self.sistemas = set()           # los sistemas libres ya despejados
+        self.puertas = set()            # las puertas menores conocidas (el id de un lado)
+        self.mensajes = set()           # los mensajes de Ines (por año) que ya se vieron
         self._cargar()
 
     def _cargar(self):
@@ -115,6 +124,13 @@ class Progreso:
             self.misiones = {int(numero) for numero in datos.get("misiones", [])}
             self.fragmentos = {str(fragmento) for fragmento in datos.get("fragmentos", [])}
             self.fichas = {str(ficha) for ficha in datos.get("fichas", [])}
+            self.anios = max(0.0, float(datos.get("anios", 0)))
+            self.ubicacion = str(datos.get("ubicacion", "UMBRAL"))
+            self.piezas = max(0, int(datos.get("piezas", 0)))
+            self.hangar = {str(tipo): int(nivel) for tipo, nivel in datos.get("hangar", {}).items()}
+            self.sistemas = {str(id_) for id_ in datos.get("sistemas", [])}
+            self.puertas = {str(id_) for id_ in datos.get("puertas", [])}
+            self.mensajes = {int(anio) for anio in datos.get("mensajes", [])}
             if datos.get("nave") in [nombre for nombre, _, _ in self.naves_disponibles()]:
                 self.nave = datos["nave"]
         except FileNotFoundError:
@@ -125,7 +141,10 @@ class Progreso:
     def guardar(self):
         _escribir_json(self.archivo, {"logros": sorted(self.logros), "nave": self.nave,
                                       "partidas": self.partidas, "misiones": sorted(self.misiones),
-                                      "fragmentos": sorted(self.fragmentos), "fichas": sorted(self.fichas)})
+                                      "fragmentos": sorted(self.fragmentos), "fichas": sorted(self.fichas),
+                                      "anios": round(self.anios, 4), "ubicacion": self.ubicacion,
+                                      "piezas": self.piezas, "hangar": self.hangar, "sistemas": sorted(self.sistemas),
+                                      "puertas": sorted(self.puertas), "mensajes": sorted(self.mensajes)})
 
     def cumplir_mision(self, numero):
         self.misiones.add(numero)

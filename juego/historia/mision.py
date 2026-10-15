@@ -12,7 +12,9 @@ archivo de historia/misiones/, con el decorador @registrar_mision. Para agregar 
 Una mision es casi todo DATOS (atributos de la clase):
     numero, titulo      "MISION 1", "LA SEÑAL"
     sector              el numero de sector donde se juega (1 a 5, ver SECTORES en config.py)
-    lugar               donde esta en el mapa estelar: (x, y) del centro de su planeta
+    lugar               donde esta en la galaxia: (x, y) en el mapa de 2400 x 640 (galaxia.py)
+    gravedad            años de mas que pasan en la Umbral en cada visita (dilatacion: cerca
+                        de un agujero negro el tiempo de Alba va mas lento que el de afuera)
     tramos              None = la ruta de su sector (rutas.py); o una lista de 4 tramos propia
                         (un tramo puede decir que anomalia trae: "anomalia": "niebla")
     jefe                False = una mision tranquila: termina con el ultimo tramo, sin jefe
@@ -28,8 +30,9 @@ Una mision es casi todo DATOS (atributos de la clase):
     final               True: es el final de la historia (despues de su dialogo, la pantalla final)
 
 Un RENGLON es (quien, texto) o (quien, texto, condicion): la condicion dice que fragmentos
-tienen que estar encontrados ("F01"), cuales no ("!F02") o varios a la vez ("F01+!F06").
-Asi un dialogo cambia segun lo que encontraste (la historia reacciona a los secretos).
+tienen que estar encontrados ("F01"), cuales no ("!F02") o varios a la vez ("F01+!F06"). "T3"
+pide que en la Umbral hayan pasado 3 años o mas (tiempo.py), y "!T6" que todavia no.
+Asi un dialogo cambia segun lo que encontraste y segun cuanto tardaste.
 Los textos van en MAYUSCULAS y sin vocales con tilde (la fuente las dibuja mal).
 """
 
@@ -49,28 +52,39 @@ class Fragmento:
 
 # ---------- Los renglones con condicion ----------
 
-def se_cumple(condicion, encontrados):
-    # "F01+!F06": F01 encontrado y F06 no. None = siempre
+def es_de_tiempo(parte):
+    # "T6" (o "!T6"): habla de los años de la Umbral, no de un fragmento
+    nombre = parte.lstrip("!")
+    return nombre.startswith("T") and nombre[1:].isdigit()
+
+
+def _vale(parte, encontrados, anios):
+    # Una parte de la condicion, sin el "!"
+    if es_de_tiempo(parte):
+        return anios >= int(parte[1:])
+    return parte in encontrados
+
+
+def se_cumple(condicion, encontrados, anios=0):
+    # "F01+!F06+T3": F01 encontrado, F06 no y ya pasaron 3 años. None = siempre
     if not condicion:
         return True
     for parte in condicion.split("+"):
-        if parte.startswith("!"):
-            if parte[1:] in encontrados:
-                return False
-        elif parte not in encontrados:
+        negada = parte.startswith("!")
+        if _vale(parte.lstrip("!"), encontrados, anios) == negada:
             return False
     return True
 
 
 def ids_de_la_condicion(condicion):
-    # Los fragmentos que nombra una condicion (para los tests)
-    return [parte.lstrip("!") for parte in condicion.split("+")] if condicion else []
+    # Los fragmentos que nombra una condicion (para los tests; sin las de tiempo)
+    return [parte.lstrip("!") for parte in condicion.split("+") if not es_de_tiempo(parte)] if condicion else []
 
 
-def filtrar(renglones, encontrados):
-    # Los renglones que corresponden a lo encontrado, como (quien, texto)
+def filtrar(renglones, encontrados, anios=0):
+    # Los renglones que corresponden a lo encontrado (y a los años), como (quien, texto)
     return [(renglon[0], renglon[1]) for renglon in renglones
-            if se_cumple(renglon[2] if len(renglon) > 2 else None, encontrados)]
+            if se_cumple(renglon[2] if len(renglon) > 2 else None, encontrados, anios)]
 
 
 # ---------- El registro ----------
@@ -114,6 +128,7 @@ class Mision:
     titulo = ""
     sector = 1
     lugar = (0, 0)
+    gravedad = 0
     tramos = None
     jefe = True
     oculta = False
