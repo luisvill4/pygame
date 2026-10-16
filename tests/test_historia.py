@@ -272,6 +272,7 @@ def test_el_mapa_muestra_la_oculta_solo_con_sus_requisitos(app):
         app.progreso.encontrar_fragmento(id_)
     mapa = Galaxia(app)
     assert "M6" in [uno.id for uno in mapa.sistemas()]
+    app.progreso.hangar["compensador"] = 1          # (los Restos estan cerca del Abismo)
     app.cambiar_escena(mapa, transicion=False)
     viajar(app, mapa, "M6")
     assert isinstance(app.escena, Dialogo)

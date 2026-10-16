@@ -20,6 +20,7 @@ class ElFinDeLaLuz(Mision):
     titulo = "EL FIN DE LA LUZ"
     sector = 5
     lugar = (2060, 350)
+    ambiente = ("gravedad", 2)      # la puerta: el compensador al maximo
     gravedad = 0.5          # al lado del agujero negro: cada visita, medio año mas en la Umbral
     final = True
 

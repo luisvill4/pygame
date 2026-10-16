@@ -15,6 +15,8 @@ Una mision es casi todo DATOS (atributos de la clase):
     lugar               donde esta en la galaxia: (x, y) en el mapa de 2400 x 640 (galaxia.py)
     gravedad            años de mas que pasan en la Umbral en cada visita (dilatacion: cerca
                         de un agujero negro el tiempo de Alba va mas lento que el de afuera)
+    ambiente            su peligro ambiental, ("calor", 1): para ir hace falta ese modulo (modulos.py)
+    plano               el plano de modulo que Ines diseña al cumplirla (asi la historia no se traba)
     tramos              None = la ruta de su sector (rutas.py); o una lista de 4 tramos propia
                         (un tramo puede decir que anomalia trae: "anomalia": "niebla")
     jefe                False = una mision tranquila: termina con el ultimo tramo, sin jefe
@@ -129,6 +131,8 @@ class Mision:
     sector = 1
     lugar = (0, 0)
     gravedad = 0
+    ambiente = None
+    plano = None
     tramos = None
     jefe = True
     oculta = False

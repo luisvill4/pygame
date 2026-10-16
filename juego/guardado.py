@@ -95,7 +95,7 @@ class Progreso:
     #   {"logros": ["primer_jefe", ...], "nave": "CIAN", "partidas": 12,
     #    "misiones": [1, 2], "fragmentos": ["F01", ...], "fichas": ["enemigo:perseguidor", ...],
     #    "anios": 1.4, "ubicacion": "S03", "piezas": 120, "hangar": {"impulsor": 1},
-    #    "sistemas": ["S03"], "puertas": ["S04"], "mensajes": [1]}
+    #    "sistemas": ["S03"], "puertas": ["S04"], "mensajes": [1], "planos": ["filtro"]}
     #   (desde "misiones": el modo historia y su galaxia)
 
     def __init__(self, archivo):
@@ -113,6 +113,7 @@ class Progreso:
         self.sistemas = set()           # los sistemas libres ya despejados
         self.puertas = set()            # las puertas menores conocidas (el id de un lado)
         self.mensajes = set()           # los mensajes de Ines (por año) que ya se vieron
+        self.planos = set()             # los planos de modulos encontrados (historia/modulos.py)
         self._cargar()
 
     def _cargar(self):
@@ -131,6 +132,7 @@ class Progreso:
             self.sistemas = {str(id_) for id_ in datos.get("sistemas", [])}
             self.puertas = {str(id_) for id_ in datos.get("puertas", [])}
             self.mensajes = {int(anio) for anio in datos.get("mensajes", [])}
+            self.planos = {str(plano) for plano in datos.get("planos", [])}
             if datos.get("nave") in [nombre for nombre, _, _ in self.naves_disponibles()]:
                 self.nave = datos["nave"]
         except FileNotFoundError:
@@ -144,7 +146,8 @@ class Progreso:
                                       "fragmentos": sorted(self.fragmentos), "fichas": sorted(self.fichas),
                                       "anios": round(self.anios, 4), "ubicacion": self.ubicacion,
                                       "piezas": self.piezas, "hangar": self.hangar, "sistemas": sorted(self.sistemas),
-                                      "puertas": sorted(self.puertas), "mensajes": sorted(self.mensajes)})
+                                      "puertas": sorted(self.puertas), "mensajes": sorted(self.mensajes),
+                                      "planos": sorted(self.planos)})
 
     def cumplir_mision(self, numero):
         self.misiones.add(numero)

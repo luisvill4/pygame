@@ -177,8 +177,9 @@ Starfield): las misiones son sistemas marcados y entre ellas hay 16 **sistemas l
   cada visita ahí suma años de **dilatación**). Lo que cuenta es el reloj de la Umbral. La
   Marea llega en el año 6.
 - **El costo:** cada viaje gasta años según la distancia; cada salida, aunque no viajes, gasta
-  un poco (nada es gratis). El camino directo de la historia cuesta ~3.8 años: sobran ~2 para
-  explorar. Explorarlo todo no se puede a tiempo: hay que elegir.
+  un poco (nada es gratis). El camino directo de la historia cuesta ~3.8 años en viajes, pero
+  los módulos obligan a explorar para juntar piezas: una campaña simulada termina entre el año
+  4.4 y el 4.9. Explorarlo todo no se puede a tiempo: hay que elegir.
 - **La Marea se ve:** un frente rojo avanza desde la izquierda y en el año 6 se traga la Umbral.
   Lo que traga ya no se puede visitar.
 - **Inés envejece:** cada año que pasa manda un mensaje ("para vos fueron unas horas; para mí,
@@ -189,6 +190,27 @@ Starfield): las misiones son sistemas marcados y entre ellas hay 16 **sistemas l
 - **Con la historia terminada el reloj se detiene:** lo que quedó se puede explorar sin apuro.
 - **Cuanto más lejos, más peligro** (de 1 a 5, por la distancia a la Umbral): escuadrones más
   grandes y más rápidos. Desde peligro 3, el último tramo es un asedio.
+- **Los módulos abren la galaxia** (pedido del usuario: "que las galaxias estén bloqueadas y se
+  desbloqueen a medida que se mejora la nave, y que se vea en la nave"). Muchos sistemas tienen
+  un **peligro ambiental** con intensidad 1 o 2, y para entrar hace falta el **módulo** de ese
+  peligro con ese nivel. Los peligros están **mezclados** por el mapa (casi siempre el del
+  bioma, pero con excepciones en todas las zonas): cada módulo abre lugares en varias zonas y el
+  orden lo elige el jugador. Es una red, no una escalera.
+  - Un módulo se fabrica en el Hangar (pestaña MÓDULOS) con su **plano** y piezas. Cada plano
+    está en uno o dos sistemas libres (se consigue al despejarlos) y además Inés lo diseña al cumplir
+    la misión anterior a la que lo pide: **la historia nunca se traba** (lo comprueba un test).
+  - **Cada nivel se ve en la Alondra** (pixel art encima del sprite, en la grilla de 2 px). En
+    el arcade la nave va siempre limpia.
+
+  | Módulo | Peligro | Nivel 1 | Nivel 2 | Plano en |
+  |---|---|---|---|---|
+  | Escudo térmico | calor (estrellas) | placas naranjas en el borde de las alas | una fila roja más adentro | Kepler, misión 1 |
+  | Filtro de esporas | esporas | cápsulas de metal con luz verde al lado de la cabina | más largas, con dos luces | Vega del Sur, Espora, misión 2 |
+  | Casco de panal | panal (la Colmena) | un panal dorado ralo en las alas | una placa dorada en el borde de atrás | Brasa, Espejo, misión 3 |
+  | Compensador | gravedad (el Abismo) | un anillo violeta abajo del motor | aletas en las puntas de las alas | Oráculo, Panal Viejo, misión 4 |
+
+  La misión 5 pide el compensador al máximo (la puerta está al lado del agujero negro). El
+  Impulsor del hangar también se ve: una tobera más por nivel.
 - **Las recompensas:** **piezas** (las monedas de cada partida, y mucho más la primera vez que se
   despeja un sistema, según su peligro) para el **Hangar**: mejoras para siempre de la Alondra
   (las cartas del Taller desde el despegue y el **Impulsor**, que acorta los viajes); los
@@ -262,8 +284,9 @@ En la historia no hay récords ni logros (miden el avance del arcade).
 | El reloj de la Umbral: años, mensajes de Inés y el frente de la Marea | `juego/historia/tiempo.py` |
 | Un sistema libre: su ruta generada y su peligro | `juego/historia/exploracion.py` (`ModoExploracion`) |
 | El hangar y las piezas | `juego/historia/hangar.py` |
+| Los módulos: peligros ambientales, planos y cómo se ven en la nave | `juego/historia/modulos.py` (las piezas las dibuja `nave.py`) |
 | Los ecos | `juego/historia/ecos.py` |
-| Lo que se guarda (misiones, fragmentos, fichas, años, ubicación, piezas, hangar, sistemas, puertas) | `progreso.json`, en `guardado.Progreso` |
+| Lo que se guarda (misiones, fragmentos, fichas, años, ubicación, piezas, hangar, sistemas, puertas, planos) | `progreso.json`, en `guardado.Progreso` |
 | Los sonidos (`fragmento`, `onda_corta`, `onda_larga`) | `herramientas/estudio/obras/efectos_director.py` |
 
 **Para escribir una misión:** copiar un archivo de `historia/misiones/`, cambiar el número, el

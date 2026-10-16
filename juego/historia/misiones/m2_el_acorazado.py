@@ -19,6 +19,8 @@ class ElAcorazado(Mision):
     titulo = "EL ACORAZADO"
     sector = 2
     lugar = (780, 220)
+    ambiente = ("calor", 1)
+    plano = "filtro"
 
     tramos = [
         {"nombre": "LOS ARIETES", "objetivo": ("interceptar", 2), "a_la_vez": 2,

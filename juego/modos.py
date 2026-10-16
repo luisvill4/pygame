@@ -14,6 +14,7 @@ Esta clase es la base (patron Template Method): los avisos y el dibujo no hacen 
 defecto y las reglas las escribe cada modo. Lo que pasa ENTRE PANTALLAS segun el modo (al
 morir, al cumplir) esta en las escenas: escenas/pasajes.py.
 """
+from juego import nave
 from juego.config import JEFE_CADA_NIVELES
 
 
@@ -26,6 +27,7 @@ class Modo:
         # Al crear la partida, antes que el Director: el modo se guarda la partida y la prepara
         self.partida = partida
         partida.nivel = (self.primer_sector() - 1) * JEFE_CADA_NIVELES + 1
+        nave.cambiar_equipo(self.equipo())
 
     # ---------- Reglas (cada modo escribe las suyas) ----------
 
@@ -52,6 +54,11 @@ class Modo:
     def encabezado(self, director):
         # El renglon de arriba en READY: [(texto, color), ...]
         raise NotImplementedError
+
+    def equipo(self):
+        # Las piezas que se ven encima de la nave (nave.cambiar_equipo). Por defecto, ninguna:
+        # solo la historia le pone modulos a la Alondra
+        return ()
 
     def hay_jefe(self):
         # False: despues del ultimo tramo no viene el jefe y la partida se cumple ahi

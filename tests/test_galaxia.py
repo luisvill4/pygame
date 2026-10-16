@@ -162,6 +162,7 @@ def test_las_flechas_eligen_el_sistema_de_ese_lado(app):
 
 def test_viajar_gasta_años_en_la_umbral_y_deja_la_nave_alla(app):
     escena = ir_a_la_galaxia(app)
+    app.progreso.hangar["escudo_termico"] = 1       # (Piedra Roja quema)
     costo = escena.costo(sistema("S02"))
     viajar(app, escena, "S02")
     assert app.progreso.anios == pytest.approx(costo) and app.progreso.ubicacion == "S02"

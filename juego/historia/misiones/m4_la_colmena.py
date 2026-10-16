@@ -19,6 +19,8 @@ class LaColmena(Mision):
     titulo = "LA COLMENA"
     sector = 4
     lugar = (1610, 230)
+    ambiente = ("panal", 1)
+    plano = "compensador"
 
     tramos = [
         {"nombre": "LA MURALLA", "objetivo": ("romper", 3, "escudero"), "a_la_vez": 2,

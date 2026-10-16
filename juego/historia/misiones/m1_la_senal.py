@@ -19,6 +19,7 @@ class LaSenal(Mision):
     titulo = "LA SEÑAL"
     sector = 1
     lugar = (380, 340)
+    plano = "escudo_termico"        # (para la Nebulosa: el aire arde)
 
     tramos = [
         {"nombre": "EL CINTURON", "objetivo": ("monedas", 10), "a_la_vez": 1,

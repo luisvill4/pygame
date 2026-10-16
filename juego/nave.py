@@ -18,9 +18,10 @@ TAMANO = 50
 PASOS_GIRO = 72             # angulos distintos que se guardan (cada 5 grados)
 ESCALONES_INCLINACION = 4   # inclinaciones distintas que se guardan
 
-_imagenes = {}      # se cargan la primera vez que se usan
-_giradas = {}       # (nombre, paso de angulo, escalon de inclinacion) -> imagen girada (ver girada)
+_imagenes = {}      # equipo -> {nombre: imagen}; se arman la primera vez que se usan
+_giradas = {}       # (equipo, nombre, paso de angulo, escalon de inclinacion) -> imagen girada (ver girada)
 _color = [None]     # color de la nave elegida (None = el del sprite). Ver NAVES en config.py
+_equipo = [()]      # las piezas que lleva encima (el modo historia: historia/modulos.py)
 
 
 def cambiar_color(color):
@@ -30,18 +31,55 @@ def cambiar_color(color):
     _giradas.clear()
 
 
-def imagen(nombre="nave"):
-    # "nave", "icono" (vidas del HUD), "icono_vacio" y "fantasma" (estela del dash)
-    if not _imagenes:
+def _clave(capas):
+    # Las capas como algo que sirve de clave (cada equipo guarda sus imagenes y sus giros)
+    return tuple((tuple(pixeles), tuple(color), solo_casco) for pixeles, color, solo_casco in capas)
+
+
+def cambiar_equipo(capas):
+    # Las piezas que lleva la nave: [(pixeles, color, solo_sobre_el_casco), ...], con los pixeles
+    # en la grilla de pixeles de arte (25 x 25). () = la nave limpia (el arcade). No borra nada:
+    # cada equipo tiene sus imagenes, asi volver a uno ya visto no recalcula los giros
+    _equipo[0] = _clave(capas)
+
+
+def armar(capas):
+    # La nave con esas piezas encima (para mostrar una antes de comprarla, como en el hangar)
+    clave = _clave(capas)
+    if clave not in _imagenes:
         nave = recursos.sprite_obligatorio("nave.png")
         if _color[0] is not None:
             nave = recursos.tenir(nave, _color[0])
+        nave = _con_piezas(nave, clave)
         icono = pygame.transform.scale(nave, (25, 25))
         icono_vacio = icono.copy()
         icono_vacio.set_alpha(40)
-        _imagenes.update(nave=nave, icono=icono, icono_vacio=icono_vacio,
-                         fantasma=recursos.tenir(nave, CIAN))
-    return _imagenes[nombre]
+        _imagenes[clave] = {"nave": nave, "icono": icono, "icono_vacio": icono_vacio,
+                            "fantasma": recursos.tenir(nave, CIAN)}
+    return _imagenes[clave]["nave"]
+
+
+def _con_piezas(base, clave):
+    # Pinta cada pixel de arte (2x2) de las piezas. Las 'solo_sobre_el_casco' (placas, panal)
+    # solo pintan donde ya hay nave y no es el contorno negro
+    nave = base.copy()
+    for pixeles, color, solo_casco in clave:
+        for columna, fila in pixeles:
+            x, y = columna * 2, fila * 2
+            if not (0 <= x < TAMANO and 0 <= y < TAMANO):
+                continue
+            if solo_casco:
+                rojo, verde, azul, alfa = nave.get_at((x, y))
+                if alfa < 128 or rojo + verde + azul < 60:
+                    continue
+            nave.fill(color, (x, y, 2, 2))
+    return nave
+
+
+def imagen(nombre="nave"):
+    # "nave", "icono" (vidas del HUD), "icono_vacio" y "fantasma" (estela del dash), con el equipo actual
+    armar(_equipo[0])
+    return _imagenes[_equipo[0]][nombre]
 
 
 def girada(nombre, angulo, inclinacion=0):
@@ -52,7 +90,7 @@ def girada(nombre, angulo, inclinacion=0):
     # inclinacion se calcula una sola vez y se guarda
     paso = round(angulo / (360 / PASOS_GIRO)) % PASOS_GIRO
     escalon = round(inclinacion * ESCALONES_INCLINACION)
-    clave = (nombre, paso, escalon)
+    clave = (_equipo[0], nombre, paso, escalon)
     if clave not in _giradas:
         base = imagen(nombre)
         if escalon:
@@ -78,7 +116,7 @@ def preparar_giros(cantidad):
             if nombre == "fantasma" and escalon:
                 continue
             for paso in range(PASOS_GIRO):
-                if (nombre, paso, escalon) in _giradas:
+                if (_equipo[0], nombre, paso, escalon) in _giradas:
                     continue
                 girada(nombre, paso * 360 / PASOS_GIRO, escalon / ESCALONES_INCLINACION)
                 cantidad -= 1

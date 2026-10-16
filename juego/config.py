@@ -325,6 +325,12 @@ MAREA_FRENTE_POR_ANIO = 120     # ...y cuantos px avanza por año (en MAREA_ANIO
 PIEZAS_POR_CREDITO = 0.1        # las monedas de cada partida de la historia se vuelven piezas a esta razon...
 PIEZAS_POR_PELIGRO = 25         # ...y despejar un sistema libre POR PRIMERA VEZ da esto por punto de peligro
 IMPULSOR_DESCUENTO = 0.12       # cada nivel del IMPULSOR (hangar) acorta los viajes esto
+# Los modulos de la Alondra (historia/modulos.py): cada uno deja entrar a los sistemas de un peligro
+# ambiental (calor, esporas, panal, gravedad) hasta su nivel. Se fabrican con el plano y piezas.
+# Medido con una campaña simulada: con estos precios el camino de la historia (que ahora pide
+# explorar para juntar piezas) termina entre el año 4.4 y el 4.9 (antes, a 70/150, en el 5.7)
+MODULOS_PRECIOS = {"escudo_termico": [30, 80], "filtro": [30, 80], "casco_panal": [30, 80],
+                   "compensador": [40, 90]}
 # El hangar: mejoras para siempre de la Alondra (precio en piezas de cada nivel)
 HANGAR_PRECIOS = {"impulsor": [50, 100, 160], "corazon": [80, 160], "recarga": [50, 100],
                   "combo": [40, 90], "atraccion": [30, 70], "motor": [50, 110]}

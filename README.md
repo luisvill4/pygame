@@ -44,6 +44,10 @@ Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA
     estira todavía más. Explorarlo todo no se puede: si llegás tarde, la historia cambia.
   - Las **piezas** compran mejoras para siempre en el **Hangar** (P en la galaxia), como el
     Impulsor, que acorta los viajes. Algunos sistemas guardan **ecos** y **puertas menores**.
+  - Muchos sistemas tienen un **peligro** (calor, esporas, panal o gravedad): para entrar hace
+    falta el **módulo** que lo aguanta. Se fabrica en el Hangar (pestaña MÓDULOS) con su
+    **plano** (algunos sistemas lo guardan, y cada misión cumplida da el de la siguiente) y
+    piezas. Cada módulo se ve en la nave.
   - Cada misión esconde **fragmentos** de una historia más grande. Nunca están a simple vista:
     hay que jugar distinto para encontrarlos (quieto, en orden, sin romper algo, siguiendo...).
     La radio a veces da una pista. Y los diálogos cambian según lo que encontraste.

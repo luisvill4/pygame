@@ -19,6 +19,8 @@ class LaDevoradora(Mision):
     titulo = "LA DEVORADORA"
     sector = 3
     lugar = (1190, 400)
+    ambiente = ("esporas", 1)
+    plano = "casco_panal"
 
     tramos = [
         {"nombre": "EL SAQUEO", "objetivo": ("monedas", 10), "a_la_vez": 2,

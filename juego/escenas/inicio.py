@@ -75,6 +75,7 @@ class Inicio(Escena):
         self.pagina = 0                     # pestaña del panel
         self.pagina_desde = app.ahora()     # cuando se mostro (para cambiarla sola)
         self.cerrar_en = None               # SALIR: se cierra cuando termina de sonar el apagado
+        nave.cambiar_equipo(())             # en los menus, la nave limpia (los modulos son de la historia)
 
     def actualizar(self, entrada):
         self.mover_fondo()

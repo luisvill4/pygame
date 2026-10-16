@@ -21,7 +21,7 @@ from juego.modos import Modo
 from juego.rutas import RUTAS
 from juego.historia.mision import mision, buscar_fragmento, filtrar
 from juego.historia.secretos import crear_secreto
-from juego.historia import fichas, hangar, ecos
+from juego.historia import fichas, hangar, ecos, modulos
 from juego.historia import misiones  # noqa: F401  (registra todas las misiones)
 
 MIRAR_CADA = 30             # cada cuantos pasos se fija que hay en pantalla (para las fichas)
@@ -65,6 +65,11 @@ class ModoHistoria(Modo):
 
     def hay_jefe(self):
         return self.mision.jefe
+
+    def equipo(self):
+        # Los modulos y el impulsor que se compraron se ven en la Alondra
+        progreso = self.partida.progreso
+        return modulos.equipo(progreso) if progreso is not None else ()
 
     def encabezado(self, director):
         dificultad = self.partida.dificultad

@@ -10,6 +10,9 @@ de Starfield: la camara sigue al sistema elegido.
       la Marea avanza desde la izquierda: a los 6 años se traga la Umbral.
     - El panel de abajo dice todo del sistema elegido: peligro, cuanto cuesta el viaje, en que
       año llegas, si tiene dilatacion y que encontraste ahi.
+    - Los sistemas con PELIGRO AMBIENTAL (calor, esporas, panal, gravedad) llevan al lado el
+      icono de su modulo (historia/modulos.py): brillante si todavia no lo tenes (no se puede
+      ir), apagado si ya lo tenes. Uno o dos puntitos abajo: el nivel que pide.
 DIRECCIONES elige el sistema mas cercano hacia ese lado; ACEPTAR viaja y despega; OPCIONES abre
 el Archivo; PAUSA, el Hangar; VOLVER, el inicio. Lo que pasa al terminar: pasajes.py.
 """
@@ -29,7 +32,7 @@ from juego.escenas.historia.hangar import Hangar
 from juego.historia.mision import filtrar
 from juego.historia.modo import ModoHistoria
 from juego.historia.exploracion import ModoExploracion
-from juego.historia import galaxia, tiempo
+from juego.historia import galaxia, tiempo, modulos
 from juego.historia.glifos import sonando, escribir
 from juego.sonido import SILENCIO
 
@@ -58,6 +61,7 @@ class Galaxia(Escena):
             self.elegida = galaxia.UMBRAL
         self.camara = list(self._camara_para(self.sistema(self.elegida).lugar))
         self.viaje = None           # el vuelo en curso: {"desde", "hasta", "paso", "costo", "anios"}
+        nave.cambiar_equipo(modulos.equipo(self.progreso))     # la Alondra con lo que se le compro
 
     # ---------- Consultas ----------
 
@@ -83,6 +87,10 @@ class Galaxia(Escena):
             return "LA MAREA LLEGA ANTES QUE VOS."      # (el frente sigue avanzando mientras viajas)
         if uno.mision is not None and not uno.mision.disponible(self.progreso):
             return "CUMPLI LA MISION %d PRIMERO." % (uno.mision.numero - 1)
+        falta = modulos.falta(self.progreso, uno.ambiente)
+        if falta is not None:
+            modulo, nivel = falta
+            return "NECESITA %s %d." % (modulo.nombre, nivel)      # (se fabrica en el hangar)
         return None
 
     def costo(self, uno):
@@ -99,6 +107,7 @@ class Galaxia(Escena):
 
     def actualizar(self, entrada):
         self.mover_fondo()
+        nave.preparar_giros(2)          # (los giros de la nave equipada, para el despegue: ver nave.girada)
         if self.viaje is not None:
             self._volar()
             return
@@ -327,8 +336,21 @@ class Galaxia(Escena):
             dibujo.pixel_art(pantalla, ESTRELLA, x, y, brillo, 4)
             if uno.id in progreso.sistemas:
                 dibujo.pixel_art(pantalla, TILDE, x + 12, y - 12, VERDE, 2)
+        self._dibujar_ambiente(pantalla, uno, x - radio - 14, y)
         if uno.id == self.elegida and dibujo.parpadeo(300):
             _anillo(pantalla, x, y, radio + 10, BLANCO if self.por_que_no(uno) is None else TEXTO_APAGADO)
+
+    def _dibujar_ambiente(self, pantalla, uno, x, y):
+        # El icono del modulo que pide (brillante: falta; apagado: ya lo tenes) y un puntito por nivel
+        if uno.ambiente is None:
+            return
+        tipo, intensidad = uno.ambiente
+        modulo = modulos.POR_PELIGRO[tipo]
+        falta = modulos.falta(self.progreso, uno.ambiente) is not None
+        color = modulo.color if falta else interfaz.mezclar(modulo.color, FONDO, 0.55)
+        dibujo.pixel_art(pantalla, modulo.icono, x + 1, y + 1, color, 2)     # (+1: 7 columnas calzan en la grilla)
+        for i in range(intensidad):
+            pantalla.fill(color, (x - 4 * intensidad + 2 + i * 8, y + 10, 4, 4))
 
     def _dibujar_ruta_del_viaje(self, pantalla):
         # Del lugar de la Alondra al elegido: el camino que haria
@@ -371,6 +393,13 @@ class Galaxia(Escena):
         adentro = interfaz.panel(pantalla, INFORME, color, rotulo)
         texto(pantalla, nombre, MEDIA, color, adentro.left, adentro.top + 8, alinear="izquierda")
         texto(pantalla, uno.bioma["nombre"], CHICA, TEXTO_SUAVE, adentro.left, adentro.top + 42, alinear="izquierda")
+        if uno.ambiente is not None:            # al lado del bioma: su peligro ambiental
+            tipo, intensidad = uno.ambiente
+            modulo = modulos.POR_PELIGRO[tipo]
+            x = adentro.left + recursos.fuente(CHICA).size(uno.bioma["nombre"])[0] + 32
+            dibujo.pixel_art(pantalla, modulo.icono, x + 7, adentro.top + 43, modulo.color, 2)
+            texto(pantalla, "%s %d" % (tipo.upper(), intensidad), CHICA, modulo.color, x + 22, adentro.top + 42,
+                  alinear="izquierda")
         # El peligro: cinco cuadraditos
         texto(pantalla, "PELIGRO", CHICA, TEXTO_SUAVE, adentro.left, adentro.top + 72, alinear="izquierda")
         for i in range(5):
@@ -402,6 +431,8 @@ class Galaxia(Escena):
             notas.append(("DESPEJADO", VERDE))
         if uno.eco and uno.eco in progreso.fragmentos:
             notas.append(("ECO", VIOLETA))
+        if uno.plano and uno.plano not in progreso.planos:
+            notas.append(("PLANO", CIAN))       # (se consigue al despejarlo o cumplirla)
         x = derecha
         for nota, color_nota in reversed(notas):
             texto(pantalla, nota, CHICA, color_nota, x, adentro.top + 72, alinear="derecha")

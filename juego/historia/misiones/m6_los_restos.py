@@ -20,6 +20,7 @@ class LosRestos(Mision):
     titulo = "LOS RESTOS"
     sector = 5
     lugar = (2230, 190)
+    ambiente = ("gravedad", 1)
     gravedad = 0.3
     jefe = False
     oculta = True
