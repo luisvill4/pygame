@@ -1,5 +1,5 @@
 """
-Los glifos de los Cantores: su escritura hecha de ritmos (ver HISTORIA.md, seccion 7).
+Los glifos de El Ultimo (al que Ines llama "los Cantores"): su escritura hecha de ritmos (HISTORIA.md, seccion 8).
 
 Cada letra es una serie de pulsos cortos (".") y largos ("-"), con un espacio entre letras.
 Es Morse, pero en el juego nadie lo llama asi: el jugador lo descubre al encontrar la clave
@@ -50,7 +50,7 @@ def ritmo(glifo, unidad):
 
 
 def sonando(glifo, unidad, momento):
-    # ¿En este momento (ms, da la vuelta) hay un pulso prendido? (para lo que titila a ritmo)
+    # ¿En este momento (ms, da la vuelta) hay un pulso encendido? (para lo que titila a ritmo)
     pulsos, vuelta = ritmo(glifo, unidad)
     momento %= vuelta
     return any(inicio <= momento < inicio + largo for inicio, largo, _ in pulsos)

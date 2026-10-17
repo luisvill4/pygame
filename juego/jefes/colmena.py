@@ -13,7 +13,7 @@ Con 2 compuertas o menos, abre todas las que le quedan a la vez.
 Segunda parte, sin compuertas: llama a sus hijas a casa (vuelven sin hacer daño: asi
 hay una sola cosa que esquivar), se enfurece y EMBISTE como una bola de billar.
     temblar (3 pulsos)   te apunta; el aviso dibuja el camino CON LOS REBOTES (en el
-                         ultimo pulso queda fijo: ¡salí del camino!)
+                         ultimo pulso queda fijo: ¡sal del camino!)
     embestir             cruza la pantalla rebotando en las paredes y en el ultimo choque...
     aturdida (5)         ...queda mareada con el ojo de la reina a la vista: ¡DASH!
     volver (3)           vuelve arriba. Cada golpe al ojo le suma un rebote

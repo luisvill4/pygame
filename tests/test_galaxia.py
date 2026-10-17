@@ -25,7 +25,7 @@ from juego.escenas.historia.hangar import Hangar
 from juego.escenas.historia.dialogo import Dialogo, ANCHO_TEXTO
 from juego.escenas.historia.archivo import Archivo, DETALLE, LISTA, PESTANAS, ALTO_GLIFO, acomodar
 from juego.escenas.historia.final import Final
-from tests.ayudas import avanzar, tecla, jugar
+from tests.ayudas import avanzar, tecla, jugar, entrar_a_la_historia
 
 
 # ---------- El mapa ----------
@@ -82,11 +82,11 @@ def test_el_camino_de_la_historia_deja_tiempo_para_explorar(tmp_path):
     assert MAREA_ANIOS - 2.5 <= total <= MAREA_ANIOS - 1.5
 
 
-def test_el_viaje_cuesta_la_distancia_la_estadia_y_las_corrientes(tmp_path):
+def test_el_viaje_cuesta_la_distancia_la_estadia_y_la_dilatacion(tmp_path):
     progreso = Progreso(str(tmp_path / "p.json"))
     casa, lejos, abismo = sistema(UMBRAL), sistema("S12"), sistema("M5")
     assert costo_viaje(lejos, lejos, progreso) == pytest.approx(ESTADIA_ANIOS)          # quedarse: solo la estadia
-    assert costo_viaje(abismo, abismo, progreso) == pytest.approx(ESTADIA_ANIOS + abismo.corrientes)
+    assert costo_viaje(abismo, abismo, progreso) == pytest.approx(ESTADIA_ANIOS + abismo.gravedad)
     sin_impulsor = costo_viaje(casa, lejos, progreso)
     progreso.hangar["impulsor"] = 2
     con_impulsor = costo_viaje(casa, lejos, progreso)
@@ -101,7 +101,7 @@ def test_una_puerta_menor_conocida_es_un_atajo(tmp_path):
     caro = costo_viaje(uno, otro, progreso)
     progreso.puertas.add(otro.id)           # (se conoce desde cualquiera de sus lados)
     atajo = costo_viaje(uno, otro, progreso)
-    assert atajo == pytest.approx(PUERTA_ANIOS + ESTADIA_ANIOS + otro.corrientes) and atajo < caro
+    assert atajo == pytest.approx(PUERTA_ANIOS + ESTADIA_ANIOS + otro.gravedad) and atajo < caro
 
 
 def test_la_marea_avanza_y_se_traga_la_umbral_a_su_tiempo(tmp_path):
@@ -126,17 +126,15 @@ def test_los_renglones_de_tiempo(tmp_path):
     antes = mision(5).despues
     a_tiempo = [texto for _, texto in filtrar(antes, set(), 2.0)]
     tarde = [texto for _, texto in filtrar(antes, set(), 6.5)]
-    assert "DICE: VENGAN." in a_tiempo and "DICE: VENGAN." not in tarde
+    assert any("PREPAREN TODAS LAS NAVES" in texto for texto in a_tiempo)       # a tiempo se van todos
+    assert not any("PREPAREN TODAS LAS NAVES" in texto for texto in tarde)
     assert any("LLEGAMOS TARDE" in texto for texto in tarde)
 
 
 # ---------- La escena: elegir, viajar, llegar ----------
 
 def ir_a_la_galaxia(app):
-    tecla(pygame.K_DOWN)                # HISTORIA
-    avanzar(app)
-    tecla(pygame.K_RETURN)
-    avanzar(app)
+    entrar_a_la_historia(app)           # (saltea el prologo)
     assert isinstance(app.escena, Galaxia)
     return app.escena
 
@@ -402,7 +400,7 @@ def test_un_viaje_corto_que_cambia_la_historia_tambien_avisa(app):
     escena = ir_a_la_galaxia(app)
     app.progreso.anios = 2.8
     lineas = escena.aviso_del_viaje(sistema("M1"))
-    assert lineas and any("APURES" in linea for linea in lineas)
+    assert lineas and any("PRISA" in linea for linea in lineas)
     app.progreso.anios = 0
     assert escena.aviso_del_viaje(sistema("M1")) is None       # corto y sin cambios: sale directo
 

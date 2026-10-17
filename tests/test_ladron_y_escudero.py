@@ -36,8 +36,8 @@ def con_dash(partida):
 
 
 def ladron_con_la_moneda(partida, centro_x=500, centro_y=300):
-    # Un ladron que ya agarro la moneda y se queda quieto con ella (no huye). Mientras la
-    # agarra, la nave espera lejos (si no, la agarraba ella)
+    # Un ladron que ya atrapo la moneda y se queda quieto con ella (no huye). Mientras la
+    # atrapa, la nave espera lejos (si no, la recogia ella)
     nave_x, nave_y = partida.nave.centro()
     poner_nave(partida, 60 if centro_x > ANCHO / 2 else ANCHO - 60, 60)
     ladron = poner(partida, crear_enemigo("ladron", partida), centro_x, centro_y)
@@ -65,7 +65,7 @@ def test_el_ladron_va_hacia_la_moneda_y_la_roba(partida):
         if partida.moneda.robada_por is not None:
             break
     assert partida.moneda.robada_por is ladron
-    assert ladron.fase == "agarrar"
+    assert ladron.fase == "atrapar"
     # Se la lleva encima de la cabeza
     jugar(partida)
     assert partida.moneda.centro()[0] == pytest.approx(ladron.centro()[0])

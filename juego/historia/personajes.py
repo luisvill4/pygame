@@ -2,7 +2,7 @@
 Los personajes del modo historia: su nombre, su color y su retrato.
 
 PERSONAJES es lo que se usa en los dialogos: (quien, texto), donde 'quien' es una clave de
-aca ("alba", "ines"...). Los retratos estan dibujados con codigo (pixel art de 12x12 con
+aqui ("alba", "ines"...). Los retratos estan dibujados con codigo (pixel art de 12x12 con
 varios colores) y se usan en la radio (chicos) y en los dialogos (grandes).
 
 Cada retrato es una lista de renglones: cada letra es un pixel y su color sale de la
@@ -10,8 +10,10 @@ paleta del retrato ("." = transparente). Un personaje sin retrato (la Errante) e
 estatica de radio. Para sumar un personaje: su nombre y color en PERSONAJES y, si tiene
 cara, su dibujo en RETRATOS.
 
-"voz" es Alba grabada hace millones de años (la Bitacora sin fecha, HISTORIA.md): su
-retrato es el de Alba en los colores de los Cantores. No se nombra en ningun lado: se ve.
+"ultimo" es EL ULTIMO: el que dejo las monedas (HISTORIA.md, "La verdad"). Aparece al final de
+la mision 5, viejo y cansado. "voz" es el mismo, joven, en su primera bitacora (la Bitacora sin
+fecha): el mismo dibujo sin arrugas y con los colores mas vivos. "cantores" (???) es el compas
+cuando "habla" por la radio.
 """
 import random
 
@@ -27,6 +29,7 @@ PERSONAJES = {
     "errante": ("BITACORA DE LA ERRANTE", GRIS),
     "mateo": ("MATEO SAAVEDRA", GRIS),
     "cantores": ("???", VIOLETA),
+    "ultimo": ("EL ULTIMO", VIOLETA),
     "voz": ("SIN FECHA", VIOLETA),
 }
 
@@ -94,9 +97,28 @@ RETRATOS = {
         "paleta": {"X": (190, 120, 255), "o": (70, 30, 120)},
     },
 }
-# La voz sin fecha: el casco de Alba, en los colores de los Cantores
-RETRATOS["voz"] = {"dibujo": RETRATOS["alba"]["dibujo"],
-                   "paleta": {"X": (190, 120, 255), "o": (70, 30, 120), "v": (40, 20, 80), "b": (255, 230, 255)}}
+RETRATOS["ultimo"] = {      # la capucha, los ojos que brillan, las arrugas y los tentaculos de la barba
+    "dibujo": ["....XXXX....",
+               "..XXXXXXXX..",
+               ".XXssssssXX.",
+               ".XssssssssX.",
+               ".XsEEssEEsX.",
+               ".XssssssssX.",
+               ".XswsswswsX.",
+               ".XXsttttsXX.",
+               "XXX.tttt.XXX",
+               "XXXX.tt.XXXX",
+               "XXXXX..XXXXX",
+               "XXXXXXXXXXXX"],
+    "paleta": {"X": (80, 44, 140), "s": (160, 150, 196), "E": (255, 236, 255), "w": (104, 94, 144),
+               "t": (128, 110, 180)},
+}
+# La voz sin fecha: el mismo, millones de años antes (sin arrugas, la barba corta, colores vivos)
+RETRATOS["voz"] = {
+    "dibujo": [renglon.replace("w", "s") for renglon in RETRATOS["ultimo"]["dibujo"][:8]] +
+              ["XXX......XXX", "XXXX....XXXX", "XXXXX..XXXXX", "XXXXXXXXXXXX"],
+    "paleta": {"X": (150, 90, 230), "s": (205, 196, 240), "E": (255, 255, 255), "t": (175, 150, 230)},
+}
 FONDO_RETRATO = (8, 10, 26)
 
 

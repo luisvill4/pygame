@@ -1,9 +1,9 @@
 """
 La radio del modo historia: mensajes cortos abajo de la pantalla que NO pausan el juego
-(como en Star Fox). Alba e Ines hablan mientras jugas.
+(como en Star Fox). Alba e Ines hablan mientras juegas.
 
 Salen de a uno, en una cola (el mismo patron que los avisos de arriba, avisos.py). Cada
-mensaje se ve un rato que depende de lo largo que es. Aca esta solo la logica (cuando
+mensaje se ve un rato que depende de lo largo que es. Aqui esta solo la logica (cuando
 empieza y termina cada uno, con partida.tiempo); como se ve lo dibuja carteles.radio().
 """
 from juego.config import RADIO_MS_MINIMO, RADIO_MS_POR_LETRA

@@ -66,7 +66,7 @@ def como_mision(uno):
     # El sistema escrito como una mision (asi el ModoHistoria lo juega sin preguntar nada)
     return type("Sistema" + uno.id, (Mision,), {
         "numero": None, "titulo": uno.nombre, "sector": uno.sector, "lugar": uno.lugar,
-        "corrientes": uno.corrientes, "tramos": ruta_del_sistema(uno), "jefe": False, "radio": uno.radio,
+        "gravedad": uno.gravedad, "tramos": ruta_del_sistema(uno), "jefe": False, "radio": uno.radio,
         "fragmentos": [], "secretos": [], "antes": [], "despues": []})
 
 

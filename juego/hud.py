@@ -176,7 +176,7 @@ def _marcador(pantalla, partida):
     color = AMARILLO if ahora - partida.tiempo_moneda < 200 else BLANCO
     texto(pantalla, dibujo.numero_arcade(partida.puntaje_visible), CHICA, color, 20, 46, alinear="izquierda")
 
-    # Creditos (al lado del puntaje): la plata de la gasolinera. Destellan al ganarlos
+    # Creditos (al lado del puntaje): el dinero de la gasolinera. Destellan al ganarlos
     texto(pantalla, "CREDITOS", MINI, GRIS, 136, 22, alinear="izquierda")
     icono_credito(pantalla, 144, 46)
     color = BLANCO if ahora - partida.tiempo_creditos < 200 else AMARILLO
@@ -479,7 +479,7 @@ _sirena = {}                # la luz roja de los costados (se arma una vez)
 
 def _presentacion_jefe(pantalla, jefe, tiempo, numero_sector):
     # La cinematica de llegada. Tapa el HUD con franjas de cine (con cinta de peligro),
-    # prende luces de sirena a los costados, avisa "¡ALERTA!" y despues pasa una franja
+    # enciende luces de sirena a los costados, avisa "¡ALERTA!" y despues pasa una franja
     # con el nombre y el apodo. Cuando el jefe termina de entrar, todo se retira
     transcurrido = tiempo - jefe.creado_en
     if jefe.fin_entrada is None:

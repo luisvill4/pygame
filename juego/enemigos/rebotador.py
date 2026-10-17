@@ -66,7 +66,7 @@ class Rebotador(Enemigo):
         direccion = math.radians(random.choice([45, 135, 225, 315]) + random.randint(-15, 15))
         self.vx = math.cos(direccion) * RAPIDEZ
         self.vy = math.sin(direccion) * RAPIDEZ
-        # Empieza volando (la pared se usa recien en el primer choque)
+        # Empieza volando (la pared no se usa hasta el primer choque)
         self.estado = "volando"
         self.pared = "abajo"
         self.inicio_choque = 0
@@ -86,7 +86,7 @@ class Rebotador(Enemigo):
         self.vy = math.sin(direccion) * rapidez
 
     def actualizar(self, partida, congelado):
-        # La clase base lo mueve y lo hace rebotar; aca solo se mira si choco
+        # La clase base lo mueve y lo hace rebotar; aqui solo se mira si choco
         antes_vx, antes_vy = self.vx, self.vy
         super().actualizar(partida, congelado)
         pared = self.pared_tocada(antes_vx, antes_vy)

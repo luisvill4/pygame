@@ -221,29 +221,29 @@ def campaña(piezas_por_partida):
     # sistema libre que mas piezas da por año entre los que se puede entrar. Devuelve el año final
     progreso = types.SimpleNamespace(hangar={}, planos=set(), piezas=0, anios=0.0, puertas=set(), sistemas=set(),
                                      guardar=lambda: None)
-    aca = sistema(UMBRAL)
+    aqui = sistema(UMBRAL)
     for clase in [clase for clase in misiones_en_orden() if not clase.oculta]:
         objetivo = sistema("M%d" % clase.numero)
         while not _equipar(progreso, objetivo):
             opciones = [uno for uno in galaxia.SISTEMAS if uno.tipo == "libre" and uno.id not in progreso.sistemas
                         and _puede_equipar(progreso, uno)]
             if not opciones:                # sin piezas para nada: se repite la ultima mision
-                progreso.anios += costo_viaje(aca, aca, progreso)
+                progreso.anios += costo_viaje(aqui, aqui, progreso)
                 progreso.piezas += piezas_por_partida
                 continue
             uno = max(opciones, key=lambda uno: (PIEZAS_POR_PELIGRO * peligro(uno) + piezas_por_partida
                                                  + (200 if uno.plano not in progreso.planos | {None} else 0))
-                      / costo_viaje(aca, uno, progreso))
+                      / costo_viaje(aqui, uno, progreso))
             _equipar(progreso, uno)
-            progreso.anios += costo_viaje(aca, uno, progreso)
+            progreso.anios += costo_viaje(aqui, uno, progreso)
             progreso.piezas += piezas_por_partida + PIEZAS_POR_PELIGRO * peligro(uno)
             progreso.sistemas.add(uno.id)
             modulos.dar_plano(progreso, uno.plano)
-            aca = uno
-        progreso.anios += costo_viaje(aca, objetivo, progreso)
+            aqui = uno
+        progreso.anios += costo_viaje(aqui, objetivo, progreso)
         progreso.piezas += piezas_por_partida
         modulos.dar_plano(progreso, clase.plano)
-        aca = objetivo
+        aqui = objetivo
     return progreso.anios
 
 

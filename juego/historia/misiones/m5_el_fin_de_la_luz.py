@@ -1,12 +1,15 @@
 """
 Mision 5: EL FIN DE LA LUZ
 
-ABISMO AZUL (el Fin de la Luz). El compas sale de la Singularidad: es una puerta. Alba
-entra; su ultima frase por radio es el mensaje del compas. Tres dias despues, el compas
-suma una palabra: VENGAN. Es el final de la historia (final = True).
+ABISMO AZUL (el Fin de la Luz). El compas sale del borde de un agujero negro. Al vencer al
+ultimo guardian el anillo se abre, Alba baja y encuentra a EL ULTIMO: el que dejo las monedas.
+Pegado al agujero el tiempo casi se detiene: ahi abajo se puede dejar pasar la Marea. Mateo y
+su tripulacion estan con el, vivos (para ellos pasaron dos dias). El compas suma una palabra:
+VENGAN. Es el final de la historia (final = True).
 
 Secretos: la brujula (con la mirada del Ojo: pegarle a la puerta desde el lado de casa) y
-la Bitacora sin fecha (con todo lo demas encontrado: la verdad, y el final verdadero).
+la Bitacora sin fecha (con todo lo demas encontrado: la primera bitacora de El Ultimo, que
+tambien fue piloto, y el final verdadero: Alba toma su lugar).
 Que cuenta y que esconde: HISTORIA.md. Como se escribe una mision: historia/mision.py.
 """
 from juego.historia.mision import Mision, Fragmento, registrar_mision
@@ -21,7 +24,7 @@ class ElFinDeLaLuz(Mision):
     sector = 5
     lugar = (2060, 350)
     ambiente = ("gravedad", 2)      # la puerta: el compensador al maximo
-    corrientes = 0.5        # al lado del agujero negro: las corrientes cuestan medio año por visita
+    gravedad = 0.5          # al lado del agujero negro: cada visita, medio año mas en la Umbral
     final = True
 
     tramos = [
@@ -38,13 +41,14 @@ class ElFinDeLaLuz(Mision):
     ]
 
     antes = [
-        ("ines", "ALBA... LA MAREA YA LLEGO. LA UMBRAL NO EXISTE MAS. TE HABLO DESDE UNA NAVE.", "T6"),
-        ("ines", "ES UN AGUJERO NEGRO, ALBA. Y EL COMPAS SALE DE ADENTRO."),
-        ("alba", "LO QUE ESTA ADENTRO DE UN AGUJERO NEGRO NO SALE, INES. ES LA REGLA."),
-        ("ines", "ESTE SI. Y SE ESTA ABRIENDO. LAS MONEDAS, LOS LADRONES... TODO VA HACIA AHI."),
+        ("ines", "ALBA... LA MAREA YA LLEGO. LA UMBRAL YA NO EXISTE. TE HABLO DESDE UNA NAVE.", "T6"),
+        ("ines", "ES UN AGUJERO NEGRO, ALBA. Y EL COMPAS SALE DEL BORDE, DE MUY CERCA."),
+        ("alba", "PEGADO A UN AGUJERO NEGRO EL TIEMPO CASI SE DETIENE. LO QUE HAYA AHI VIVE EN CAMARA LENTA."),
+        ("ines", "POR ESO EL COMPAS ES TAN LENTO. ALGUIEN LO TOCA DESDE AHI ABAJO."),
+        ("ines", "LAS MONEDAS, LOS LADRONES... TODO VA HACIA AHI. Y UN ANILLO DE ROCAS LO CUIDA."),
         ("alba", "ENTONCES VAMOS HACIA AHI."),
-        ("ines", "ALBA. GRACIAS POR SEGUIR."),
-        ("alba", "NO ME AGRADEZCAS TODAVIA."),
+        ("ines", "ALBA. CADA MINUTO QUE PASES CERCA DEL BORDE SON DIAS AQUI. NO TE QUEDES."),
+        ("alba", "NO ME ESPERES DESPIERTA."),
     ]
 
     radio = {
@@ -65,52 +69,61 @@ class ElFinDeLaLuz(Mision):
         "jefe": [
             ("alba", "ES... HERMOSO."),
             ("ines", "ALBA. CONCENTRATE."),
-            ("ines", "LA LENTE DEL OJO APUNTABA ACA. DESDE EL CINTURON... DESDE CASA.", "F03+!F09"),
+            ("ines", "LA LENTE DEL OJO APUNTABA AQUI. DESDE EL CINTURON... DESDE CASA.", "F03+!F09"),
         ],
     }
 
     despues = [
-        ("ines", "SE ABRIO. ALBA, LA PUERTA SE ABRIO."),
-        ("alba", "LO VEO. ADENTRO HAY... LUZ. Y MONEDAS. MILES."),
-        ("ines", "NO SABEMOS QUE HAY DEL OTRO LADO. NO TENES QUE ENTRAR."),
-        ("alba", "INES. EL COMPAS DIJO SEGUI LAS MONEDAS. NUNCA DIJO HASTA DONDE."),
-        ("alba", "SI NO VUELVO..."),
-        ("alba", "SEGUI LAS MONEDAS."),
-        ("ines", "¿ALBA? ...¿ALBA?"),
-        # A tiempo: hay tiempo para que todos crucen
-        ("ines", "TRES DIAS SIN SEÑAL DE LA ALONDRA. PERO EL COMPAS CAMBIO OTRA VEZ.", "!T6"),
-        ("ines", "AHORA TERMINA CON UNA PALABRA NUEVA. LA TRADUJE CIEN VECES.", "!T6"),
-        ("ines", "DICE: VENGAN.", "!T6"),
+        ("ines", "SE ABRIO. ALBA, EL ANILLO SE ABRIO."),
+        ("alba", "BAJO. HAY UNA LUZ PEGADA AL BORDE DEL AGUJERO. UNA ESTACION, CON MILES DE MONEDAS ALREDEDOR."),
+        ("alba", "INES... HAY ALGUIEN."),
+        ("ultimo", "LLEGASTE."),
+        ("ultimo", "APRENDI TU IDIOMA ESCUCHANDO SUS RADIOS, CUARENTA DE SUS AÑOS. PERDONA SI LO HABLO MAL."),
+        ("alba", "¿ERES TU LOS CANTORES?"),
+        ("ultimo", "NO HAY CANTORES. HAY UNO SOLO. SOY EL ULTIMO DE LOS MIOS."),
+        ("ultimo", "HACE MILLONES DE AÑOS, LA MAREA PASO POR MI GALAXIA. YO LLEGUE TARDE. SOLO ME SALVE YO."),
+        ("ultimo", "DESDE ENTONCES VIAJO DELANTE DE ELLA, CASI A LA VELOCIDAD DE LA LUZ. PARA MI FUERON OCHENTA AÑOS. FUERA, MILLONES."),
+        ("ultimo", "EN CADA GALAXIA DEJO LO MISMO: LAS MONEDAS, LOS GUARDIANES, EL COMPAS. UN CAMINO HASTA AQUI."),
+        ("ultimo", "NUNCA NADIE LLEGO A TIEMPO. TU ERES LA PRIMERA."),
+        ("alba", "¿Y QUE HAY AQUI ABAJO?"),
+        ("ultimo", "TIEMPO. PEGADO AL AGUJERO, UNA HORA SON MIL AÑOS DE FUERA."),
+        ("ultimo", "LA MAREA NO SE PUEDE FRENAR. PERO SE PUEDE DEJAR PASAR. TRAIGAN SUS NAVES Y BAJEN CONMIGO UNAS HORAS."),
+        ("ultimo", "CUANDO SUBAN, LA MAREA YA VA A ESTAR LEJOS. Y LAS ESTRELLAS, QUIETAS OTRA VEZ."),
+        ("mateo", "...¿ALBA? SOY MATEO SAAVEDRA, DE LA ERRANTE. LLEGAMOS EN LA CAPSULA."),
+        ("mateo", "PARA NOSOTROS PASARON DOS DIAS DESDE QUE BAJAMOS. DILE A INES... DILE QUE ME PERDONE."),
+        ("alba", "INES. MATEO ESTA AQUI. ESTAN VIVOS, LOS TRES."),
+        # La respuesta tarda: arriba el tiempo corre mucho mas rapido
+        ("ines", "ALBA... TU MENSAJE TARDO TRES DIAS EN LLEGAR. PARA TI FUERON MINUTOS.", "!T6"),
+        ("ines", "Y EL COMPAS CAMBIO. AHORA TERMINA CON UNA PALABRA NUEVA: VENGAN.", "!T6"),
+        ("ines", "ATENCION, ESTACION UMBRAL. PREPAREN TODAS LAS NAVES. NOS VAMOS.", "!T6"),
         # Tarde: la Marea ya llego a la Umbral
-        ("ines", "LA MAREA YA ESTA ACA. LA UMBRAL SE PARTIO. QUEDAMOS POCOS, EN TRES NAVES.", "T6"),
+        ("ines", "LA MAREA YA ESTA AQUI. LA UMBRAL SE PARTIO. QUEDAMOS POCOS, EN TRES NAVES.", "T6"),
         ("ines", "Y EL COMPAS CAMBIO. TERMINA CON UNA PALABRA NUEVA: VENGAN.", "T6"),
         ("ines", "LLEGAMOS TARDE PARA LOS DEMAS. PERO VAMOS.", "T6"),
-        # El final verdadero: con todo encontrado, llega la Bitacora sin fecha
-        ("ines", "...Y LLEGO OTRA COSA. UNA GRABACION. NO TIENE FECHA. TIENE MILLONES DE AÑOS.", "F11"),
-        ("voz", "INES. SI ESCUCHAS ESTO, YA PASO. TODO.", "F11"),
-        ("voz", "DEL OTRO LADO DE LA PUERTA NO HAY MAREA TODAVIA. FALTAN MILLONES DE AÑOS. HAY TIEMPO.", "F11"),
-        ("voz", "MATEO LLEGO ANTES QUE YO. ESTA BIEN. DICE QUE TENIAS RAZON CON EL COMPAS.", "F11"),
-        ("voz", "GRABAMOS LAS MONEDAS. DESPERTAMOS A LOS GUARDIANES. APRENDIMOS A CANTAR.", "F11"),
-        ("voz", "LA MAREA NO SE PUEDE FRENAR. PERO SE PUEDE CRUZAR. VENGAN TODOS.", "F11"),
-        ("voz", "SEGUI LAS MONEDAS. LAS DEJAMOS NOSOTROS.", "F11"),
-        ("ines", "...NOSOTROS. LOS CANTORES. SIEMPRE FUIMOS NOSOTROS.", "F11"),
-        ("ines", "ATENCION, ESTACION UMBRAL. PREPAREN TODAS LAS NAVES.", "F11+!T6"),
-        ("ines", "NOS VAMOS.", "F11+!T6"),
-        ("ines", "TODOS NO, ALBA. LLEGAMOS TARDE. PERO LOS QUE QUEDAMOS... VAMOS.", "F11+T6"),
+        # El final verdadero: con todo encontrado, El Ultimo le cuenta quien fue
+        ("ultimo", "ANTES DE QUE LLEGUEN, ESCUCHA ESTO. ES MI PRIMERA BITACORA.", "F11"),
+        ("voz", "DIA 1. EN MI CIELO APARECIERON MONEDAS. ALGUIEN LAS DEJO PARA NOSOTROS. VOY A SEGUIRLAS.", "F11"),
+        ("ultimo", "YO TAMBIEN FUI PILOTO. A MI TAMBIEN ME DEJARON UN CAMINO. NUNCA SUPE QUIEN: SIEMPRE HUBO ALGUIEN DELANTE.", "F11"),
+        ("ultimo", "YA ESTOY VIEJO, ALBA. NO AGUANTO OTRO VIAJE. Y ALGUIEN TIENE QUE IR DELANTE DE LA MAREA, A LA GALAXIA QUE SIGUE.", "F11"),
+        ("alba", "...INES. NO VOY A BAJAR CON USTEDES.", "F11"),
+        ("ines", "LO SE. LO SUPE EL DIA QUE TE OFRECISTE.", "F11"),
+        ("ultimo", "MI NOMBRE, EN TU IDIOMA, QUIERE DECIR AMANECER. LO GRABE ASI EN TODAS LAS MONEDAS: ALBA.", "F11"),
+        ("ultimo", "AHORA ES TUYO DE VERDAD.", "F11"),
     ]
 
     fragmentos = [
         Fragmento("F09", "LA BRUJULA",
-                  ["ALBA LE PEGO A LA PUERTA DESDE EL LADO DE CASA, HACIA DONDE MIRABA EL OJO.",
-                   "LOS INSTRUMENTOS SE VOLVIERON LOCOS: EL RELOJ DE LA ALONDRA EMPEZO A CONTAR HACIA ATRAS.",
+                  ["ALBA GOLPEO LA PUERTA DESDE EL LADO DE CASA, HACIA DONDE MIRABA EL OJO.",
+                   "LOS INSTRUMENTOS SE VOLVIERON LOCOS: EL RELOJ DE LA ALONDRA CASI SE DETUVO. FUERA PASABAN HORAS POR CADA SEGUNDO.",
                    "LA PUERTA NO LLEVA A OTRO LUGAR. LLEVA A OTRO:"],
                   glifo=escribir("CUANDO"),
-                  reaccion=[("alba", "¡EL RELOJ! INES, EL RELOJ DE LA ALONDRA VA PARA ATRAS.")]),
+                  reaccion=[("alba", "¡EL RELOJ! INES, EL RELOJ DE LA ALONDRA CASI NO SE MUEVE.")]),
         Fragmento("F11", "BITACORA SIN FECHA",
-                  ["UNA GRABACION QUE LLEGO DESDE LA PUERTA. SEGUN INES, TIENE MILLONES DE AÑOS.",
-                   "LA VOZ ES LA DE ALBA.",
-                   "SI ENCONTRAS ESTO, YA LO HICISTE. SEGUI LAS MONEDAS. LAS DEJAMOS NOSOTROS."],
-                  reaccion=[("ines", "ALBA... ESTA LLEGANDO ALGO POR EL COMPAS. UNA GRABACION... CON TU VOZ.")],
+                  ["UNA GRABACION SIN FECHA QUE LLEGO POR EL COMPAS. LA VOZ ES JOVEN. NO ES HUMANA.",
+                   "DIA 1. EN MI CIELO APARECIERON MONEDAS. ALGUIEN LAS DEJO PARA NOSOTROS. VOY A SEGUIRLAS.",
+                   "ES LA VOZ DE EL ULTIMO, MILLONES DE AÑOS ANTES, CUANDO TAMBIEN ERA PILOTO."],
+                  reaccion=[("voz", "DIA 1. EN MI CIELO APARECIERON MONEDAS. VOY A SEGUIRLAS."),
+                            ("ines", "¿QUIEN ES? ES UNA VOZ JOVEN... Y LA GRABACION NO TIENE FECHA.")],
                   oculto=True),
     ]
 

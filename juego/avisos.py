@@ -7,7 +7,7 @@ que sale). El que llega mientras se ve otro espera su turno, asi nunca se pisan 
 Los urgentes (una amenaza: una anomalia, la ultima vida) no esperan: el que se esta viendo se
 va enseguida y el urgente pasa primero.
 
-Aca esta solo la logica (cuando empieza y cuando termina cada uno, con partida.tiempo):
+Aqui esta solo la logica (cuando empieza y cuando termina cada uno, con partida.tiempo):
 como se ve lo dibuja carteles.pancarta().
 """
 

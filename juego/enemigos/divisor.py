@@ -44,7 +44,7 @@ class DivisorBase(Enemigo):
     destruible = True
     plural = "DIVISORES"
     nombre = "DIVISOR"
-    pista = "¡PARTILO CON EL DASH!"
+    pista = "¡PARTELO CON EL DASH!"
     hijo = None                 # tipo en el que se parte (None = el mas chico)
     giro = 0.03                 # que tan rapido corrige el rumbo (los chicos son mas agiles)
 

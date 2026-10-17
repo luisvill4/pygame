@@ -14,7 +14,7 @@ con piezas (MODULOS_PRECIOS, config.py).
 
 Cada modulo SE VE en la nave: 'piezas' son capas de pixel art (en la grilla de 25x25 pixeles de
 arte del sprite de 50x50) que nave.py dibuja encima. Asi la Alondra cambia a medida que la mejoras.
-Para un peligro nuevo: un Modulo aca (con su dibujo) y el peligro en los sistemas que lo tengan.
+Para un peligro nuevo: un Modulo aqui (con su dibujo) y el peligro en los sistemas que lo tengan.
 """
 from juego.config import MODULOS_PRECIOS, ROJO, VERDE, AMARILLO, VIOLETA
 from juego.historia import galaxia

@@ -1,7 +1,7 @@
 """
 Configuracion: colores, paletas y todas las reglas que se pueden ajustar.
 
-Aca van SOLO valores (numeros, colores, textos), nada de pygame ni de logica.
+Aqui van SOLO valores (numeros, colores, textos), nada de pygame ni de logica.
 Asi se puede cambiar la dificultad sin miedo a romper nada.
 """
 import os
@@ -50,7 +50,7 @@ FUNDIDO_MUSICA = 700            # ms que tarda un tema en apagarse (y el nuevo e
 FUNDIDO_AMBIENTE = 1500         # lo mismo para el ambiente de cada sector (mas lento: es un fondo)
 CANALES_AUDIO = 24              # sonidos a la vez: 2 musica + 2 ambiente + 2 loops + 18 efectos
 # Volumen de cada categoria, relativo (la mezcla): asi se equilibra todo sin tocar los archivos.
-# Deja MARGEN (headroom), como una mezcla profesional: los temas estan a -14 LUFS y aca bajan
+# Deja MARGEN (headroom), como una mezcla profesional: los temas estan a -14 LUFS y aqui bajan
 # a -20 (0.5), los efectos quedan un poco por encima de la musica y la suma casi nunca llega
 # al maximo (con todo al 1.0, medido con un bot: 53 de 362 segundos sonaban recortados)
 MEZCLA = {"MUSICA": 0.5, "EFECTOS": 0.7, "INTERFAZ": 0.6, "AMBIENTE": 0.3}
@@ -61,7 +61,7 @@ ATENUAR_VUELTA = 600            # ...y despues tarda estos ms en volver
 # cosa en cada momento, y si la suma se pasaria del maximo (el audio se recorta: suena
 # saturado), baja los efectos. Primero los de menos importancia (DETALLE y ACCION)
 TECHO_MEZCLA = 0.89             # la suma de todo nunca pasa de esto (0.89 = -1 dB del maximo)
-PISO_DETALLES = 0.35            # los detalles bajan hasta aca antes de tocar a los importantes
+PISO_DETALLES = 0.35            # los detalles bajan hasta aqui antes de tocar a los importantes
 RECUPERACION_MEZCLA = 300       # ms que tarda en volver al volumen entero cuando se despeja
 # Los efectos armonicos suenan en el acorde que viene si cambia dentro de estos ms (ver
 # Sonidos.color_actual)
@@ -106,7 +106,7 @@ TREBOL = [(0, 90, 40), VERDE, BLANCO]
 # ================================== #
 
 # Colores con un papel fijo: todas las pantallas los usan igual, asi el juego "habla"
-# un solo idioma visual. Para cambiar el estilo de toda la interfaz, se cambia aca
+# un solo idioma visual. Para cambiar el estilo de toda la interfaz, se cambia aqui
 TEXTO = BLANCO                  # lo que hay que leer
 TEXTO_SUAVE = GRIS              # etiquetas y ayudas
 TEXTO_APAGADO = (70, 80, 110)   # lo vacio o lo que no se puede usar
@@ -163,7 +163,7 @@ INVULNERABLE_ESCUDO = 500       # ms sin recibir daño despues de que se rompe e
 DASH_FUERZA = 14
 DASH_DURACION = 180             # ms que dura el impulso (sin recibir daño)
 DASH_RECARGA = 1500             # ms hasta poder usarlo otra vez
-BUFFER_DASH = 150               # si apretas el dash hasta estos ms antes de que se recargue, sale igual
+BUFFER_DASH = 150               # si aprietas el dash hasta estos ms antes de que se recargue, sale igual
 # Dash perfecto: destruir (o partir) con el dash a un enemigo destruible, o INTERCEPTAR al
 # embestidor en plena embestida. Atravesar a los demas enemigos o a las balas no cuenta.
 # Premio: puntos, el combo no se corta y el dash se recarga casi enseguida (se pueden encadenar)
@@ -208,7 +208,7 @@ MEJORA_ONDA_RADIO = [70, 100]   # ONDA: radio de la onda al terminar el dash
 MEJORA_COMETA = 1.5             # COMETA: el dash dura esto por su duracion normal
 MEJORA_FILO_PUNTOS = 3          # FILO: puntos por un enemigo que normalmente el dash no destruye
 MEJORA_ROCE = [6, 4, 3]         # ESCUDO ROCE: dash perfectos para regenerar el escudo (por nivel).
-                                # Ese escudo dura hasta que te pegan; mientras lo tenes, no se cuenta
+                                # Ese escudo dura hasta que te pegan; mientras lo tienes, no se cuenta
 MEJORA_ATRACCION = [110, 170]   # ATRACCION: px desde los que la moneda viene sola
 MEJORA_COMBO = 0.3              # COMBO LARGO: el combo tarda esta parte mas en cortarse (por nivel)
 MEJORA_SUERTE = 0.25            # SUERTE: esta parte menos de espera entre power-ups (por nivel)
@@ -222,8 +222,8 @@ FENIX_INVULNERABLE = 2500       # FENIX: ms sin recibir daño al volver
 # Los creditos no son puntos: gastarlos no baja el puntaje (los records no cambian)
 CREDITOS_POR_MONEDA = 1         # por el multiplicador del combo (con x5, 5 por moneda)
 TIENDA_CARTAS = 3               # cartas en el mostrador
-PRECIO_CARTA = 40               # una carta comun, si todavia no la tenes...
-PRECIO_POR_NIVEL = 25           # ...y esto mas por cada nivel que ya tenes de ella
+PRECIO_CARTA = 40               # una carta comun, si todavia no la tienes...
+PRECIO_POR_NIVEL = 25           # ...y esto mas por cada nivel que ya tienes de ella
 PRECIO_RARA = 1.5               # las raras (peso menor a 1) cuestan esto por el precio
 PRECIO_POR_SECTOR = 0.2         # todo sube esta parte en cada sector (se juntan mas creditos)
 # (Medido con un bot: un sector da ~50-70 creditos jugando flojo y ~100-180 jugando bien,
@@ -279,11 +279,11 @@ ENJAMBRE_ESPERA_PICADA = (3500, 5500)   # ms entre picadas (al azar)
 ENJAMBRE_PUNTOS = 2             # por dron
 ENJAMBRE_BONUS = 10             # por destruir el enjambre entero con el dash
 
-# Ladron: va hacia la moneda y, si la agarra, huye con ella al borde mas cercano. No lastima:
+# Ladron: va hacia la moneda y, si la atrapa, huye con ella al borde mas cercano. No lastima:
 # lo que te roba es el combo. Mientras la lleva, el reloj del combo espera
 LADRON_VELOCIDAD = 2.0          # buscando la moneda (siempre mas lento que la nave)
 LADRON_HUIDA = 3.6              # huyendo con ella (con el tope de ENEMIGO_VELOCIDAD_MAX)
-LADRON_AGARRE = 500             # ms que se queda quieto al agarrarla: tu momento para reaccionar
+LADRON_ATRAPE = 500             # ms que se queda quieto al atraparla: tu momento para reaccionar
 LADRON_PUNTOS = 3               # por romperlo con el dash...
 LADRON_BONUS = 10               # ...y esto mas si le recuperas la moneda (que ademas se cobra)
 
@@ -339,7 +339,7 @@ HANGAR_PRECIOS = {"impulsor": [50, 100, 160], "corazon": [80, 160], "recarga": [
 
 # Asedio: el ultimo tramo de cada sector, antes del jefe. Llegan escuadrones de todos lados
 # y hay que aguantar. Mientras dura, la barra de nivel se puede llenar pero el nivel espera:
-# el jefe llega recien al terminar el asedio
+# el jefe no llega hasta que termina el asedio
 ASEDIO_DURACION = 15000         # ms que dura
 ASEDIO_INICIO = 2500            # ms desde que empieza el tramo (despues del cartel)
 ASEDIO_RESPIRO = 600            # ms entre escuadrones durante el asedio
@@ -386,7 +386,7 @@ CARTEL_ALFA_MOMENTO = 150       # lo mismo para los momentos (jefe vencido, rang
 
 # La Fortaleza: una marcha militar. Cada "compas" un cañon se carga, dispara a ritmo y
 # queda RECALENTADO: ahi se le pega con el dash. Un ataque por vez, siempre con aviso.
-# Sin cañones se le cae la coraza: tira cortinas de escombros y CAE sobre vos; al caer
+# Sin cañones se le cae la coraza: tira cortinas de escombros y CAE sobre ti; al caer
 # queda aturdida con el nucleo a la vista. (Las duraciones van en pulsos, ver JEFE_PULSO)
 FORTALEZA_VIDA_CANON = 2        # golpes que aguanta cada cañon
 FORTALEZA_PUNTOS_CANON = 10     # puntos por romper un cañon
@@ -439,7 +439,7 @@ ABEJA_PUNTOS = 2
 
 # Anomalias: una vez por sector el espacio se pone raro un rato (ver anomalias.py).
 # Cada sector tiene la suya ("anomalia" en SECTORES), pero no siempre llega esa: asi las
-# cuatro se pueden ver desde el primer sector (antes la fiebre del oro recien salia en el nivel 18)
+# cuatro se pueden ver desde el primer sector (antes la fiebre del oro no salia hasta el nivel 18)
 ANOMALIA_PROPIA = 0.5           # chances de que llegue la del sector (si no, una de las otras)
 ANOMALIA_NIVEL = 3              # llega en el 3er nivel de cada sector (niveles 3, 8, 13...)
 ANOMALIA_ESPERA = 4000          # ms desde que empieza ese nivel
@@ -645,7 +645,7 @@ VIBRACIONES = {
     "impacto":         (2, [(100, 0.18, 0.1), (100, 0.06, 0)]),      # el jefe choca una pared
     "impacto_grande":  (3, [(60, 0.15, 0.08), (140, 0.32, 0.15), (160, 0.1, 0.04)]),   # la Fortaleza cae
     "coraza":          (3, [(150, 0.28, 0.28), (250, 0.1, 0.1)]),
-    "aviso_jefe":      (1, [(60, 0, 0.15), (60, 0, 0), (60, 0, 0.15)]),           # "¡movete!"
+    "aviso_jefe":      (1, [(60, 0, 0.15), (60, 0, 0), (60, 0, 0.15)]),           # "¡muevete!"
     "zumbido":         (1, [(240, 0, 0.08), (240, 0, 0.12)]),                     # la Colmena tiembla
     "inhalar":         (1, [(150, 0.03, 0), (150, 0.05, 0), (150, 0.08, 0), (150, 0.1, 0.02),
                             (150, 0.13, 0.04), (150, 0.16, 0.06)]),               # crece de a poco

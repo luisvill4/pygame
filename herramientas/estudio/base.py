@@ -8,7 +8,7 @@ import numpy as np
 try:
     from numba import njit
 except ImportError:
-    # Sin numba todo anda igual, solo que los filtros tardan mucho mas
+    # Sin numba todo funciona igual, solo que los filtros tardan mucho mas
     def njit(*args, **kwargs):
         if args and callable(args[0]):
             return args[0]

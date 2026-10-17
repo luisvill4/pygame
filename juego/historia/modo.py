@@ -6,7 +6,7 @@ MEJORA_TRAMO_HISTORIA y el desafio llega en el tramo 2; al vencer al jefe la par
 cumple (no hay gasolinera ni sector siguiente); una mision sin jefe se cumple al despejar
 el ultimo tramo; no guarda records.
 
-Ademas cuenta la historia mientras jugas:
+Ademas cuenta la historia mientras juegas:
 - por la radio, lo que la mision tiene para cada momento ("tramo_2", "jefe"...), segun lo
   que ya encontraste (los renglones con condicion, ver mision.py);
 - los secretos de la mision (secretos.py): les pasa los avisos, mueve las reliquias que

@@ -16,7 +16,7 @@ Dos opciones sirven para cualquier tipo:
     pista       lo que se dice por la radio cuando el secreto deja algo en pantalla
                 ([(quien, texto), ...]): un "¿y eso?" que ayuda a darse cuenta
 El ModoHistoria crea uno nuevo en cada partida (cada uno lleva su cuenta) y le pasa los
-avisos. Para un tipo nuevo: una clase aca con su 'tipo', 'preparar(opciones)' y los avisos
+avisos. Para un tipo nuevo: una clase aqui con su 'tipo', 'preparar(opciones)' y los avisos
 que necesite; si deja algo en pantalla, una reliquia (reliquias.py) con self.soltar(...).
 
 Las reglas para que un secreto este bien escrito estan en HISTORIA.md: nunca a simple
@@ -121,7 +121,7 @@ class Secreto:
 @registrar_secreto
 class MonedaGrabadaEscondida(Secreto):
     # Una vez por partida, despues de juntar 'monedas' y desde el tramo 'desde_tramo', aparece una
-    # moneda distinta en otro lugar que la comun. Si no la agarras a tiempo, se apaga
+    # moneda distinta en otro lugar que la comun. Si no la recoges a tiempo, se apaga
     tipo = "moneda_grabada"
 
     def preparar(self, opciones):
@@ -177,7 +177,7 @@ class RestosALaDeriva(AlaDeriva):
 
 @registrar_secreto
 class BalizaALaDeriva(AlaDeriva):
-    # Una baliza que titila su 'mensaje' (una palabra, en el ritmo de los Cantores)
+    # Una baliza que titila su 'mensaje' (una palabra, en el ritmo de El Ultimo)
     tipo = "baliza"
     espera_comun = BALIZA_ESPERA
 
@@ -269,14 +269,14 @@ class RachaDeMonedas(Secreto):
 @registrar_secreto
 class SeguirAlLadron(Secreto):
     # Seguir de cerca a un ladron que se lleva la moneda, sin alcanzarlo, hasta que salga de la
-    # pantalla: "seguir las monedas" al pie de la letra. Desde que te acercas tenes que quedarte
+    # pantalla: "seguir las monedas" al pie de la letra. Desde que te acercas tienes que quedarte
     # a menos de 'distancia' px y seguirlo al menos SEGUIR_MINIMO ms
     tipo = "seguir_al_ladron"
 
     def preparar(self, opciones):
         self.distancia = opciones.get("distancia", SEGUIR_DISTANCIA)
         self.ladron = None          # el que estas siguiendo
-        self.desde = None           # desde cuando lo seguis (None: todavia no te acercaste)
+        self.desde = None           # desde cuando lo sigues (None: todavia no te acercaste)
 
     def actualizar(self):
         partida = self.partida
@@ -303,7 +303,7 @@ class SeguirAlLadron(Secreto):
 class QuietoEnLaAnomalia(Secreto):
     # Quedarse quieto (sin moverse ni usar el dash) durante una 'anomalia': en el silencio se
     # oye el compas, pulso a pulso (el ritmo de 'mensaje'). Al terminar la palabra, se encuentra.
-    # Si te moves, vuelve a empezar
+    # Si te mueves, vuelve a empezar
     tipo = "quieto_en_anomalia"
 
     def preparar(self, opciones):
@@ -322,7 +322,7 @@ class QuietoEnLaAnomalia(Secreto):
             return
         antes = self.quieto
         self.quieto += MS_POR_FRAME
-        # Cada pulso del compas suena (corto o largo) y la nave lo siente: un anillo chiquito
+        # Cada pulso del compas suena (corto o largo) y la nave lo siente: un anillo pequeño
         for inicio, _, es_largo in self.pulsos:
             if antes < inicio + 1 <= self.quieto:
                 nave_x, nave_y = nave.centro()

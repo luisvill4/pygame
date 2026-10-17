@@ -267,7 +267,7 @@ def a_db_pico(senal):
 def loudness(senal):
     # Volumen percibido aproximado en LUFS (ITU BS.1770): pondera las frecuencias como el
     # oido (menos graves, un poco mas de agudos), promedia en bloques de 400 ms y descarta
-    # los silencios. La musica de juegos y streaming anda por -14 a -18 LUFS
+    # los silencios. La musica de juegos y streaming esta entre -14 y -18 LUFS
     pesada = ecualizar(senal, [("corte_graves", 60), ("agudos", 1700, 4.0)])
     bloque, paso = muestras(0.4), muestras(0.1)
     potencias = []

@@ -418,7 +418,7 @@ class Director:
 
     def al_vencer_al_jefe(self):
         # Vencido el jefe, se cierra el sector: "¡JEFE VENCIDO!", el cartel del rango, y
-        # recien despues el sector nuevo (los carteles salen uno detras de otro)
+        # solo despues el sector nuevo (los carteles salen uno detras de otro)
         partida = self.partida
         bitacora = self.bitacora
         if bitacora.inicio_jefe is not None:

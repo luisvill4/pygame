@@ -6,8 +6,9 @@ Marea ya se trago la Umbral: tiempo.py):
     - el de siempre: "LA MAREA - FIN", con la musica del Game Over (melancolica) y la cuenta
       de lo que encontraste ("TODAVIA HAY COSAS QUE NO ENCONTRASTE");
     - el verdadero (con la Bitacora sin fecha): "EL PRINCIPIO", con la musica en mayor y el
-      mensaje del compas traducido. El final es el principio: es un bucle.
-Las lineas aparecen de a una (avanzan en actualizar: anda igual a cualquier FPS). ACEPTAR
+      mensaje del compas traducido. Alba toma el lugar de El Ultimo: ahora las monedas las deja
+      ella, en la galaxia que sigue.
+Las lineas aparecen de a una (avanzan en actualizar: funciona igual a cualquier FPS). ACEPTAR
 sigue (lo decide quien la abrio, con 'al_terminar').
 """
 from juego import dibujo, interfaz
@@ -21,7 +22,7 @@ from juego.historia import fichas, tiempo
 from juego.sonido import SILENCIO
 
 VERDAD = "F11"              # el fragmento que abre el final verdadero (la Bitacora sin fecha)
-MENSAJE = ["SEGUI", "LAS", "MONEDAS"]
+MENSAJE = ["SIGUE", "LAS", "MONEDAS"]
 PASOS_POR_LINEA = 40        # cada cuantos pasos aparece una linea mas
 
 
@@ -71,11 +72,11 @@ class Final(Escena):
             self._dibujar_cuentas(pantalla, 350)
         if lineas >= 4:
             if self.verdadero:
-                frase, color_frase = "LOS CANTORES SOMOS NOSOTROS.", VIOLETA
+                frase, color_frase = "AHORA LAS MONEDAS LAS DEJA ALBA.", VIOLETA
             elif self.tarde:
-                frase, color_frase = "LA MAREA LLEGO PRIMERO. PERO ALGUNOS CRUZARON.", ROJO
+                frase, color_frase = "LA MAREA LLEGO PRIMERO. PERO ALGUNOS BAJARON A TIEMPO.", ROJO
             elif self._todo_encontrado():
-                frase, color_frase = "LA PUERTA SIGUE ABIERTA. ¿VOLVES A CRUZARLA?", TEXTO_SUAVE
+                frase, color_frase = "EL ULTIMO TODAVIA TIENE ALGO PARA CONTARTE.", TEXTO_SUAVE
             else:
                 frase, color_frase = "TODAVIA HAY COSAS QUE NO ENCONTRASTE.", TEXTO_SUAVE
             texto(pantalla, frase, CHICA, color_frase, CENTRO_X, 470)

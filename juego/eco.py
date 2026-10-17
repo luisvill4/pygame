@@ -3,7 +3,7 @@ Eco (mejora ECO): una copia violeta de la nave que repite tu dash un momento des
 
 La Partida anota el camino de cada dash. Al terminar, con la mejora ECO hay una chance
 (MEJORA_ECO) de que nazca un Eco con ese camino: espera ECO_RETRASO pasos y lo recorre
-igual que vos.
+igual que tu nave.
 Lo que toca: destruye a los enemigos que el dash destruye, aturde a los demas y rompe
 las balas. (Tiene x/y: se dibuja interpolado como todo lo que se mueve)
 """

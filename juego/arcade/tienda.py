@@ -6,7 +6,7 @@ Despues de cada jefe se para en la gasolinera y se paga con CREDITOS (los dan la
 monedas, ver Partida.ganar_creditos). Hay dos clases de articulos:
 
 - CARTAS de mejora (mejoras.py), sorteadas como en el Taller. Su precio:
-      PRECIO_CARTA + PRECIO_POR_NIVEL por cada nivel que ya tenes de ella
+      PRECIO_CARTA + PRECIO_POR_NIVEL por cada nivel que ya tienes de ella
       (x PRECIO_RARA si es rara) y todo sube un poco en cada sector.
 - SERVICIOS, segun la dificultad ("servicios" en DIFICULTADES, config.py):
       sortear  cambia las cartas del mostrador (cada vez un poco mas caro)
@@ -85,12 +85,12 @@ class Carta(Articulo):
         tienda.partida.sumar_mejora(self.tipo)
 
     def etiqueta(self, partida):
-        tenes = partida.mejora(self.tipo)
+        tienes = partida.mejora(self.tipo)
         if self.vendido:
-            return "NIVEL " + str(tenes) + "/" + str(self.mejora.maximo)
-        if tenes == 0:
+            return "NIVEL " + str(tienes) + "/" + str(self.mejora.maximo)
+        if tienes == 0:
             return "NUEVA"
-        return "NIVEL " + str(tenes + 1) + "/" + str(self.mejora.maximo)
+        return "NIVEL " + str(tienes + 1) + "/" + str(self.mejora.maximo)
 
 
 class Sortear(Articulo):
@@ -122,7 +122,7 @@ class Sortear(Articulo):
 class EscudoDeViaje(Articulo):
     tipo = "escudo"
     nombre = "ESCUDO"
-    descripcion = ["SALIS CON ESCUDO.", "DURA HASTA UN GOLPE"]
+    descripcion = ["SALES CON ESCUDO.", "DURA HASTA UN GOLPE"]
     color = CIAN
     icono = ["XXXXXXX",
              "X.....X",

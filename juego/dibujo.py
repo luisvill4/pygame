@@ -3,7 +3,7 @@ Ayudas de dibujo con el estilo arcade retro: texto pixelado con sombra o contorn
 texto con relieve, marcos de doble linea, parpadeos...
 
 Todas reciben la superficie donde dibujar (normalmente el lienzo de 1066x600).
-Las lineas CRT no estan aca: las pone la ventana despues de escalar (ventana.py).
+Las lineas CRT no estan aqui: las pone la ventana despues de escalar (ventana.py).
 
 Accesibilidad: parpadeo() y color_arcoiris() se frenan solos si el jugador eligio
 DESTELLOS REDUCIDOS, asi todo lo que parpadea respeta esa opcion sin hacer nada mas.

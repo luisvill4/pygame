@@ -7,7 +7,8 @@ del Abismo: los rebotadores (capsulas de memoria) repiten el ultimo segundo de l
 la radio de los restos todavia reproduce el diario de Mateo.
 
 Secretos: la caja negra (el ultimo registro: entraron a la puerta) y otra moneda grabada,
-en la estela de la capsula, con una firma distinta: MATEO (se lee con la clave del compas).
+en la estela de la capsula, con una firma distinta: MATEO (se lee con la clave del compas). Esta
+recien grabada: Mateo esta vivo, abajo, con El Ultimo (se ve al final de la mision 5).
 Que cuenta y que esconde: HISTORIA.md. Como se escribe una mision: historia/mision.py.
 """
 from juego.historia.mision import Mision, Fragmento, registrar_mision
@@ -21,7 +22,7 @@ class LosRestos(Mision):
     sector = 5
     lugar = (2230, 190)
     ambiente = ("gravedad", 1)
-    corrientes = 0.3
+    gravedad = 0.3
     jefe = False
     oculta = True
     requisitos = ["F02", "F04", "F07"]
@@ -41,7 +42,7 @@ class LosRestos(Mision):
     antes = [
         ("ines", "ALBA. JUNTE LAS TRES BITACORAS Y CALCULE DONDE SE PARTIO LA ERRANTE."),
         ("ines", "ESTA AL BORDE DEL ABISMO, CERCA DE LA PUERTA. NADIE MAS LO SABE."),
-        ("alba", "¿QUERES QUE VAYA?"),
+        ("alba", "¿QUIERES QUE VAYA?"),
         ("ines", "QUIERO SABER QUE LE PASO. NADA MAS. SIN GUARDIANES, SIN PELEAS. SOLO RESTOS."),
         ("alba", "VOY. Y LO QUE ENCUENTRE, TE LO TRAIGO."),
     ]
@@ -49,14 +50,14 @@ class LosRestos(Mision):
     radio = {
         "tramo_1": [
             ("mateo", "DIARIO DE A BORDO, DIA 1. INES DICE QUE ESTOY LOCO. PUEDE SER. PERO EL COMPAS ES REAL."),
-            ("alba", "...ES SU VOZ. LA RADIO DE LOS RESTOS SIGUE ANDANDO."),
+            ("alba", "...ES SU VOZ. LA RADIO DE LOS RESTOS SIGUE FUNCIONANDO."),
         ],
         "tramo_2": [
             ("mateo", "DIA 203. ROCIO DICE QUE LAS MONEDAS CANTAN. TOMAS, QUE LOS CAÑONES CUENTAN HACIA ATRAS."),
             ("mateo", "YO SOLO QUIERO VOLVER A CASA Y CONTARSELO A INES."),
         ],
         "tramo_3": [
-            ("mateo", "DIA 377. LA MAREA NOS ALCANZO. EL CASCO NO AGUANTA. LA PUERTA ESTA AHI NOMAS."),
+            ("mateo", "DIA 377. LA MAREA NOS ALCANZO. EL CASCO NO AGUANTA. LA PUERTA ESTA AHI MISMO."),
             ("alba", "LOS REBOTADORES REPITEN UN SEGUNDO... EL ULTIMO DE LA ERRANTE.", "!F10"),
         ],
         "tramo_4": [
@@ -70,6 +71,7 @@ class LosRestos(Mision):
         ("alba", "NADIE. FALTA LA CAPSULA DE ESCAPE."),
         ("ines", "ESCUCHE LA CAJA NEGRA. ENTRARON, ALBA. ENTRARON A LA PUERTA.", "F10"),
         ("ines", "NO SE SI ESO ES BUENO O MALO. PERO EL DIJO QUE NO ES UN FINAL.", "F10"),
+        ("alba", "INES. SI BAJARON HASTA EL BORDE DEL AGUJERO, PARA ELLOS PASARON MINUTOS. PUEDEN ESTAR VIVOS.", "F10"),
         ("ines", "ENTONCES SE FUERON. A ALGUN LADO.", "!F10"),
         ("alba", "Y HABIA OTRA MONEDA BLANCA EN LA ESTELA. CON OTRA FIRMA.", "F13"),
         ("ines", "LA MIRE CON LA CLAVE. DICE... NO. NO PUEDE SER.", "F13+F06"),
@@ -81,12 +83,12 @@ class LosRestos(Mision):
         Fragmento("F10", "EL ULTIMO REGISTRO",
                   ["CAJA NEGRA DE LA ERRANTE. ULTIMO REGISTRO DE MATEO SAAVEDRA:",
                    "LA NAVE NO AGUANTA. ROCIO Y TOMAS YA ESTAN EN LA CAPSULA. LA PUERTA ESTA A MIL KILOMETROS. VAMOS A ENTRAR.",
-                   "INES, SI ESCUCHAS ESTO: NO ES UN FINAL. SEGUI LAS MONEDAS."],
-                  reaccion=[("mateo", "INES, SI ESCUCHAS ESTO: NO ES UN FINAL. SEGUI LAS MONEDAS."),
+                   "INES, SI ESCUCHAS ESTO: NO ES UN FINAL. SIGUE LAS MONEDAS."],
+                  reaccion=[("mateo", "INES, SI ESCUCHAS ESTO: NO ES UN FINAL. SIGUE LAS MONEDAS."),
                             ("ines", "...MATEO.")]),
         Fragmento("F13", "LA OTRA FIRMA",
                   ["UNA MONEDA GRABADA, COMO LA DEL CINTURON. EN LA ESTELA DE LA CAPSULA, RUMBO A LA PUERTA.",
-                   "PERO LA FIRMA ES OTRA: MAS CORTA, TORPE. COMO HECHA A MANO."],
+                   "PERO LA FIRMA ES OTRA: MAS CORTA, TORPE, COMO HECHA A MANO. Y EL METAL ESTA NUEVO: LA GRABARON HACE MUY POCO."],
                   glifo=escribir("MATEO"),
                   reaccion=[("alba", "OTRA MONEDA BLANCA. EL DIBUJO ES DISTINTO... COMO HECHO A MANO.")]),
     ]
@@ -94,5 +96,5 @@ class LosRestos(Mision):
     secretos = [
         ("restos", "F10", {"tramo": 3, "pista": [("alba", "AHI VA UN PEDAZO DEL CASCO. LA CAJA NEGRA TIENE QUE ESTAR AHI.")]}),
         ("moneda_grabada", "F13", {"monedas": 6, "desde_tramo": 4,
-                                   "pista": [("alba", "¿OTRA MONEDA BLANCA? ¿ACA?")]}),
+                                   "pista": [("alba", "¿OTRA MONEDA BLANCA? ¿AQUI?")]}),
     ]

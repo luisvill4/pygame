@@ -13,7 +13,7 @@ sistema elegido.
       esporas, panal, gravedad) y para entrar hace falta su modulo (historia/modulos.py). Al lado
       de cada uno va el icono de su modulo (brillante si falta) y un CANDADO si no se puede ir.
     - El panel de abajo dice todo del sistema elegido: peligro, cuanto cuesta el viaje, en que
-      año llegas, sus corrientes y que encontraste ahi.
+      año llegas, si tiene dilatacion y que encontraste ahi.
 
 COMO SE ELIGE (pedido del usuario: "no se pueden seleccionar bien"; antes las flechas buscaban
 el mas cercano en un cono y saltaban a lugares inesperados). Reglas fijas, siempre iguales:
@@ -99,13 +99,13 @@ class Galaxia(Escena):
     def por_que_no(self, uno):
         # Si no se puede ir: por que (None = se puede)
         if uno.tipo == "umbral":
-            return "LA CASA. NO HAY NADA QUE HACER ACA."
+            return "LA CASA. NO HAY NADA QUE HACER AQUI."
         if tiempo.tragado(uno, self.progreso.anios):
             return "LA MAREA SE LO TRAGO."
         if tiempo.tragado(uno, self.progreso.anios + self.costo(uno)):
-            return "LA MAREA LLEGA ANTES QUE VOS."      # (el frente sigue avanzando mientras viajas)
+            return "LA MAREA LLEGA ANTES QUE TU."      # (el frente sigue avanzando mientras viajas)
         if uno.mision is not None and not uno.mision.disponible(self.progreso):
-            return "CUMPLI LA MISION %d PRIMERO." % (uno.mision.numero - 1)
+            return "CUMPLE LA MISION %d PRIMERO." % (uno.mision.numero - 1)
         falta = modulos.falta(self.progreso, uno.ambiente)
         if falta is not None:
             modulo, nivel = falta
@@ -199,7 +199,7 @@ class Galaxia(Escena):
             self.app.sonidos.reproducir("ui_aceptar")
             self.app.cambiar_escena(Hangar(self.app, volver_a=self))
         elif entrada.pulso(VOLVER):
-            from juego.escenas.inicio import Inicio        # (Inicio abre la Galaxia: se importa aca)
+            from juego.escenas.inicio import Inicio        # (Inicio abre la Galaxia: se importa aqui)
             self.app.sonidos.reproducir("ui_volver")
             self.app.cambiar_escena(Inicio(self.app))
         self._mover_camara(self.sistema(self.elegida).lugar)
@@ -338,7 +338,7 @@ class Galaxia(Escena):
         anios = self.anios_que_se_ven()
         progreso = self.progreso
         if tiempo.historia_terminada(progreso):
-            frase, color = ("SEGUI LAS MONEDAS", AMARILLO) if VERDAD in progreso.fragmentos else \
+            frase, color = ("SIGUE LAS MONEDAS", AMARILLO) if VERDAD in progreso.fragmentos else \
                 ("EL COMPAS DICE: VENGAN", VIOLETA)
         elif anios >= MAREA_ANIOS:
             frase, color = "LA MAREA LLEGO", ROJO
@@ -449,7 +449,7 @@ class Galaxia(Escena):
             dibujo.pixel_art(pantalla, CANDADO, x + radio + 7, y - radio + 1, TEXTO_SUAVE, 2)
 
     def _dibujar_ambiente(self, pantalla, uno, x, y):
-        # El icono del modulo que pide (brillante: falta; apagado: ya lo tenes) y un puntito por nivel
+        # El icono del modulo que pide (brillante: falta; apagado: ya lo tienes) y un puntito por nivel
         if uno.ambiente is None:
             return
         tipo, intensidad = uno.ambiente
@@ -555,8 +555,8 @@ class Galaxia(Escena):
             texto(pantalla, motivo, CHICA, TEXTO_SUAVE, derecha, adentro.top + 8, alinear="derecha")
         else:
             costo = self.costo(uno)
-            aca = uno is self.ubicacion()
-            viaje = "ESTAS ACA: +%.2f AÑOS" % costo if aca else "VIAJE: +%.1f AÑOS" % costo
+            aqui = uno is self.ubicacion()
+            viaje = "ESTAS AQUI: +%.2f AÑOS" % costo if aqui else "VIAJE: +%.1f AÑOS" % costo
             largo = costo >= VIAJE_LARGO_ANIOS and not tiempo.historia_terminada(progreso)
             texto(pantalla, viaje + ("  (LARGO)" if largo else ""), CHICA, AMARILLO if largo else TEXTO, derecha,
                   adentro.top + 8, alinear="derecha")
@@ -564,8 +564,8 @@ class Galaxia(Escena):
             texto(pantalla, "LLEGAS EN EL AÑO %.1f" % llegada, CHICA, ROJO if llegada >= MAREA_ANIOS else TEXTO_SUAVE,
                   derecha, adentro.top + 32, alinear="derecha")
         notas = []
-        if uno.corrientes:
-            notas.append(("CORRIENTES +%.1f" % uno.corrientes, VIOLETA))
+        if uno.gravedad:
+            notas.append(("DILATACION +%.1f" % uno.gravedad, VIOLETA))
         if galaxia.unidos_por_puerta(self.ubicacion(), uno, progreso):
             notas.append(("PUERTA MENOR", VIOLETA))
         if uno.mision is not None and uno.mision.numero in progreso.misiones:

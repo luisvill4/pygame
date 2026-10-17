@@ -228,7 +228,7 @@ class Nave:
 
     def _acelerar(self, dx, dy, vel_max):
         # Inercia: la velocidad se acerca poco a poco a la deseada. Se separa en dos partes:
-        #   avance: lo que ya va hacia donde apretas
+        #   avance: lo que ya va hacia donde aprietas
         #   deriva: lo que va de costado
         # Arrancar es suave (NAVE_ACELERACION), pero lo que va "para otro lado" (ir hacia
         # atras o de costado) se corrige mas fuerte (NAVE_FRENADO): asi la nave dobla y
@@ -253,7 +253,7 @@ class Nave:
 
     def _dash(self, tiempo, dx, dy, pidio_dash, recarga_dash, efectos):
         # Impulso hacia donde presionas (o hacia donde mira la nave).
-        # Si lo apretas justo antes de que se recargue, se guarda y sale apenas este listo
+        # Si lo aprietas justo antes de que se recargue, se guarda y sale apenas este listo
         cx, cy = self.centro()
         if tiempo >= self.dash_listo:
             self.dash_extra = self.dash_extra_max       # recargado: vuelven los dashes extra

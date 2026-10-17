@@ -16,7 +16,7 @@ PASOS_ENTRADA = int((AVISO_ESCUADRON + ENTRADA_ESCUADRON + 600) / MS_POR_FRAME) 
 
 
 def con_escuadrones(partida):
-    # El fixture los apaga: aca se prenden (y la nave no recibe daño)
+    # El fixture los apaga: aqui se encienden (y la nave no recibe daño)
     partida.director.con_escuadrones = True
     partida.nave.invulnerable_hasta = math.inf
     return partida.director

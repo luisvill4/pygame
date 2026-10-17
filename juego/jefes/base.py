@@ -154,7 +154,7 @@ class Jefe:
 
     def objetos_que_se_mueven(self):
         # Lo que se dibuja interpolado (las partes con posicion propia, como los
-        # segmentos de la Serpiente, se agregan aca)
+        # segmentos de la Serpiente, se agregan aqui)
         return [self]
 
     def punto_cartel_dash(self):
@@ -296,7 +296,7 @@ class Jefe:
             self.al_recibir_golpe(partida)
 
     def empezar_a_morir(self, partida):
-        partida.sonidos.parar_loops()       # (un laser que quedo prendido)
+        partida.sonidos.parar_loops()       # (un laser que quedo encendido)
         partida.sonidos.parar_musica(fundido=150)      # el golpe final corta la musica
         romper_balas(partida.balas, partida.efectos, EMBESTIDA)
         self.cambiar_fase("morir", 2000, partida.tiempo)

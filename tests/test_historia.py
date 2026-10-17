@@ -32,7 +32,7 @@ from juego.historia.galaxia import ANCHO_GALAXIA, ALTO_GALAXIA
 from juego.escenas.historia.final import Final
 from juego.escenas.juego import Juego
 from juego.escenas.listo import Listo
-from tests.ayudas import avanzar, tecla, jugar
+from tests.ayudas import avanzar, tecla, jugar, entrar_a_la_historia
 
 MOMENTOS_DE_RADIO = {"tramo_1", "tramo_2", "tramo_3", "tramo_4", "jefe"}
 
@@ -226,10 +226,7 @@ def test_la_mision_oculta_aparece_con_las_tres_bitacoras(tmp_path):
 # ---------- El recorrido ----------
 
 def ir_al_mapa(app):
-    tecla(pygame.K_DOWN)                # HISTORIA
-    avanzar(app)
-    tecla(pygame.K_RETURN)
-    avanzar(app)
+    entrar_a_la_historia(app)           # (saltea el prologo)
     assert isinstance(app.escena, Galaxia)
     return app.escena
 
@@ -486,7 +483,7 @@ def test_la_baliza_titila_su_mensaje_y_se_abre_con_el_dash(app):
     partida.radio.vaciar()
     jugar(partida, int(BALIZA_ESPERA / MS_POR_FRAME) + 2)
     baliza = partida.modo.reliquias[0]
-    assert isinstance(baliza, Baliza) and traducir(baliza.glifo) == "SEGUI"
+    assert isinstance(baliza, Baliza) and traducir(baliza.glifo) == "SIGUE"
     avanzar(app)                            # (se dibuja)
     abrir_con_el_dash(partida, baliza)
     assert "F12" in app.progreso.fragmentos

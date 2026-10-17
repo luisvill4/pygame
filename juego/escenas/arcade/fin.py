@@ -81,7 +81,7 @@ class Fin(Escena):
             self.app.sonidos.reproducir("teclear")
 
     def _volver_al_menu(self):
-        from juego.escenas.inicio import Inicio     # (aca adentro: Inicio tambien llega hasta Fin)
+        from juego.escenas.inicio import Inicio     # (aqui adentro: Inicio tambien llega hasta Fin)
         self.app.efectos.reiniciar()
         self.app.fondo.ir_a_sector(SECTORES[0], instantaneo=True)
         self.app.sonidos.reproducir("ui_volver")

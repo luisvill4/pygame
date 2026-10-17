@@ -181,7 +181,7 @@ class Enemigo:
     def entrar(self, partida, desde, hasta, demora):
         # Entrar volando desde 'desde' (un punto afuera de la pantalla) hasta 'hasta' (su lugar),
         # como en los juegos de naves. Durante 'demora' ms solo se ve su flecha en el borde (el
-        # aviso); despues vuela ENTRADA_ESCUADRON ms sin hacer daño, y recien ahi ataca
+        # aviso); despues vuela ENTRADA_ESCUADRON ms sin hacer daño, y solo entonces ataca
         self.x, self.y = desde[0] - self.tamano / 2, desde[1] - self.tamano / 2
         self.vx, self.vy = 0, 0
         self.entrada = (desde, hasta, partida.tiempo + demora)
@@ -454,7 +454,7 @@ class Enemigo:
         return _retirados[cls.tipo]
 
     def _dibujar_aviso_de_entrada(self, pantalla):
-        # Una flecha en el borde, del color del enemigo, que apunta hacia adentro: "por aca
+        # Una flecha en el borde, del color del enemigo, que apunta hacia adentro: "por aqui
         # entran". Late (dibujo.parpadeo respeta DESTELLOS REDUCIDOS)
         if not dibujo.parpadeo(120):
             return

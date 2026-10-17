@@ -35,12 +35,12 @@ class LaDevoradora(Mision):
     ]
 
     antes = [
-        ("ines", "CADA VIAJE TUYO SE NOS COME MESES. NO TE LO RECLAMO... PERO APURATE.", "T3+!T6"),
+        ("ines", "PARA TI FUERON UNAS HORAS. PARA MI, AÑOS. NO TE LO RECLAMO... PERO DATE PRISA.", "T3+!T6"),
         ("ines", "EN EL CAMPO ESMERALDA LAS MONEDAS DESAPARECEN ANTES DE QUE LLEGUES."),
         ("alba", "¿OTRO PILOTO?"),
         ("ines", "NO HAY NADIE MAS AHI AFUERA. O NO DEBERIA HABER."),
         ("ines", "Y HAY NIEBLA: ESPORAS TAN DENSAS QUE LA RADIO NO PASA. AHI ADENTRO VAS A ESTAR SOLA."),
-        ("alba", "SIEMPRE ESTOY SOLA, INES. VOS SOS UNA VOZ."),
+        ("alba", "SIEMPRE ESTOY SOLA, INES. TU ERES UNA VOZ."),
         ("ines", "UNA VOZ QUE TE CUIDA. Y MATEO DECIA QUE EN EL SILENCIO SE ESCUCHA MEJOR EL COMPAS."),
     ]
 
@@ -54,7 +54,7 @@ class LaDevoradora(Mision):
             ("ines", "ESOS LADRONES NO SON PIRATAS. QUIERO SABER A DONDE LLEVAN LAS MONEDAS.", "!F05"),
         ],
         "tramo_3": [
-            ("ines", "NIEBLA. NO VEO NADA DESDE ACA. ESTAS SOLA, ALBA."),
+            ("ines", "NIEBLA. NO VEO NADA DESDE AQUI. ESTAS SOLA, ALBA."),
         ],
         "tramo_4": [
             ("ines", "¡ALBA! TE PERDI EN LA NIEBLA... ¿ESTAS AHI? ¡VIENEN TODOS!"),
@@ -68,7 +68,7 @@ class LaDevoradora(Mision):
     despues = [
         ("ines", "EL RADAR PIERDE A LOS LADRONES EN EL BORDE. PERO TODOS SALEN RUMBO AL MISMO LUGAR: EL ABISMO AZUL."),
         ("alba", "ALGUIEN ESTA JUNTANDO MONEDAS ALLA."),
-        ("ines", "O ALGO. ¿Y POR QUE LAS DEJARON DESPARRAMADAS EN PRIMER LUGAR?"),
+        ("ines", "O ALGO. ¿Y POR QUE LAS DEJARON ESPARCIDAS EN PRIMER LUGAR?"),
         ("alba", "NO LAS ROBAN, INES. LAS LLEVAN. COMO CARTEROS.", "F05"),
         ("alba", "INES. EN LA NIEBLA ESCUCHE EL COMPAS: CORTO, LARGO. LOS GLIFOS SON RITMOS.", "F06"),
         ("ines", "...¡CLARO! LOS GLIFOS SE LEEN COMO EL COMPAS. CADA RITMO ES UNA LETRA.", "F06"),

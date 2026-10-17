@@ -37,7 +37,7 @@ FORMAS = {
 
 # Los colores que usa la musica del juego: nombre -> (fundamental, forma). "do" es el de
 # siempre (y el que suena sin musica). Si un tema nuevo trae un acorde con otro color, el
-# test test_cada_acorde_tiene_su_color avisa: hay que sumarlo aca y en juego/sonido.py
+# test test_cada_acorde_tiene_su_color avisa: hay que sumarlo aqui y en juego/sonido.py
 COLORES = {
     "do": (0, "mayor"), "reb": (1, "mayor"), "re7": (2, "dominante"), "mi": (4, "mayor"),
     "mi7": (4, "dominante"), "misus": (4, "suspendida"), "fa": (5, "mayor"), "sol": (7, "mayor"),

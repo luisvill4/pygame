@@ -31,7 +31,7 @@ ARRIBA = "arriba"
 ABAJO = "abajo"
 IZQUIERDA = "izquierda"
 DERECHA = "derecha"
-SILENCIO = "silencio"           # M: apaga o prende todo el sonido (en cualquier pantalla)
+SILENCIO = "silencio"           # M: apaga o enciende todo el sonido (en cualquier pantalla)
 PANTALLA_COMPLETA = "pantalla_completa"     # F11
 DESARROLLADOR = "desarrollador"             # F1: el panel del modo desarrollador (en la partida)
 PESTANA_ANTERIOR = "pestana_anterior"       # LB o Q: la pestaña de la izquierda (en los menus con pestañas)
@@ -140,7 +140,7 @@ class Entrada:
             elif cruceta_y == -1:
                 self.acciones.append(ABAJO)
         elif evento.type == pygame.JOYAXISMOTION and evento.axis in (0, 1):
-            # El stick cuenta como un toque solo cuando recien se inclina
+            # El stick cuenta como un toque solo cuando se acaba de inclinar
             direccion = direccion_stick(evento.value)
             if direccion != 0:
                 self.con_mando = True

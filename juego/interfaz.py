@@ -345,7 +345,7 @@ def _ancho_glifo(glifo):
 
 def carta(pantalla, rect, color, icono, nombre, lineas, elegida=False, apagada=False, rara=False, nivel=None):
     # Una carta: arriba el "arte" (su color con rayas y el icono grande), el nombre, que
-    # hace y abajo los niveles (cuadraditos: llenos los que tenes, el de borde de color es
+    # hace y abajo los niveles (cuadraditos: llenos los que tienes, el de borde de color es
     # el que se suma). La elegida brilla con un borde blanco que late; la apagada (vendida
     # o sin sentido) va en gris. Devuelve el rectangulo libre de abajo (para el precio)
     if apagada:

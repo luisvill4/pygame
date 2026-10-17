@@ -46,7 +46,7 @@ class Iniciales(Escena):
                     self.app.cambiar_escena(Fin(self.app, self.partida, fila_nueva=fila))
 
     def al_cerrar(self):
-        # Si se cierra la ventana aca, el record se guarda igual
+        # Si se cierra la ventana aqui, el record se guarda igual
         self.app.records.agregar("".join(self.letras), self.partida.puntaje, self.partida.dificultad)
 
     def dibujar(self, pantalla):

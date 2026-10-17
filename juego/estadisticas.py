@@ -2,7 +2,7 @@
 Estadisticas de UNA partida: lo que se muestra en el Game Over y lo que revisan los logros.
 
 La Partida va sumando a medida que pasan las cosas (monedas, dash, enemigos...).
-Los rangos de cada sector y las mejoras elegidas tambien quedan anotados aca.
+Los rangos de cada sector y las mejoras elegidas tambien quedan anotados aqui.
 """
 
 

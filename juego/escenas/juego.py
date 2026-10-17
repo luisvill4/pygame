@@ -3,9 +3,9 @@ Jugando: avanza la partida un frame, con hit-stop y pausa.
 
 Hit-stop: mientras partida.congelar_frames > 0 no se actualiza ni se redibuja
 nada (la pantalla queda quieta un instante despues de un impacto).
-Si el director ofrece mejoras, se abre el Taller (y al elegir, se vuelve aca); despues
-de cada jefe, la Gasolinera (y al seguir viaje, se vuelve aca).
-F1 abre el panel del modo desarrollador (si MODO_DESARROLLADOR esta prendido en config).
+Si el director ofrece mejoras, se abre el Taller (y al elegir, se vuelve aqui); despues
+de cada jefe, la Gasolinera (y al seguir viaje, se vuelve aqui).
+F1 abre el panel del modo desarrollador (si MODO_DESARROLLADOR esta encendido en config).
 """
 from juego import hud
 from juego.config import MODO_DESARROLLADOR, SECTORES, JEFE_CADA_NIVELES

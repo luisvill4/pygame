@@ -1,7 +1,7 @@
 """
-Ladron: va hacia la moneda y, si la agarra, huye con ella al borde mas cercano.
+Ladron: va hacia la moneda y, si la atrapa, huye con ella al borde mas cercano.
 
-Fases:  buscar -> agarrar (LADRON_AGARRE ms quieto: tu momento para reaccionar) -> huir
+Fases:  buscar -> atrapar (LADRON_ATRAPE ms quieto: tu momento para reaccionar) -> huir
 No lastima: lo que te roba es el combo. Mientras lleva la moneda, el reloj del combo espera
 (si no, el combo se cortaria solo en plena persecucion y perseguirlo no serviria).
 - Si lo alcanzas con el dash: recuperas la moneda (se cobra en el momento, con bonus) y
@@ -14,7 +14,7 @@ import math
 
 import pygame
 
-from juego.config import VIOLETA, BLANCO, LADRON_VELOCIDAD, LADRON_HUIDA, LADRON_AGARRE, LADRON_PUNTOS
+from juego.config import VIOLETA, BLANCO, LADRON_VELOCIDAD, LADRON_HUIDA, LADRON_ATRAPE, LADRON_PUNTOS
 from juego.enemigos.base import Enemigo, registrar_enemigo
 
 ESTELA_HUIDA = [(40, 20, 70), VIOLETA]      # las particulas que deja al huir
@@ -61,7 +61,7 @@ class Ladron(Enemigo):
             self.fase = "buscar"        # se la sacaron (ej: llego el jefe): a buscarla de nuevo
         if self.fase == "buscar":
             self._buscar(partida)
-        elif self.fase == "agarrar":
+        elif self.fase == "atrapar":
             # Quieto con la moneda: el aviso de que va a huir
             self.vx, self.vy = 0, 0
             if partida.tiempo >= self.fase_hasta:
@@ -86,8 +86,8 @@ class Ladron(Enemigo):
             self.vy += (dir_y / distancia * rapidez - self.vy) * 0.06
         self.separarse(partida)
         if self.caja().colliderect(moneda.caja()):
-            self.fase = "agarrar"
-            self.fase_hasta = partida.tiempo + LADRON_AGARRE
+            self.fase = "atrapar"
+            self.fase_hasta = partida.tiempo + LADRON_ATRAPE
             self.vx, self.vy = 0, 0
             partida.robar_moneda(self)
 

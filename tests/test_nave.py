@@ -30,7 +30,7 @@ def test_dash(partida):
 
 def test_buffer_del_dash(partida):
     nave = partida.nave
-    nave.dash_listo = partida.tiempo + 100      # se apreta 100 ms antes de que este listo
+    nave.dash_listo = partida.tiempo + 100      # se aprieta 100 ms antes de que este listo
     jugar(partida, dash=True)
     jugar(partida, 10)
     assert nave.dash_hasta > 0                  # salio igual al recargarse

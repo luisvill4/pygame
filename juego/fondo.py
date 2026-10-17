@@ -10,7 +10,7 @@ enemigos, monedas o power-ups.
 Ambientes (SECTORES en config.py):
     asteroides  rocas que pasan flotando y, cada tanto, una estrella fugaz
     brasas      chispas que suben como de un incendio y relampagos lejanos
-    esporas     luciernagas que se prenden y apagan, y esporas que caen
+    esporas     luciernagas que se encienden y apagan, y esporas que caen
     panal       un panal de abejas gigante y tenue detras de todo, y polen
     abismo      polvo que gira hacia el centro y ondas de gravedad
 
@@ -351,7 +351,7 @@ class Fondo:
             color = ((110, 40, 20), (110, 70, 20), (90, 20, 20))[parpadea]
             pantalla.fill(color, (x, y, tamano, tamano))
         elif mota.tipo == "luciernaga":
-            # Se prende y se apaga lento (y al final de su vida se apaga del todo)
+            # Se enciende y se apaga lento (y al final de su vida se apaga del todo)
             brillo = math.sin(self.pasos / 25 + mota.fase)
             if brillo > -0.2 and mota.vida > 30:
                 pantalla.fill((24, 80, 44), (x - 4, y - 2, 12, 8))

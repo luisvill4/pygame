@@ -119,7 +119,7 @@ class Gasolinera(Escena):
             self._comprar()
 
     def _sonar_neon(self):
-        # El cartel GAS titila (_dibujar_cartel, con el mismo reloj): cuando vuelve a prender, zumba
+        # El cartel GAS titila (_dibujar_cartel, con el mismo reloj): cuando vuelve a encender, zumba
         ticks = pygame.time.get_ticks()
         apagado = ticks % 2600 < 90 or 300 < ticks % 2600 < 360
         if self.neon_apagado and not apagado:
@@ -229,15 +229,15 @@ class Gasolinera(Escena):
         self._dibujar_tanque(estacion)
 
     def _dibujar_piso(self, pantalla, piso_y):
-        # Una plataforma de metal de lado a lado, con remaches y luces que se prenden en ola
+        # Una plataforma de metal de lado a lado, con remaches y luces que se encienden en ola
         pantalla.fill(BORDE, (0, piso_y, ANCHO, 24))
         pantalla.fill(PANEL, (0, piso_y + 4, ANCHO, 16))
         pantalla.fill(ACERO_CLARO, (0, piso_y, ANCHO, 4))
         for remache_x in range(24, ANCHO, 32):
             pantalla.fill(ACERO_CLARO, (remache_x, piso_y + 10, 4, 4))
         for i, luz_x in enumerate(range(32, ANCHO, 64)):
-            prendida = (self.pasos // 8 - i) % 17 == 0
-            pantalla.fill(AMARILLO if prendida else (70, 50, 0), (luz_x, piso_y + 20, 8, 4))
+            encendida = (self.pasos // 8 - i) % 17 == 0
+            pantalla.fill(AMARILLO if encendida else (70, 50, 0), (luz_x, piso_y + 20, 8, 4))
 
     def _dibujar_edificio(self, pantalla):
         # La tienda: techo, ventana con el vendedor (un robot que parpadea) y la puerta
@@ -377,8 +377,8 @@ class Gasolinera(Escena):
         a_la_venta = tienda.a_la_venta(articulo)
         nivel = None
         if es_carta:
-            tenes = self.partida.mejora(articulo.tipo)
-            nivel = (tenes, articulo.mejora.maximo)
+            tienes = self.partida.mejora(articulo.tipo)
+            nivel = (tienes, articulo.mejora.maximo)
         pie = interfaz.carta(pantalla, carta, articulo.color, articulo.icono, articulo.nombre, (),
                              elegida=elegida, apagada=not a_la_venta, rara=articulo.rara, nivel=nivel)
         if not es_carta:
@@ -401,7 +401,7 @@ class Gasolinera(Escena):
             texto(pantalla, str(precio), CHICA, color, izquierda + 22, pie.centery + 1, alinear="izquierda")
 
     def _dibujar_detalle(self, pantalla):
-        # El panel de abajo: que hace lo elegido, cuanto cuesta y si alcanza la plata
+        # El panel de abajo: que hace lo elegido, cuanto cuesta y si alcanza el dinero
         articulos = self.tienda.articulos()
         if not articulos or self.pasos < PASOS_SIN_ELEGIR:
             return

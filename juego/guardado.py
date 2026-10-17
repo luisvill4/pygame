@@ -95,7 +95,7 @@ class Progreso:
     #   {"logros": ["primer_jefe", ...], "nave": "CIAN", "partidas": 12,
     #    "misiones": [1, 2], "fragmentos": ["F01", ...], "fichas": ["enemigo:perseguidor", ...],
     #    "anios": 1.4, "ubicacion": "S03", "piezas": 120, "hangar": {"impulsor": 1},
-    #    "sistemas": ["S03"], "puertas": ["S04"], "mensajes": [1], "planos": ["filtro"]}
+    #    "sistemas": ["S03"], "puertas": ["S04"], "mensajes": [1], "planos": ["filtro"], "prologo": true}
     #   (desde "misiones": el modo historia y su galaxia)
 
     def __init__(self, archivo):
@@ -114,6 +114,7 @@ class Progreso:
         self.puertas = set()            # las puertas menores conocidas (el id de un lado)
         self.mensajes = set()           # los mensajes de Ines (por año) que ya se vieron
         self.planos = set()             # los planos de modulos encontrados (historia/modulos.py)
+        self.prologo = False            # si ya se vio el prologo del modo historia (escenas/historia/prologo.py)
         self._cargar()
 
     def _cargar(self):
@@ -133,6 +134,7 @@ class Progreso:
             self.puertas = {str(id_) for id_ in datos.get("puertas", [])}
             self.mensajes = {int(anio) for anio in datos.get("mensajes", [])}
             self.planos = {str(plano) for plano in datos.get("planos", [])}
+            self.prologo = bool(datos.get("prologo", False))
             if datos.get("nave") in [nombre for nombre, _, _ in self.naves_disponibles()]:
                 self.nave = datos["nave"]
         except FileNotFoundError:
@@ -147,7 +149,11 @@ class Progreso:
                                       "anios": round(self.anios, 4), "ubicacion": self.ubicacion,
                                       "piezas": self.piezas, "hangar": self.hangar, "sistemas": sorted(self.sistemas),
                                       "puertas": sorted(self.puertas), "mensajes": sorted(self.mensajes),
-                                      "planos": sorted(self.planos)})
+                                      "planos": sorted(self.planos), "prologo": self.prologo})
+
+    def ver_prologo(self):
+        self.prologo = True
+        self.guardar()
 
     def cumplir_mision(self, numero):
         self.misiones.add(numero)

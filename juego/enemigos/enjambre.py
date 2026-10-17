@@ -1,5 +1,5 @@
 """
-Enjambre: ENJAMBRE_CANTIDAD drones chiquitos que vuelan juntos, en formacion.
+Enjambre: ENJAMBRE_CANTIDAD drones pequeños que vuelan juntos, en formacion.
 
 - La Bandada es el "centro" del grupo: te sigue despacio, gira y la formacion se abre
   y se cierra (como si respirara). Cada dron vuela hacia su lugar en la formacion.
@@ -122,7 +122,7 @@ class Dron(Enemigo):
     tipo = "enjambre"
     plural = "DRONES"
     nombre = "ENJAMBRE"
-    pista = "¡DESTRUILOS CON EL DASH!"
+    pista = "¡DESTRUYELOS CON EL DASH!"
     color = CIAN
     tamano = 20
     radio = 7

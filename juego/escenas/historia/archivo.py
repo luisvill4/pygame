@@ -11,7 +11,7 @@ Cinco pestañas (LB/RB o Q/E):
     TECNOLOGIA    la Alondra y los power-ups                        anotan solas la primera
     FENOMENOS     la Marea, el compas, las monedas y las anomalias  vez que las ves)
 A la izquierda la lista (se desplaza si no entra); a la derecha el elegido: su dibujo (las
-fichas), su texto y, si tiene, el glifo de los Cantores. Con la clave del compas
+fichas), su texto y, si tiene, el glifo de El Ultimo. Con la clave del compas
 (glifos.CLAVE_DE_LOS_GLIFOS) los glifos se traducen. Todo sale de los registros: una mision,
 un fragmento o una ficha nuevos aparecen solos.
 """

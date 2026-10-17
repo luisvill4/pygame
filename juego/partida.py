@@ -16,7 +16,7 @@ Reglas importantes:
 - Se sube de nivel (un tramo mas de la ruta) al cumplir el OBJETIVO del tramo y despejar
   la zona: lo decide el Director (progresion.py y objetivos.py). La Partida le avisa lo que
   pasa: monedas, enemigos rotos (al_romper), perfectos, intercepciones.
-- Los creditos (la plata de la gasolinera) pasan por ganar_creditos() y gastar_creditos().
+- Los creditos (el dinero de la gasolinera) pasan por ganar_creditos() y gastar_creditos().
   Los dan las monedas; no son puntos (gastarlos no baja el puntaje).
 - Dash perfecto: destruir con el dash a un enemigo destruible o interceptar a uno en pleno
   ataque (_interceptar). _dash_perfecto() premia (una vez por dash): puntos, el combo sigue
@@ -109,7 +109,7 @@ class Partida:
         self.combo = 0                  # monedas seguidas sin dejar pasar mucho tiempo
         self.mejor_combo = 0
         self.ultima_moneda = -10000
-        self.creditos = 0               # la plata de la gasolinera (ver ganar_creditos)
+        self.creditos = 0               # el dinero de la gasolinera (ver ganar_creditos)
         self.tiempo_creditos = -10000   # la ultima vez que se ganaron (para que el HUD destelle)
         self.nivel = 1
         self.record_superado = False
@@ -164,11 +164,11 @@ class Partida:
         return min(1 + max(0, self.nivel - 5) * 0.08, 1.5) * self.reglas["velocidad"]
 
     def mejora(self, tipo):
-        # Cuantas veces se eligio esta mejora (0 = no la tenes)
+        # Cuantas veces se eligio esta mejora (0 = no la tienes)
         return self.mejoras.get(tipo, 0)
 
     def mejoras_elegidas(self):
-        # [(tipo, veces)] de las mejoras que tenes, en el orden de mejoras.py
+        # [(tipo, veces)] de las mejoras que tienes, en el orden de mejoras.py
         return [(tipo, self.mejora(tipo)) for tipo in TIPOS_MEJORA if self.mejora(tipo)]
 
     def espera_powerup(self):
@@ -199,7 +199,7 @@ class Partida:
 
     def activar(self, tipo, duracion):
         # Nunca lo acorta: un escudo de ESCUDO ROCE (hasta el golpe) no pasa a durar segundos
-        # por agarrar la capsula del escudo
+        # por recoger la capsula del escudo
         if duracion == HASTA_PERDER_VIDA:
             hasta = math.inf
         else:
@@ -243,7 +243,7 @@ class Partida:
         return puntos
 
     def ganar_creditos(self, cantidad):
-        # Todos los creditos pasan por aca (hoy solo los dan las monedas)
+        # Todos los creditos pasan por aqui (hoy solo los dan las monedas)
         self.creditos += cantidad
         self.tiempo_creditos = self.tiempo
         self.estadisticas.creditos += cantidad
@@ -626,7 +626,7 @@ class Partida:
         self._regenerar_escudo()
 
     def perfectos_para_regenerar(self):
-        # Cuantos dash perfectos pide ESCUDO ROCE en su nivel (0 = no la tenes)
+        # Cuantos dash perfectos pide ESCUDO ROCE en su nivel (0 = no la tienes)
         nivel = self.mejora("roce")
         return MEJORA_ROCE[nivel - 1] if nivel else 0
 
@@ -648,7 +648,7 @@ class Partida:
         self.sonidos.reproducir("pw_escudo", nave_x)
 
     def _revisar_moneda(self):
-        # (la robada no se puede agarrar: hay que alcanzar al ladron con el dash)
+        # (la robada no se puede recoger: hay que alcanzar al ladron con el dash)
         if self.moneda.robada_por is None and self.nave.caja_recoger().colliderect(self.moneda.caja()):
             self._recoger_moneda()
 
@@ -727,7 +727,7 @@ class Partida:
                 return
 
     def recoger_powerup(self, powerup, x, y):
-        # Agarrar un power-up en (x, y): la capsula, o el modo desarrollador
+        # Recoger un power-up en (x, y): la capsula, o el modo desarrollador
         self.sonidos.reproducir("pw_" + powerup.tipo, x)
         self.entrada.vibrar("powerup")
         powerup.al_recoger(self, x, y)
@@ -837,7 +837,7 @@ class Partida:
         self.congelar_frames = max(self.congelar_frames, 2)
 
     def robar_moneda(self, ladron):
-        # Un ladron agarro la moneda: se la lleva encima (ver Moneda.seguir_al_ladron)
+        # Un ladron atrapo la moneda: se la lleva encima (ver Moneda.seguir_al_ladron)
         self.moneda.robada_por = ladron
         centro_x, centro_y = self.moneda.centro()
         self.efectos.explosion(centro_x, centro_y, [(40, 20, 70), VIOLETA, AMARILLO], 10, 3, 2)
@@ -897,7 +897,7 @@ class Partida:
         self.quitar_enemigo(enemigo)
 
     def quitar_enemigo(self, enemigo):
-        # Todo enemigo que sale del juego pasa por aca (destruido, retirado, llega el jefe)
+        # Todo enemigo que sale del juego pasa por aqui (destruido, retirado, llega el jefe)
         if enemigo in self.enemigos:
             self.enemigos.remove(enemigo)
         enemigo.al_quitar(self)

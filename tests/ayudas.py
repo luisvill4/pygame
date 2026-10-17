@@ -49,6 +49,19 @@ def empezar_partida(app):
     return app.escena.partida
 
 
+def entrar_a_la_historia(app):
+    # Desde el Inicio: HISTORIA y, si sale el prologo (la primera vez), saltearlo. Devuelve la galaxia
+    from juego.escenas.historia.prologo import Prologo
+    tecla(pygame.K_DOWN)                # HISTORIA
+    avanzar(app)
+    tecla(pygame.K_RETURN)
+    avanzar(app)
+    if isinstance(app.escena, Prologo):
+        tecla(pygame.K_ESCAPE)
+        avanzar(app)
+    return app.escena
+
+
 def jugar(partida, frames=1, dx=0, dy=0, dash=False):
     # Avanza la partida sola (sin escenas), como si se jugara
     for _ in range(frames):

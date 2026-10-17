@@ -118,7 +118,7 @@ class Intocable(Desafio):
 class SinAyuda(Desafio):
     tipo = "sin_ayuda"
     nombre = "SIN AYUDA"
-    pista = "LLEGA AL JEFE SIN AGARRAR POWER-UPS"
+    pista = "LLEGA AL JEFE SIN RECOGER POWER-UPS"
     color = MAGENTA
 
     def al_agarrar_powerup(self):

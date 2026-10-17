@@ -3,7 +3,7 @@ Escuadrones: los enemigos llegan en GRUPOS que entran, atacan y se van.
 
 Como en los juegos de naves (Galaga, 1942, Metal Slug): nada aparece de la nada en el
 medio de la pantalla. Primero se ve una flecha en el borde (el aviso), despues el grupo
-entra volando en formacion hasta su lugar y recien ahi ataca. Cuando se le termina el
+entra volando en formacion hasta su lugar y solo entonces ataca. Cuando se le termina el
 turno, los que quedan se retiran volando. Si los eliminas a todos, hay bonus.
 
 Formaciones (patron Registry, como los enemigos): cada una es una funcion con el
@@ -79,7 +79,7 @@ def _repartir(cantidad, centro, desde, hasta):
 
 def _por_un_costado(cantidad, lado, nave_y):
     # En columna por la izquierda (lado = -1) o por la derecha (1), a la altura de la nave
-    # mas o menos (asi la columna "apunta" hacia vos)
+    # mas o menos (asi la columna "apunta" hacia ti)
     centro_y = nave_y + random.randint(-90, 90)
     desde_x = -AFUERA if lado < 0 else ANCHO + AFUERA
     hasta_x = ADENTRO if lado < 0 else ANCHO - ADENTRO
@@ -132,7 +132,7 @@ def esquinas(cantidad, nave_x, nave_y):
 @formacion("cerco")
 def cerco(cantidad, nave_x, nave_y):
     # Repartidos alrededor, por los cuatro bordes: te rodean, con un hueco del lado de la
-    # nave (por ahi no entra nadie: asi ninguno llega encima tuyo)
+    # nave (por ahi no entra nadie: asi ninguno llega encima de ti)
     pares = []
     hacia_la_nave = math.atan2(nave_y - ALTO / 2, nave_x - ANCHO / 2) + random.uniform(-0.3, 0.3)
     giro = hacia_la_nave - 2 * math.pi * cantidad / (cantidad + 1)        # el hueco es el lugar que sobra

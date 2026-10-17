@@ -1,8 +1,8 @@
 """
 Mision 2: EL ACORAZADO
 
-NEBULOSA CARMESI (el Acorazado Imperial). La Errante paso por aca; Ines cuenta quien era
-Mateo. Los cañones disparan en compas: son metronomos. Ines traduce la primera palabra: SEGUI.
+NEBULOSA CARMESI (el Acorazado Imperial). La Errante paso por aqui; Ines cuenta quien era
+Mateo. Los cañones disparan en compas: son metronomos. Ines traduce la primera palabra: SIGUE.
 
 Secretos: la segunda bitacora (romper los cañones en orden: un reloj se lee como un libro)
 y la baliza de la Errante, que titila en la tormenta.
@@ -35,18 +35,18 @@ class ElAcorazado(Mision):
     ]
 
     antes = [
-        ("ines", "LA NEBULOSA CARMESI QUEMA. LITERAL: LA MAREA ESTA CALENTANDO EL GAS."),
+        ("ines", "LA NEBULOSA CARMESI QUEMA. LITERALMENTE: LA MAREA ESTA CALENTANDO EL GAS."),
         ("alba", "INES. ¿CONOCIAS A ALGUIEN DE LA ERRANTE?"),
         ("ines", "AL CAPITAN. MATEO SAAVEDRA."),
         ("ines", "VIVIMOS JUNTOS SIETE AÑOS. SE FUE A SEGUIR EL COMPAS CUANDO NADIE MAS LO OIA. NI YO."),
         ("alba", "...LO SIENTO."),
         ("alba", "YO NO TENGO A NADIE QUE ME ESPERE, INES. POR ESO ME OFRECI."),
-        ("ines", "AHORA TENES. Y NO LO SIENTAS: ENCONTRA LO QUE EL ENCONTRO. LA ERRANTE PASO POR ACA."),
+        ("ines", "AHORA TIENES. Y NO LO SIENTAS: ENCUENTRA LO QUE EL ENCONTRO. LA ERRANTE PASO POR AQUI."),
     ]
 
     radio = {
         "tramo_1": [
-            ("ines", "ESOS ARIETES FIJAN LA MIRA ANTES DE EMBESTIR. CUANDO LA LINEA SE QUEDA QUIETA, CORRETE."),
+            ("ines", "ESOS ARIETES FIJAN LA MIRA ANTES DE EMBESTIR. CUANDO LA LINEA SE QUEDA QUIETA, APARTATE."),
         ],
         "tramo_2": [
             ("alba", "UN ENJAMBRE. LO QUE ME FALTABA."),
@@ -69,11 +69,12 @@ class ElAcorazado(Mision):
     despues = [
         ("ines", "LOS CAÑONES ERAN METRONOMOS. CON SU RITMO PUDE TRADUCIR LA PRIMERA PALABRA DEL COMPAS."),
         ("alba", "¿CUAL?"),
-        ("ines", "SEGUI."),
-        ("alba", "¿SEGUI QUE?"),
+        ("ines", "SIGUE."),
+        ("alba", "¿SEGUIR QUE?"),
         ("ines", "TODAVIA NO SE. PERO ALGUIEN SE TOMO MUCHO TRABAJO PARA DECIRNOSLO."),
-        ("ines", "LA BALIZA QUE ENCONTRASTE TITILA ESA MISMA PALABRA. MATEO LA HABIA LEIDO HACE TRES AÑOS.", "F12"),
-        ("ines", "Y LA BITACORA DE TOMAS... DICE QUE LOS RELOJES CUENTAN HACIA ATRAS. NO LO ENTIENDO.", "F04"),
+        ("ines", "EN LA UMBRAL YA LES PUSIMOS NOMBRE A LOS QUE MANDAN EL COMPAS: LOS CANTORES."),
+        ("ines", "LA BALIZA QUE ENCONTRASTE PARPADEA CON ESA MISMA PALABRA. MATEO LA HABIA LEIDO HACE TRES AÑOS.", "F12"),
+        ("ines", "Y LA BITACORA DE TOMAS DICE QUE LOS CAÑONES SON RELOJES QUE CUENTAN HACIA ATRAS. ¿CUANTO NOS QUEDA?", "F04"),
         ("alba", "¿Y AHORA?"),
         ("ines", "EL CAMPO ESMERALDA. ALGO PASA CON LAS MONEDAS AHI: SE MUEVEN SOLAS."),
     ]
@@ -82,19 +83,19 @@ class ElAcorazado(Mision):
         Fragmento("F04", "LA ERRANTE 2/3",
                   ["BITACORA DE TOMAS ILIC, NAVEGANTE. DIA 88.",
                    "CONTE LOS DISPAROS DE LOS CAÑONES TODA LA NOCHE. NO SON ARMAS: SON RELOJES.",
-                   "Y NO CUENTAN HACIA ADELANTE. CUENTAN HACIA ATRAS. EN CADA CAÑON HAY UN GLIFO:"],
+                   "Y NO CUENTAN HACIA ADELANTE: CUENTAN HACIA ATRAS, COMO UNA CUENTA REGRESIVA. EN CADA CAÑON HAY UN GLIFO:"],
                   glifo=escribir("ATRAS"),
                   reaccion=[("alba", "EL ULTIMO CAÑON TENIA ALGO ADENTRO... OTRA BITACORA DE LA ERRANTE.")]),
         Fragmento("F12", "LA BALIZA",
-                  ["LA BALIZA DE EMERGENCIA DE LA ERRANTE. TRES AÑOS PRENDIDA.",
-                   "NO PIDE AYUDA. TITILA SIEMPRE LO MISMO, Y TIENE UNA GRABACION DE MATEO:",
-                   "ACA LA ERRANTE. ESTAMOS BIEN. SEGUIMOS. NO NOS ESPEREN."],
-                  glifo=escribir("SEGUI"),
-                  reaccion=[("alba", "UNA BALIZA DE LA ERRANTE. TODAVIA TITILA, A RITMO."),
+                  ["LA BALIZA DE EMERGENCIA DE LA ERRANTE. TRES AÑOS ENCENDIDA.",
+                   "NO PIDE AYUDA. PARPADEA SIEMPRE LO MISMO, Y TIENE UNA GRABACION DE MATEO:",
+                   "AQUI LA ERRANTE. ESTAMOS BIEN. SEGUIMOS. NO NOS ESPEREN."],
+                  glifo=escribir("SIGUE"),
+                  reaccion=[("alba", "UNA BALIZA DE LA ERRANTE. TODAVIA PARPADEA, A RITMO."),
                             ("ines", "...ES LA VOZ DE MATEO.")]),
     ]
 
     secretos = [
         ("partes_en_orden", "F04"),
-        ("baliza", "F12", {"tramo": 3, "mensaje": "SEGUI"}),
+        ("baliza", "F12", {"tramo": 3, "mensaje": "SIGUE"}),
     ]

@@ -34,11 +34,12 @@ class LaSenal(Mision):
     ]
 
     antes = [
-        ("ines", "ALBA, ¿ME ESCUCHAS? ACA ESTACION UMBRAL. EL COMPAS VOLVIO A SONAR ESTA MAÑANA. MAS FUERTE QUE NUNCA."),
-        ("alba", "BUEN DIA PARA VOS TAMBIEN, INES."),
+        ("ines", "ALBA, ¿ME ESCUCHAS? AQUI ESTACION UMBRAL. EL COMPAS VOLVIO A SONAR ESTA MAÑANA. MAS FUERTE QUE NUNCA."),
+        ("alba", "BUENOS DIAS PARA TI TAMBIEN, INES."),
         ("ines", "LA MAREA SIGUE EN CAMINO. SEIS AÑOS. NO LA PODEMOS FRENAR Y NO HAY A DONDE ESCAPAR."),
         ("ines", "PERO EL COMPAS NO ES RUIDO: ALGUIEN LO PUSO AHI. Y TODO EMPIEZA EN EL CINTURON EXTERIOR."),
-        ("ines", "AHI ESTAN LAS MONEDAS. JUNTA TODAS LAS QUE PUEDAS: EL COMPAS SALE DE ELLAS."),
+        ("ines", "AHI ESTAN LAS MONEDAS. JUNTA TODAS LAS QUE PUEDAS: CADA UNA SUENA CON UN PEDAZO DEL COMPAS."),
+        ("ines", "Y RECUERDA: CADA VIAJE TUYO SON MESES AQUI. ELIGE BIEN A DONDE VAS."),
         ("alba", "PERSEGUIR MONEDAS EN EL FIN DEL MUNDO. ME ENCANTA. ALONDRA LISTA, DESPEGO."),
     ]
 
@@ -53,16 +54,16 @@ class LaSenal(Mision):
             ("ines", "Y MIRA LAS MONEDAS DE CERCA: TODAS TIENEN UN SIMBOLO GRABADO.", "!F01"),
         ],
         "tramo_3": [
-            ("ines", "EL ESPACIO SE DOBLA. ES LA MAREA: YA SE SIENTE DESDE ACA."),
-            ("ines", "HAY ALGO EN EL FONDO, ENTRE LAS ROCAS... NO. NADA. SEGUI.", "!F02"),
+            ("ines", "EL ESPACIO SE DOBLA. ES LA MAREA: YA SE SIENTE DESDE AQUI."),
+            ("ines", "HAY ALGO EN EL FONDO, ENTRE LAS ROCAS... NO. NADA. SIGUE.", "!F02"),
         ],
         "tramo_4": [
             ("ines", "MUCHAS SEÑALES DE GOLPE. ¡AGUANTA, ALBA!"),
         ],
         "jefe": [
             ("alba", "ESO ES UN OJO. UN OJO DEL TAMAÑO DE UNA LUNA."),
-            ("ines", "ES UNA LENTE. Y NO TE MIRA A VOS: MIRA MAS ALLA. PEGALE CUANDO SE CANSE."),
-            ("ines", "SI SALIS SIN UN RASGUÑO, PUEDO MEDIR A DONDE APUNTA.", "!F03"),
+            ("ines", "ES UNA LENTE. Y NO TE MIRA A TI: MIRA MAS ALLA. GOLPEALO CUANDO SE CANSE."),
+            ("ines", "SI SALES SIN UN RASGUÑO, PUEDO MEDIR A DONDE APUNTA.", "!F03"),
         ],
     }
 
@@ -73,15 +74,15 @@ class LaSenal(Mision):
         ("ines", "ESA MONEDA BLANCA QUE TRAJISTE TIENE EL SIMBOLO DE TODAS, PERO GRANDE. COMO UNA FIRMA.", "F01"),
         ("alba", "Y ENCONTRE RESTOS DE UNA NAVE. TENIAN UNA BITACORA.", "F02"),
         ("ines", "...ES DE LA ERRANTE. LA ESCRIBIO ROCIO, SU INGENIERA.", "F02"),
-        ("ines", "LA ERRANTE PASO POR AHI HACE TRES AÑOS. SIGUIENDO EL COMPAS, IGUAL QUE VOS."),
+        ("ines", "LA ERRANTE PASO POR AHI HACE TRES AÑOS. SIGUIENDO EL COMPAS, IGUAL QUE TU."),
         ("alba", "LA ERRANTE NO VOLVIO, INES."),
-        ("ines", "YA SE. POR ESO VAS VOS."),
+        ("ines", "YA SE. POR ESO VAS TU."),
     ]
 
     fragmentos = [
         Fragmento("F01", "LA MONEDA GRABADA",
                   ["UNA MONEDA MAS PESADA QUE LAS DEMAS. GIRA LENTO, COMO SI NO QUISIERA IRSE.",
-                   "EL SIMBOLO QUE TODAS TIENEN CHIQUITO, ESTA LO TIENE GRANDE. INES CREE QUE ES UNA FIRMA."],
+                   "EL SIMBOLO QUE TODAS TIENEN PEQUEÑO, ESTA LO TIENE GRANDE. INES CREE QUE ES UNA FIRMA."],
                   glifo=escribir("ALBA"),
                   reaccion=[("alba", "ESTA MONEDA ES DISTINTA. TIENE UN DIBUJO GRABADO. LA GUARDO.")]),
         Fragmento("F02", "LA ERRANTE 1/3",
@@ -93,7 +94,7 @@ class LaSenal(Mision):
                   ["INES MIDIO LA LENTE DEL OJO: NO APUNTABA A LA ALONDRA.",
                    "APUNTABA AL ABISMO AZUL, AL OTRO LADO DEL MAPA. SIEMPRE AL MISMO PUNTO.",
                    "COMO UNA BRUJULA."],
-                  reaccion=[("ines", "ALBA, MIRA LOS DATOS DE LA LENTE. NO TE APUNTABA A VOS.")]),
+                  reaccion=[("ines", "ALBA, MIRA LOS DATOS DE LA LENTE. NO TE APUNTABA A TI.")]),
     ]
 
     secretos = [

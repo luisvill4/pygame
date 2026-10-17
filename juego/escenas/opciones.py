@@ -7,7 +7,7 @@ hace el ajuste elegido. Cada cambio se aplica al instante y se guarda en config.
 
     LB/RB (Q/E)     cambiar de seccion
     ARRIBA/ABAJO    elegir un ajuste (la ultima fila es VOLVER)
-    IZQ/DER         cambiar el valor (ENTER tambien prende y apaga los SI/NO)
+    IZQ/DER         cambiar el valor (ENTER tambien enciende y apaga los SI/NO)
     B (ESC)         volver
 
 Cada fila es un Ajuste (patron Template Method): la clase base sabe dibujar la fila y
@@ -172,20 +172,20 @@ class Interruptor(Ajuste):
         return "SI" if self.valor(app) else "NO"
 
     def dibujar_valor(self, pantalla, app, y, color, elegida):
-        prendido = self.valor(app)
+        encendido = self.valor(app)
         llave = pygame.Rect(VALOR_X - 56, y - 12, 56, 24)
-        pantalla.fill(VERDE if prendido else LINEA_APAGADA, llave)
+        pantalla.fill(VERDE if encendido else LINEA_APAGADA, llave)
         pygame.draw.rect(pantalla, BLANCO if elegida else GRIS, llave, 2)
         perilla = pygame.Rect(0, 0, 20, 16)
-        perilla.center = (llave.right - 14 if prendido else llave.left + 14, y)
-        pantalla.fill(BLANCO if prendido else GRIS, perilla)
-        texto(pantalla, self.texto_valor(app), MEDIA, color if prendido else GRIS, llave.left - 16, y,
+        perilla.center = (llave.right - 14 if encendido else llave.left + 14, y)
+        pantalla.fill(BLANCO if encendido else GRIS, perilla)
+        texto(pantalla, self.texto_valor(app), MEDIA, color if encendido else GRIS, llave.left - 16, y,
               alinear="derecha")
 
 
 class Volumen(Ajuste):
     # Una barra de cuadritos de 0 a VOLUMEN_MAX. Tocarla saca el silencio de la tecla M
-    # (si estas subiendo el volumen, lo queres oir). Con el silencio puesto se ve en gris
+    # (si estas subiendo el volumen, lo quieres oir). Con el silencio puesto se ve en gris
     def cambiar(self, app, direccion):
         app.opciones.silencio = False
         self.poner(app, min(max(self.valor(app) + direccion, 0), VOLUMEN_MAX))
@@ -228,7 +228,7 @@ AJUSTES = [
     Lista("NEON", "VIDEO", "neon", ORDEN_NEON,
           "EL BRILLO DE LAS BALAS, LA MONEDA, LAS CAPSULAS Y LAS EXPLOSIONES."),
     Volumen("VOLUMEN", "SONIDO", "volumen",
-            "EL VOLUMEN DE TODO. LA TECLA M APAGA Y PRENDE EL SONIDO."),
+            "EL VOLUMEN DE TODO. LA TECLA M ACTIVA Y DESACTIVA EL SONIDO."),
     Volumen("MUSICA", "SONIDO", "volumen_musica", "LA MUSICA DE FONDO. EN 0 NO SUENA."),
     Volumen("EFECTOS", "SONIDO", "volumen_efectos", "LOS SONIDOS DEL JUEGO: MONEDAS, GOLPES, MENUS..."),
     Interruptor("LATIDO", "SONIDO", "latido", "UN LATIDO SUAVE CUANDO TE QUEDA UNA SOLA VIDA."),
@@ -239,7 +239,7 @@ AJUSTES = [
     Interruptor("AVISO JEFE", "ACCESIBILIDAD", "aviso_jefe",
                 "LOS JEFES MARCAN HACIA DONDE VAN A DISPARAR ANTES DE HACERLO."),
     Lista("VIBRACION", "ACCESIBILIDAD", "vibracion", ORDEN_VIBRACION,
-          "QUE TAN FUERTE VIBRA EL MANDO.", al_cambiar=_probar_vibracion),
+          "CUANTO VIBRA EL MANDO.", al_cambiar=_probar_vibracion),
     Interruptor("AUDIO MONO", "ACCESIBILIDAD", "audio_mono",
                 "TODO SUENA IGUAL POR LOS DOS LADOS (PARA UN SOLO AURICULAR U OIDO)."),
 ]

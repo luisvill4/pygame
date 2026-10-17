@@ -375,7 +375,7 @@ def surtidor():
 
 @obra("neon")
 def neon():
-    # El cartel de neon "GAS" que vuelve a prender: un zumbido electrico cortito
+    # El cartel de neon "GAS" que vuelve a encender: un zumbido electrico cortito
     efecto = Efecto("neon", 0.1, "pp", sala=(0.5, 0.4), cola=0.05)
     tono(efecto, I.SIRENA, "C3:90", tremolo=(60, 60, 0.6))
     aire(efecto, 0.06, [(0, 2500)], modo="banda", volumen=-8)

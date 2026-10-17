@@ -137,7 +137,7 @@ class App:
         # Teclas que funcionan en cualquier pantalla
         opciones = self.opciones
         if self.entrada.pulso(SILENCIO):
-            # M: calla todo o lo vuelve a prender (los volumenes de Opciones no se tocan)
+            # M: calla todo o lo vuelve a encender (los volumenes de Opciones no se tocan)
             opciones.silencio = not opciones.silencio
             self.sonidos.aplicar_volumen(opciones)
             opciones.guardar()

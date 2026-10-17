@@ -4,7 +4,7 @@ Anomalias: una vez por sector, el espacio se pone raro por un rato.
 Como los enemigos y los jefes, usan un registro (@registrar_anomalia) y una clase base
 con "ganchos" que cada anomalia completa a su manera (patron Template Method):
 
-    actualizar(partida)         en cada paso (lanzar asteroides, prender llamaradas...)
+    actualizar(partida)         en cada paso (lanzar asteroides, encender llamaradas...)
     terminar(partida)           al irse (o si llega el jefe antes)
     dibujar(pantalla, partida)  lo que se ve encima del juego (avisos, niebla)
     multiplicador_monedas()     para las que cambian las reglas (la fiebre del oro)
@@ -131,7 +131,7 @@ class TormentaSolar(Anomalia):
     # Fases: calma -> aviso (la franja parpadea) -> llamarada (quema) -> calma...
     tipo = "tormenta"
     nombre = "TORMENTA SOLAR"
-    pista = "SALI DE LAS FRANJAS QUE PARPADEAN"
+    pista = "SAL DE LAS FRANJAS QUE PARPADEAN"
     color = (255, 140, 0)
 
     def __init__(self, partida):

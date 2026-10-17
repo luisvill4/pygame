@@ -2,7 +2,7 @@
 Mision 4: LA COLMENA
 
 MAR DE AMBAR (la Madre del Enjambre). La Colmena es una biblioteca. El mensaje se lee
-entero: SEGUI LAS MONEDAS, y despues una firma.
+entero: SIGUE LAS MONEDAS, y despues una firma.
 
 Secretos: la tercera bitacora (20 monedas seguidas: cantan tan fuerte que la radio capta
 un eco de hace tres años) y las bibliotecarias (vencer a la Colmena sin romper una abeja).
@@ -35,10 +35,10 @@ class LaColmena(Mision):
     ]
 
     antes = [
-        ("ines", "TE HABLO DESDE UNA NAVE: LA UMBRAL YA NO EXISTE. SEGUIMOS, ALBA. SEGUI.", "T6"),
+        ("ines", "TE HABLO DESDE UNA NAVE: LA UMBRAL YA NO EXISTE. SEGUIMOS, ALBA. SIGUE.", "T6"),
         ("ines", "EL MAR DE AMBAR ES UN PANAL DEL TAMAÑO DE UN SISTEMA SOLAR. CON INSCRIPCIONES. MILLONES."),
         ("alba", "UNA BIBLIOTECA."),
-        ("ines", "ESO CREO. Y SEGUN LAS BITACORAS, LA ERRANTE TAMBIEN LLEGO HASTA ACA."),
+        ("ines", "ESO CREO. Y SEGUN LAS BITACORAS, LA ERRANTE TAMBIEN LLEGO HASTA AQUI."),
         ("ines", "TRAEME TODO LO QUE SE PUEDA LEER, ALBA. TODO."),
     ]
 
@@ -66,29 +66,30 @@ class LaColmena(Mision):
     despues = [
         ("ines", "ALBA... CON LO QUE TRAJISTE, EL COMPAS SE LEE ENTERO."),
         ("alba", "DECILO."),
-        ("ines", "SEGUI LAS MONEDAS."),
+        ("ines", "SIGUE LAS MONEDAS."),
         ("ines", "Y DESPUES UNA FIRMA EN GLIFOS. NO LA PUEDO LEER.", "!F06"),
         ("ines", "Y DESPUES UNA FIRMA. LA MISMA DE LA MONEDA BLANCA: ALBA.", "F06+F01"),
         ("ines", "Y DESPUES UNA FIRMA. LA LEI CON LA CLAVE DEL COMPAS: DICE ALBA.", "F06+!F01"),
         ("alba", "TODO ESTE VIAJE PARA QUE NOS DIGAN LO QUE YA ESTAMOS HACIENDO."),
         ("ines", "HAY ALGO MAS. EL COMPAS NO SALE DE LA MAREA. SALE DEL ABISMO AZUL. DE UN AGUJERO NEGRO."),
         ("ines", "Y ALBA... LA TRANSMISION QUE CAPTASTE ES LA ULTIMA DE MATEO. DICE TU NOMBRE.", "F07"),
-        ("ines", "HACE TRES AÑOS. ANTES DE QUE NOS CONOCIERAMOS.", "F07"),
+        ("ines", "Y DICE QUE NO SON MUCHOS. QUE ES UNO SOLO. HACE TRES AÑOS, ANTES DE QUE NOS CONOCIERAMOS.", "F07"),
         ("alba", "...HABRA LEIDO LA FIRMA DE LAS MONEDAS. NADA MAS.", "F07"),
         ("ines", "SI. SERA ESO.", "F07"),
+        ("ines", "OTRA COSA: EL POEMA DE LA CELDA ESTA EN SINGULAR. NO DICE NOSOTROS. DICE YO.", "F08"),
     ]
 
     fragmentos = [
         Fragmento("F07", "LA ERRANTE 3/3",
                   ["ULTIMA TRANSMISION DE LA ERRANTE. LA CAPTO LA RADIO DE LA ALONDRA CUANDO LAS MONEDAS CANTARON.",
-                   "MATEO: ...LLEGAMOS A LA... (ESTATICA) ...ALBA. DECILE A ALBA...",
+                   "MATEO: ...LLEGAMOS, INES. NO SON MUCHOS: ES UNO SOLO. (ESTATICA) ...SE LLAMA ALBA...",
                    "NADIE EN LA ERRANTE CONOCIA A NINGUNA ALBA."],
-                  reaccion=[("mateo", "...LLEGAMOS A LA... (ESTATICA) ...ALBA. DECILE A ALBA..."),
+                  reaccion=[("mateo", "...LLEGAMOS, INES. ES UNO SOLO. (ESTATICA) ...SE LLAMA ALBA..."),
                             ("alba", "¿QUE FUE ESO? ¿DIJO MI NOMBRE?")]),
         Fragmento("F08", "LAS BIBLIOTECARIAS",
-                  ["LAS ABEJAS VOLVIERON A CASA Y LA CELDA MAS VIEJA SE ABRIO. ADENTRO, UN POEMA DE LOS CANTORES:",
-                   "LA VIMOS LLEGAR UNA VEZ. LA VAMOS A VER LLEGAR OTRA.",
-                   "NO TENEMOS MIEDO. YA CONOCEMOS EL CAMINO."],
+                  ["LAS ABEJAS VOLVIERON A CASA Y LA CELDA MAS VIEJA SE ABRIO. ADENTRO, UN POEMA. ESTA ESCRITO EN SINGULAR:",
+                   "LA VI LLEGAR UNA VEZ, Y SE LLEVO A TODOS. LA VOY A VER LLEGAR OTRA.",
+                   "ESTA VEZ NO VOY A LLEGAR TARDE."],
                   glifo=escribir("OTRA"),
                   reaccion=[("alba", "LAS ABEJAS VOLVIERON A CASA... Y SE ABRIO UNA CELDA. HAY UN TEXTO.")]),
     ]

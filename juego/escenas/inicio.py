@@ -27,6 +27,7 @@ from juego.escenas.opciones import Opciones
 from juego.escenas.arcade.dificultad import Dificultad
 from juego.escenas.logros import Logros
 from juego.escenas.historia.galaxia import Galaxia
+from juego.escenas.historia.prologo import Prologo
 from juego.enemigos import TIPOS_ENEMIGO
 from juego.moneda import imagen_moneda
 from juego.powerups import TIPOS_POWERUP
@@ -36,7 +37,7 @@ from juego.carteles import TROFEO
 MENU = ["ARCADE", "HISTORIA", "LOGROS", "OPCIONES", "SALIR"]
 DESCRIPCION_MENU = {        # (hasta 25 letras: entran en un renglon)
     "ARCADE": "LA RUTA SIN FIN Y RECORDS",
-    "HISTORIA": "LA MAREA. SEGUI EL COMPAS",
+    "HISTORIA": "LA MAREA. SIGUE EL COMPAS",
     "LOGROS": "LOGROS Y HANGAR DE NAVES",
     "OPCIONES": "VIDEO, SONIDO Y MAS",
     "SALIR": "CERRAR EL JUEGO",
@@ -106,13 +107,19 @@ class Inicio(Escena):
             if elegida == "ARCADE":
                 self.app.cambiar_escena(Dificultad(self.app, volver_a=self))
             elif elegida == "HISTORIA":
-                self.app.cambiar_escena(Galaxia(self.app))
+                self.app.cambiar_escena(self._historia())
             elif elegida == "LOGROS":
                 self.app.cambiar_escena(Logros(self.app, volver_a=self))
             elif elegida == "OPCIONES":
                 self.app.cambiar_escena(Opciones(self.app, volver_a=self))
             else:
                 self.cerrar_en = self.app.ahora() + 450
+
+    def _historia(self):
+        # La primera vez, el prologo (que es la Marea, el compas...); despues, directo a la galaxia
+        if self.app.progreso.prologo:
+            return Galaxia(self.app)
+        return Prologo(self.app, al_terminar=lambda: self.app.cambiar_escena(Galaxia(self.app)))
 
     def _elegir(self, opcion):
         self.opcion = opcion

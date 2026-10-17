@@ -108,7 +108,7 @@ class Presentacion(Escena):
         if NAVE_SUBE[0] <= t:
             self.app.efectos.estela(CENTRO_X, self.y_nave(t) + 24, 0)
         if self.logo_cayo and apretado and t > LOGO_CAE[1] + 400:
-            from juego.escenas.inicio import Inicio     # (aca adentro: Inicio no importa esta escena)
+            from juego.escenas.inicio import Inicio     # (aqui adentro: Inicio no importa esta escena)
             self.app.sonidos.reproducir("ui_aceptar")
             self.app.cambiar_escena(Inicio(self.app))
 

@@ -165,7 +165,7 @@ def logro():
 
 # ---------- Modo historia ----------
 
-# El ritmo de los Cantores (glifos.py): A-L-B-A en pulsos cortos y largos. Un corto dura una
+# El ritmo de El Ultimo (glifos.py): A-L-B-A en pulsos cortos y largos. Un corto dura una
 # unidad, un largo tres; entre pulsos una unidad de silencio y entre letras tres
 UNIDAD_ALBA = 55            # ms
 

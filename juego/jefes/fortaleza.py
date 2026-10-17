@@ -10,18 +10,18 @@ y recalentado es el momento de pegarle con el dash al cañon que disparo.
 Cada cañon tiene su ataque (y una lucecita de su color para reconocerlo):
     rafaga  (rojo):     3 obuses, uno por pulso: "¡pum, pum, pum!"
     misiles (amarillo): 2 misiles que te siguen (el dash los destruye y da puntos)
-    laser   (cian):     un rayo que barre la pantalla hacia vos: hay que cruzarlo con el dash
+    laser   (cian):     un rayo que barre la pantalla hacia ti: hay que cruzarlo con el dash
     minas   (magenta):  2 minas que caen en las X y estallan en cruz, una por pulso
 Con cada cañon roto el pulso se acelera, y con 2 o menos los ataques vienen de a dos.
 
 Sin cañones se le cae la coraza y empieza el baile final:
     cortinas (escombros que caen con un hueco: busca el hueco) -> apuntar (se pone
-    encima tuyo) -> fijar (se queda quieta un pulso, temblando: ¡salí de abajo!) ->
+    encima de ti) -> fijar (se queda quieta un pulso, temblando: ¡sal de abajo!) ->
     CAER (se desploma hasta el piso y suelta ondas de choque) ->
     aturdida (nucleo a la vista: ¡DASH!) -> subir -> cortinas...
 
 Los cañones son Partes (ver partes.py): la clase base ya resuelve el golpe con el dash,
-el daño al tocarlos y la flechita. Aca solo se decide cuando se les puede pegar.
+el daño al tocarlos y la flechita. Aqui solo se decide cuando se les puede pegar.
 
 Tamaño: todo se mide en "pixeles del dibujo" (el respaldo es de 128x64) y se agranda
 ESCALA veces con px(). Para cambiar el tamaño de la Fortaleza alcanza con cambiar ESCALA.
@@ -93,10 +93,10 @@ def fortaleza_respaldo(con_coraza, color_nucleo, luces):
     for remache_x in list(range(8, 44, 6)) + list(range(86, 122, 6)):
         imagen.fill(ACERO_CLARO, (remache_x, 31, 1, 1))
         imagen.fill(BORDE, (remache_x, 32, 1, 1))
-    # Ventanitas arriba (se prenden alternadas segun el cuadro) y motores rojos a los costados
+    # Ventanitas arriba (se encienden alternadas segun el cuadro) y motores rojos a los costados
     for i, ventana_x in enumerate(range(16, 112, 8)):
-        prendida = (i % 2 == 0) == luces
-        imagen.fill(CIAN if prendida else BORDE, (ventana_x, 8, 2, 2))
+        encendida = (i % 2 == 0) == luces
+        imagen.fill(CIAN if encendida else BORDE, (ventana_x, 8, 2, 2))
     for motor_x in (2, 122):
         imagen.fill(ROJO if luces else (110, 0, 30), (motor_x, 18, 4, 10))
     if con_coraza:
@@ -259,7 +259,7 @@ class Fortaleza(Jefe):
 
     def cajas_danio(self):
         # El casco en dos cajas que siguen su forma (abajo es mas angosto: asi no te
-        # pega con una esquina que no se ve), los cañones y el rayo laser prendido
+        # pega con una esquina que no se ve), los cañones y el rayo laser encendido
         x, y = int(self.x), int(self.y)
         cajas = [pygame.Rect(x + px(2), y + px(3), px(124), px(31)),
                  pygame.Rect(x + px(13), y + px(34), px(102), px(16))]
@@ -316,7 +316,7 @@ class Fortaleza(Jefe):
         self.turno = 0
         nave_x = partida.nave.centro()[0]
         if primero.ataque == "laser":
-            # Para barrer hacia vos, se pone del otro lado de la pantalla
+            # Para barrer hacia ti, se pone del otro lado de la pantalla
             lejos = ANCHO * 0.8 if nave_x < ANCHO / 2 else ANCHO * 0.2
             self.destino_x = self.x_sobre(lejos)
         else:
@@ -494,7 +494,7 @@ class Fortaleza(Jefe):
                 self.sonar(partida, "cortina_aviso")         # el aviso: retumba el techo
 
         elif fase == "apuntar":
-            # Se pone encima tuyo (el aviso marca la columna donde va a caer)
+            # Se pone encima de ti (el aviso marca la columna donde va a caer)
             self.x += (self.x_sobre(partida.nave.centro()[0]) - self.x) * 0.12
             if self.fin_de_fase(ahora):
                 self.cambiar_fase_pulsos("fijar", FORTALEZA_FIJAR, ahora)
@@ -617,9 +617,9 @@ class Fortaleza(Jefe):
         # Las cuatro lamparitas del casco marcan el pulso, como un metronomo
         if self.fase in ("entrar", "morir", "caer") or self.pulso < 0:
             return
-        prendida = self.pulso % 4
+        encendida = self.pulso % 4
         for i in range(4):
-            color = AMARILLO if i == prendida else (70, 50, 0)
+            color = AMARILLO if i == encendida else (70, 50, 0)
             pantalla.fill(color, (int(self.x) + px(53 + i * 6), int(self.y) + px(44), px(4), px(3)))
 
     def dibujar_laser(self, pantalla):

@@ -1,5 +1,5 @@
 """
-Todos los power-ups. El orden en que estan aca es el orden del HUD y del panel de inicio
+Todos los power-ups. El orden en que estan aqui es el orden del HUD y del panel de inicio
 (los cinco primeros, ademas, son los cuadros de sprites/powerups.png).
 """
 import math

@@ -4,10 +4,10 @@ Reliquias: las cosas escondidas del modo historia que guardan un fragmento del A
 No llevan cartel ni brillan de mas: hay que darse cuenta de que estan (HISTORIA.md,
 "Reglas para escribir un secreto"). Cada una guarda que fragmento esconde, tiene x/y (se
 dibuja interpolada), sabe si la tocaste (tocada) y si ya se fue (termino). Las sueltan los
-secretos (secretos.py) y el ModoHistoria (modo.py) las mueve y avisa cuando las encontras.
+secretos (secretos.py) y el ModoHistoria (modo.py) las mueve y avisa cuando las encuentras.
 Para una nueva: una clase con fragmento, x, y, caja(), tocada(), termino(), mover() y dibujar().
 
-    MonedaGrabada   una moneda distinta: gira lento, tiene un glifo y se apaga si no la agarras
+    MonedaGrabada   una moneda distinta: gira lento, tiene un glifo y se apaga si no la recoges
     Restos          los restos de una nave, apagados como el fondo: solo el dash los abre
     Baliza          una baliza de emergencia que titila un glifo a ritmo: tambien con el dash
 """
@@ -47,7 +47,7 @@ class MonedaGrabada:
             return
         cuadro = _moneda_palida()
         dibujo.pegar(pantalla, cuadro, self.x, self.y)
-        # El glifo: un rombo chiquito y una raya, oscuros, en el medio de la moneda
+        # El glifo: un rombo pequeño y una raya, oscuros, en el medio de la moneda
         centro_x, centro_y = dibujo.en_grilla(self.x + 10), dibujo.en_grilla(self.y + 10)
         pantalla.fill((60, 60, 90), (centro_x - 4, centro_y - 2, 2, 4))
         pantalla.fill((60, 60, 90), (centro_x, centro_y - 2, 4, 2))
@@ -137,12 +137,12 @@ class Baliza:
     def __init__(self, fragmento, glifo):
         # Cruza de derecha a izquierda por la mitad de abajo, mas despacio que los restos
         self.fragmento = fragmento
-        self.glifo = glifo              # lo que titila (el mensaje, en el ritmo de los Cantores)
+        self.glifo = glifo              # lo que titila (el mensaje, en el ritmo de El Ultimo)
         self.x = ANCHO
         self.y = 380
 
     def caja(self):
-        # (un poco mas grande que el dibujo: es chiquita y hay que acertarle con el dash)
+        # (un poco mas grande que el dibujo: es pequeña y hay que acertarle con el dash)
         return pygame.Rect(int(self.x) - 8, int(self.y) - 8, len(BALIZA[0]) * 2 + 16, len(BALIZA) * 2 + 16)
 
     def tocada(self, partida):
@@ -158,8 +158,8 @@ class Baliza:
 
     def dibujar(self, pantalla, partida):
         # Apagada como el fondo; solo la luz titila el glifo (con el reloj real: es dibujo)
-        prendida = sonando(self.glifo, BALIZA_UNIDAD, pygame.time.get_ticks())
-        colores = {"X": (70, 74, 96), "o": (34, 36, 56), "L": (110, 90, 40) if prendida else (40, 38, 50)}
+        encendida = sonando(self.glifo, BALIZA_UNIDAD, pygame.time.get_ticks())
+        colores = {"X": (70, 74, 96), "o": (34, 36, 56), "L": (110, 90, 40) if encendida else (40, 38, 50)}
         izquierda, arriba = dibujo.en_grilla(self.x), dibujo.en_grilla(self.y)
         for fila, renglon in enumerate(BALIZA):
             for columna, letra in enumerate(renglon):

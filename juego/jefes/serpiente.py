@@ -7,7 +7,7 @@ Pelea a su ritmo (el pulso), siempre en este orden:
 
     nadar (6 pulsos)   da vueltas a tu alrededor, buscando el angulo
     acechar (2)        se frena, abre la boca y te apunta (el aviso marca la linea;
-                       en el ultimo pulso la direccion queda fija: ¡correte!)
+                       en el ultimo pulso la direccion queda fija: ¡apartate!)
     morder             se lanza en linea recta. Si se estrella contra un borde...
     aturdida (5)       ...queda mareada con el CASCABEL de la cola brillando: ¡DASH a la cola!
 

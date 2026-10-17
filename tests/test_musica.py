@@ -4,7 +4,7 @@ import pygame
 from juego.sonido import MUSICAS, SILENCIO, ruta_del_sonido
 from juego.config import MS_POR_FRAME
 from juego.hud import MS_ALERTA
-from tests.ayudas import avanzar, empezar_partida, tecla
+from tests.ayudas import avanzar, empezar_partida, tecla, entrar_a_la_historia
 
 
 def test_los_temas_existen():
@@ -138,9 +138,7 @@ def test_el_modo_historia_mapa_con_la_del_menu_y_el_dialogo_en_silencio(app):
     from juego.config import SECTORES
     from juego.escenas.historia.galaxia import Galaxia, VIAJE_PASOS
     from juego.escenas.historia.dialogo import Dialogo
-    tecla(pygame.K_DOWN)            # HISTORIA
-    avanzar(app)
-    tecla(pygame.K_RETURN)
+    entrar_a_la_historia(app)       # (saltea el prologo)
     avanzar(app)
     assert isinstance(app.escena, Galaxia) and app.sonidos.actual == "menu"
     app.escena.elegida = "M1"

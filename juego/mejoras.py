@@ -2,7 +2,7 @@
 Mejoras: cartas que se eligen durante la partida y duran hasta el Game Over.
 
 Cada tanto (en el nivel MEJORA_PRIMER_NIVEL y al cerrar cada sector) el juego ofrece
-3 al azar y elegis una (escena Taller). Asi cada partida termina armando una nave
+3 al azar y eliges una (escena Taller). Asi cada partida termina armando una nave
 distinta: mas dash, mas puntos, mas vida...
 
 Patron "registro" (como los power-ups): cada mejora es una clase con @registrar_mejora.
@@ -262,7 +262,7 @@ class Corazon(Mejora):
 @registrar_mejora
 class Fenix(Mejora):
     tipo, nombre, color = "fenix", "FENIX", NARANJA
-    descripcion = ["SI PERDES LA ULTIMA", "VIDA, VOLVES CON UNA", "(UNA VEZ)"]
+    descripcion = ["SI PIERDES LA ULTIMA", "VIDA, VUELVES CON UNA", "(UNA VEZ)"]
     peso = 0.5
     icono = ["...X...",
              "..XX...",

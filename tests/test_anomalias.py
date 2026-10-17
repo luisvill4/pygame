@@ -57,7 +57,7 @@ def test_el_jefe_la_corta(partida):
 
 
 def test_la_del_sector_la_mitad_de_las_veces_y_todas_desde_el_principio(partida):
-    # Antes cada sector traia siempre la suya: la fiebre del oro recien salia en el nivel 18
+    # Antes cada sector traia siempre la suya: la fiebre del oro no salia hasta el nivel 18
     random.seed(7)
     director = partida.director
     elegidas = [director.elegir_anomalia() for _ in range(2000)]

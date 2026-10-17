@@ -1,12 +1,11 @@
 """
-El RELOJ DE LA UMBRAL: el tiempo que se gasta viajando.
+El RELOJ DE LA UMBRAL: la relatividad del tiempo en la historia.
 
-La Alondra no es rapida: cruzar entre estrellas lleva meses, y cerca del Abismo las corrientes
-de la Marea la arrastran y lleva mas (galaxia.py). El tiempo pasa igual para todos (Alba
-tambien envejece; sin relatividad: pedido del usuario, se parecia demasiado a Interstellar).
-Lo que cuenta es progreso.anios: la Marea llega en MAREA_ANIOS.
+Para Alba un viaje dura horas; en la Estacion Umbral pasan años (viaja casi a la velocidad de
+la luz y, cerca del Abismo, la gravedad estira su tiempo todavia mas: galaxia.py). Lo que
+cuenta es el tiempo de la Umbral: progreso.anios. La Marea llega en MAREA_ANIOS.
 
-    - Cada año que pasa, Ines manda un mensaje (MENSAJES): asi cuenta la Umbral los dias.
+    - Cada año que pasa, Ines manda un mensaje (MENSAJES): ella envejece, Alba no.
     - El frente de la Marea avanza por el mapa de la galaxia (se ve) y a los MAREA_ANIOS se
       traga la Umbral: desde ahi es TARDE. La historia sigue, pero cambia (los renglones con
       "T6": ver mision.filtrar) y el final tambien.
@@ -19,19 +18,19 @@ from juego.historia.mision import misiones_en_orden
 
 # Los años en que la historia cambia (los renglones con "T3", "T6": mision.filtrar). Si un viaje
 # cruza uno, la galaxia avisa antes de salir (un test vigila que esten todos los que se usan)
-HITOS = [(3, "INES VA A PEDIRTE QUE TE APURES."),
+HITOS = [(3, "INES VA A PEDIRTE QUE TE DES PRISA."),
          (MAREA_ANIOS, "LA UMBRAL CAE. LA HISTORIA CAMBIA.")]
 
 MENSAJES = [        # (años, lo que dice Ines cuando pasan)
-    (1, [("ines", "UN AÑO DESDE QUE SALISTE, ALBA. LO FESTEJAMOS CON CAFE DE MAQUINA. FALTABAS VOS."),
+    (1, [("ines", "ALBA, PARA TI FUERON UNAS HORAS. AQUI PASO UN AÑO ENTERO."),
          ("ines", "LA MAREA YA SE VE DE NOCHE, COMO UNA MANCHA ROJA. LA GENTE SALE A MIRARLA.")]),
-    (2, [("ines", "DOS AÑOS. EVACUARON LOS PLANETAS DE AFUERA. NO HAY A DONDE IR, PERO LA GENTE SE MUEVE IGUAL.")]),
-    (3, [("ines", "TRES AÑOS. ME SALIERON CANAS. A VOS TAMBIEN, SEGURO, AUNQUE NO ME LO DIGAS."),
-         ("ines", "NO TE LO DIGO PARA QUE TE APURES. BUENO... UN POCO SI.")]),
+    (2, [("ines", "DOS AÑOS. EVACUARON LOS PLANETAS DE AFUERA. NO HAY A DONDE IR, PERO LA GENTE SE MUEVE DE TODOS MODOS.")]),
+    (3, [("ines", "TRES AÑOS. ME SALIERON CANAS. TU SIGUES IGUAL QUE EL DIA QUE TE FUISTE."),
+         ("ines", "NO TE LO DIGO PARA QUE TE DES PRISA. BUENO... UN POCO SI.")]),
     (4, [("ines", "CUATRO AÑOS. LA MAREA YA TAPA MEDIO CIELO. LAS ORBITAS EMPIEZAN A TEMBLAR.")]),
     (5, [("ines", "CINCO AÑOS. LA UMBRAL ES LO UNICO QUE QUEDA EN PIE DE ESTE LADO. ME QUEDO HASTA QUE VUELVAS.")]),
     (6, [("ines", "LA MAREA LLEGO. LA UMBRAL NO AGUANTA. SUBIMOS A LOS QUE PUDIMOS A LAS NAVES."),
-         ("ines", "VAMOS HACIA EL ABISMO, DETRAS TUYO. ALBA... TERMINA LO QUE EMPEZASTE.")]),
+         ("ines", "VAMOS HACIA EL ABISMO, DETRAS DE TI. ALBA... TERMINA LO QUE EMPEZASTE.")]),
 ]
 
 

@@ -240,8 +240,8 @@ def laser_carga():
 
 @obra("laser")
 def laser():
-    # El laser prendido (loop): zumbido en octavas de Re que vibra. Es una Obra que da la
-    # vuelta (1 s exacto, como un tema): suena sin cortes todo lo que dure prendido
+    # El laser encendido (loop): zumbido en octavas de Re que vibra. Es una Obra que da la
+    # vuelta (1 s exacto, como un tema): suena sin cortes todo lo que dure encendido
     efecto = Obra("laser", segundos=1.0, vuelta=True, sala=(0.3, 0.3), objetivo=-14.0, pegamento=False, humano=0.0)
     tono(efecto, I.SIRENA, "D3+D4:1000", tremolo=(16, 16, 0.25), reverb=0.0, legato=1.0)
     aire(efecto, 1.0, [(0, 3000)], modo="banda", volumen=-14, forma=[(0, 1), (1.0, 1)])
@@ -547,7 +547,7 @@ def motor_pesado():
 
 @obra("servo")
 def servo():
-    # Se pone encima tuyo: un servo que va y viene
+    # Se pone encima de ti: un servo que va y viene
     efecto = Efecto("servo", 0.8, "pp", sala=(0.6, 0.3))
     deslizar(efecto, I.LEAD_HUECO, [(0, "D4"), (0.2, "E4"), (0.4, "D4"), (0.6, "E4"), (0.8, "D4")], volumen=-2)
     return efecto

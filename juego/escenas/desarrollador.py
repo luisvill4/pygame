@@ -1,11 +1,11 @@
 """
 Modo desarrollador: un panel para probar jefes, enemigos y power-ups sin tener que
-llegar jugando. Se abre con F1 en plena partida (si MODO_DESARROLLADOR esta prendido
+llegar jugando. Se abre con F1 en plena partida (si MODO_DESARROLLADOR esta encendido
 en config.py) y, como la pausa, el tiempo de la partida no corre mientras esta abierto.
 
     JEFE         < EL OJO >        trae ese jefe ahora (si ya hay uno, lo cambia)
     ENEMIGO      < PERSEGUIDOR >   trae un enemigo de ese tipo (aparece con su "X")
-    POWER-UP     < ESCUDO >        te lo da enseguida, como si agarraras la capsula
+    POWER-UP     < ESCUDO >        te lo da enseguida, como si recogieras la capsula
     ANOMALIA     < NIEBLA CERRADA > la trae ahora (si ya habia una, la cambia; con un jefe, no)
     INVENCIBLE   NO                nada te hace daño
     LIMPIAR                        saca a todos los enemigos y las balas
@@ -19,7 +19,7 @@ Apenas se usa algo, la partida queda marcada (partida.modo_desarrollador): ya no
 record ni logros, y el HUD muestra "MODO DEV".
 
 Las listas salen de los registros (TIPOS_JEFE, TIPOS_ENEMIGO, TIPOS_POWERUP, TIPOS_ANOMALIA):
-un jefe, enemigo, power-up o anomalia nuevo aparece aca solo, sin tocar este archivo.
+un jefe, enemigo, power-up o anomalia nuevo aparece aqui solo, sin tocar este archivo.
 """
 import pygame
 

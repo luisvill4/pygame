@@ -1,6 +1,6 @@
 """
 Rutas: la de cada sector, tramo por tramo, escrita a mano (como las fases de un juego de
-naves o los niveles de Mega Man). Aca van SOLO datos. Las usan los dos modos: el arcade
+naves o los niveles de Mega Man). Aqui van SOLO datos. Las usan los dos modos: el arcade
 las recorre en orden y cada mision de la historia usa la de su sector (o trae la suya).
 
 Cada sector tiene 4 TRAMOS y despues el jefe: un tramo por nivel (niveles 1-4, el jefe en

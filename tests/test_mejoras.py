@@ -224,7 +224,7 @@ def test_botin_duplica_los_puntos_del_dash(partida):
 def test_doble_dash_da_un_dash_extra_y_es_dificil_de_conseguir(partida):
     doble = TIPOS_MEJORA["doble_dash"]
     assert doble.peso < 1 and doble.maximo == 1
-    assert not doble.disponible(partida)            # recien desde el sector 3
+    assert not doble.disponible(partida)            # solo desde el sector 3
     partida.director.numero_sector = 3
     assert doble.disponible(partida)
     partida.elegir_mejora("doble_dash")

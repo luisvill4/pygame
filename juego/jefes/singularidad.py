@@ -428,7 +428,7 @@ class Singularidad(Jefe):
             return
         centro_x, centro_y = self.centro()
         if self.fase in ("colapsar", "expuesta"):
-            # Flechitas en cada hueco, apuntando hacia el nucleo: "entra por aca"
+            # Flechitas en cada hueco, apuntando hacia el nucleo: "entra por aqui"
             vaiven = 6 if dibujo.parpadeo(200) else 0
             for angulo in self.angulos_huecos():
                 for fila, ancho in enumerate((4, 12, 20)):

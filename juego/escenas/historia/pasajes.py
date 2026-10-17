@@ -28,7 +28,7 @@ def renglones_del_plano(id_modulo, en_una_mision):
 
 
 RESCATE = [("ines", "¡ALBA! ¿ME ESCUCHAS? ...TE TENGO. TE SACO DE AHI."),
-           ("ines", "DESCANSA. LA MAREA NO ESPERA, PERO VOS TAMPOCO TE RENDIS.")]
+           ("ines", "DESCANSA. LA MAREA NO ESPERA, PERO TU TAMPOCO TE RINDES.")]
 
 
 def ir_a_la_galaxia(app, elegida=None):
@@ -74,7 +74,7 @@ def _sistema_despejado(app, partida):
     if primera and uno.puerta:
         progreso.puertas.add(uno.id)
         otro = galaxia.sistema(uno.puerta)
-        renglones.append(("alba", "ACA HAY UNA PUERTA MENOR. LLEVA DERECHO A %s." % otro.nombre))
+        renglones.append(("alba", "AQUI HAY UNA PUERTA MENOR. LLEVA DERECHO A %s." % otro.nombre))
         renglones.append(("ines", "UN ATAJO. CRUZARLA CASI NO GASTA TIEMPO."))
     progreso.guardar()
     app.cambiar_escena(Dialogo(app, renglones, lambda: ir_a_la_galaxia(app, uno.id), "SISTEMA DESPEJADO",

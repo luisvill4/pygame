@@ -76,11 +76,11 @@ class Taller(Escena):
         centro_x = CENTRO_X + (i - (len(self.ofertas) - 1) / 2) * (ANCHO_CARTA + SEPARACION)
         arriba = ARRIBA_CARTA - caida - (14 if elegida else 0)
         carta = pygame.Rect(int(centro_x - ANCHO_CARTA // 2), arriba, ANCHO_CARTA, ALTO_CARTA)
-        tenes = self.partida.mejora(mejora.tipo)
+        tienes = self.partida.mejora(mejora.tipo)
         pie = interfaz.carta(pantalla, carta, mejora.color, mejora.icono, mejora.nombre, mejora.descripcion,
-                             elegida=elegida, rara=mejora.peso < 1, nivel=(tenes, mejora.maximo))
-        if tenes == 0:
+                             elegida=elegida, rara=mejora.peso < 1, nivel=(tienes, mejora.maximo))
+        if tienes == 0:
             etiqueta, color = "NUEVA", CIAN
         else:
-            etiqueta, color = "NIVEL " + str(tenes + 1) + "/" + str(mejora.maximo), AMARILLO
+            etiqueta, color = "NIVEL " + str(tienes + 1) + "/" + str(mejora.maximo), AMARILLO
         texto(pantalla, etiqueta, CHICA, color, pie.centerx, pie.centery)

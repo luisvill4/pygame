@@ -5,7 +5,7 @@ Todo se dibuja en un lienzo de ANCHO x ALTO (1066x600) y mostrar() lo
 escala a la ventana sin suavizar (pixeles nitidos), centrado y con barras negras
 si sobra espacio.
 
-Las lineas CRT se ponen aca, DESPUES de escalar: asi quedan parejas en cualquier
+Las lineas CRT se ponen aqui, DESPUES de escalar: asi quedan parejas en cualquier
 resolucion (en el lienzo, al agrandarlo 1.8 veces, unas salian mas gruesas que otras).
 Hay UNA linea oscura al pie de cada fila de pixeles de arte (PIXEL_ARTE filas del
 lienzo): cada pixel de los sprites lleva su linea, como en una pantalla de verdad. Con
