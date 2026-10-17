@@ -34,17 +34,21 @@ Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA
 - **ARCADE:** la ruta sin fin por los cinco sectores, con récords por dificultad. Todo lo que
   sigue en esta guía.
 - **HISTORIA (beta): *La Marea*.** Una galaxia viene en curso de choque y no hay forma de
-  salvarse, hasta que aparece un compás escondido en las ondas gravitacionales. La piloto
+  salvarse, hasta que aparece un compás que se cuela en todas las radios. La piloto
   **Alba** sale a seguirlo, sector por sector. Cada sector es una **misión** con su diálogo
   antes y después, y durante el juego te habla la radio (Inés, desde la base) sin pausar nada.
-  - La **galaxia** se recorre libre, como el mapa de Starfield: las misiones están marcadas y
-    entre ellas hay sistemas para explorar. Cuanto más lejos de casa, más peligro (y más piezas).
-  - **El tiempo es relativo:** para Alba un viaje son horas, pero en la Estación Umbral pasan
-    años, y la Marea llega en el año 6 (se ve avanzar en el mapa). Cerca del Abismo el tiempo se
-    estira todavía más. Explorarlo todo no se puede: si llegás tarde, la historia cambia.
+  - La **galaxia** se recorre libre: las misiones están marcadas y entre ellas hay sistemas
+    para explorar. Cuanto más lejos de casa, más peligro (y más piezas). Las flechas eligen el
+    sistema más cercano hacia ese lado (una flechita amarilla muestra adónde lleva cada una) y
+    LB/RB (Q/E) saltan a los lugares a los que ya se puede viajar.
+  - **Viajar lleva tiempo:** la Alondra es lenta, cada viaje gasta meses y la Marea llega en el
+    año 6 (se ve avanzar en el mapa). Cerca del Abismo las corrientes demoran todavía más. Un
+    viaje largo pregunta antes de salir. Explorarlo todo no se puede: si llegás tarde, la
+    historia cambia.
   - Las **piezas** compran mejoras para siempre en el **Hangar** (P en la galaxia), como el
     Impulsor, que acorta los viajes. Algunos sistemas guardan **ecos** y **puertas menores**.
-  - Muchos sistemas tienen un **peligro** (calor, esporas, panal o gravedad): para entrar hace
+  - Al empezar, todo está bloqueado menos la primera misión. Cada sistema tiene un **peligro**
+    (calor, esporas, panal o gravedad): para entrar hace
     falta el **módulo** que lo aguanta. Se fabrica en el Hangar (pestaña MÓDULOS) con su
     **plano** (algunos sistemas lo guardan, y cada misión cumplida da el de la siguiente) y
     piezas. Cada módulo se ve en la nave.

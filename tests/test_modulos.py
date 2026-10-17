@@ -33,7 +33,8 @@ def test_cada_peligro_tiene_su_modulo_y_cada_plano_existe():
     for modulo in modulos.MODULOS:
         assert modulo.id in MODULOS_PRECIOS
         lugares = [uno for uno in todos_los_sistemas() if uno.plano == modulo.id]
-        assert len(lugares) >= 2, modulo.id                 # (cada plano en mas de un lugar)
+        primero = modulo.id == misiones_en_orden()[0].plano      # (el de la mision 1: el primero que se fabrica)
+        assert len(lugares) >= (1 if primero else 2), modulo.id   # (cada plano en mas de un lugar)
         assert len(modulos.lo_que_abre(modulo.id, 1)) >= 2, modulo.id
         assert len(modulo.icono) == 7 and all(len(fila) == 7 for fila in modulo.icono)
 
@@ -226,7 +227,10 @@ def campaña(piezas_por_partida):
         while not _equipar(progreso, objetivo):
             opciones = [uno for uno in galaxia.SISTEMAS if uno.tipo == "libre" and uno.id not in progreso.sistemas
                         and _puede_equipar(progreso, uno)]
-            assert opciones, "la campaña se trabo"
+            if not opciones:                # sin piezas para nada: se repite la ultima mision
+                progreso.anios += costo_viaje(aca, aca, progreso)
+                progreso.piezas += piezas_por_partida
+                continue
             uno = max(opciones, key=lambda uno: (PIEZAS_POR_PELIGRO * peligro(uno) + piezas_por_partida
                                                  + (200 if uno.plano not in progreso.planos | {None} else 0))
                       / costo_viaje(aca, uno, progreso))

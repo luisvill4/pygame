@@ -13,8 +13,8 @@ Una mision es casi todo DATOS (atributos de la clase):
     numero, titulo      "MISION 1", "LA SEÑAL"
     sector              el numero de sector donde se juega (1 a 5, ver SECTORES en config.py)
     lugar               donde esta en la galaxia: (x, y) en el mapa de 2400 x 640 (galaxia.py)
-    gravedad            años de mas que pasan en la Umbral en cada visita (dilatacion: cerca
-                        de un agujero negro el tiempo de Alba va mas lento que el de afuera)
+    corrientes          años de mas que cuesta cada visita (cerca del Abismo, las corrientes de
+                        la Marea arrastran la nave y navegar ahi es lento)
     ambiente            su peligro ambiental, ("calor", 1): para ir hace falta ese modulo (modulos.py)
     plano               el plano de modulo que Ines diseña al cumplirla (asi la historia no se traba)
     tramos              None = la ruta de su sector (rutas.py); o una lista de 4 tramos propia
@@ -130,7 +130,7 @@ class Mision:
     titulo = ""
     sector = 1
     lugar = (0, 0)
-    gravedad = 0
+    corrientes = 0
     ambiente = None
     plano = None
     tramos = None

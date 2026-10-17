@@ -21,7 +21,7 @@ class ElFinDeLaLuz(Mision):
     sector = 5
     lugar = (2060, 350)
     ambiente = ("gravedad", 2)      # la puerta: el compensador al maximo
-    gravedad = 0.5          # al lado del agujero negro: cada visita, medio año mas en la Umbral
+    corrientes = 0.5        # al lado del agujero negro: las corrientes cuestan medio año por visita
     final = True
 
     tramos = [

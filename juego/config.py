@@ -317,6 +317,7 @@ GOLPE_DESDE_MARGEN = 45         # secreto de la brujula: cuantos grados de marge
 # del mapa de la galaxia (2400 x 640). Para Alba un viaje son horas; en la Umbral pasan años
 MAREA_ANIOS = 6                 # años hasta que la Marea llega a la Umbral
 VIAJE_ANIOS_POR_PX = 0.0015     # años que pasan en la Umbral por cada px de viaje (el camino de la historia: ~3)
+VIAJE_LARGO_ANIOS = 1.0         # un viaje que gasta esto o mas pide confirmacion (la galaxia avisa)
 ESTADIA_ANIOS = 0.05            # años que pasan en cada salida, aunque no viajes (nada es gratis)
 PUERTA_ANIOS = 0.05             # cruzar una puerta menor (un atajo) cuesta solo esto
 PELIGRO_CADA_PX = 440           # el peligro de un sistema sube 1 cada tantos px de la Umbral (de 1 a 5)
@@ -327,10 +328,11 @@ PIEZAS_POR_PELIGRO = 25         # ...y despejar un sistema libre POR PRIMERA VEZ
 IMPULSOR_DESCUENTO = 0.12       # cada nivel del IMPULSOR (hangar) acorta los viajes esto
 # Los modulos de la Alondra (historia/modulos.py): cada uno deja entrar a los sistemas de un peligro
 # ambiental (calor, esporas, panal, gravedad) hasta su nivel. Se fabrican con el plano y piezas.
-# Medido con una campaña simulada: con estos precios el camino de la historia (que ahora pide
-# explorar para juntar piezas) termina entre el año 4.4 y el 4.9 (antes, a 70/150, en el 5.7)
-MODULOS_PRECIOS = {"escudo_termico": [30, 80], "filtro": [30, 80], "casco_panal": [30, 80],
-                   "compensador": [40, 90]}
+# Medido con una campaña simulada (todos los sistemas libres bloqueados): con 25-35 piezas por
+# partida el camino de la historia termina cerca del año 4.4, y con 15 en el 5.3. El primero
+# (el escudo) tiene que alcanzar con lo que da la mision 1
+MODULOS_PRECIOS = {"escudo_termico": [20, 70], "filtro": [25, 70], "casco_panal": [25, 70],
+                   "compensador": [30, 80]}
 # El hangar: mejoras para siempre de la Alondra (precio en piezas de cada nivel)
 HANGAR_PRECIOS = {"impulsor": [50, 100, 160], "corazon": [80, 160], "recarga": [50, 100],
                   "combo": [40, 90], "atraccion": [30, 70], "motor": [50, 110]}

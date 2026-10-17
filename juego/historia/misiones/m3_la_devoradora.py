@@ -35,7 +35,7 @@ class LaDevoradora(Mision):
     ]
 
     antes = [
-        ("ines", "PARA VOS FUERON UNAS HORAS. PARA MI, AÑOS. NO TE LO RECLAMO... PERO APURATE.", "T3+!T6"),
+        ("ines", "CADA VIAJE TUYO SE NOS COME MESES. NO TE LO RECLAMO... PERO APURATE.", "T3+!T6"),
         ("ines", "EN EL CAMPO ESMERALDA LAS MONEDAS DESAPARECEN ANTES DE QUE LLEGUES."),
         ("alba", "¿OTRO PILOTO?"),
         ("ines", "NO HAY NADIE MAS AHI AFUERA. O NO DEBERIA HABER."),

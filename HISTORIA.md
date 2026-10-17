@@ -14,7 +14,7 @@ Una galaxia enana, que los astrónomos llaman **la Marea**, viene en curso de ch
 frente: sus fuerzas de marea van a desgarrar las órbitas de todo el vecindario estelar. Faltan
 seis años. No hay a dónde escapar y no hay forma de detenerla.
 
-En las ondas gravitacionales hay un **compás**: pulsos cortos y largos que se repiten. No es
+En todas las radios se cuela un **compás**: pulsos cortos y largos que se repiten. No es
 ruido: alguien lo puso ahí. Lleva al Cinturón Exterior, donde flotan unos objetos de metal con un
 símbolo grabado. Por la forma les dicen **monedas**.
 
@@ -169,21 +169,26 @@ Los fragmentos de la misión oculta tampoco aparecen en el Archivo hasta que apa
 
 ## 10. La galaxia y el tiempo
 
-El mapa de la historia es una **galaxia que se recorre libre** (como el mapa estelar de
-Starfield): las misiones son sistemas marcados y entre ellas hay 16 **sistemas libres**.
+El mapa de la historia es una **galaxia que se recorre libre**: las misiones son sistemas
+marcados y entre ellas hay 16 **sistemas libres**.
 
-- **La relatividad:** para Alba un viaje dura horas; en la Estación Umbral pasan **años** (viaja
-  casi a la velocidad de la luz, y cerca del Abismo la gravedad estira su tiempo todavía más:
-  cada visita ahí suma años de **dilatación**). Lo que cuenta es el reloj de la Umbral. La
-  Marea llega en el año 6.
+- **Viajar es lento** (sin relatividad: pedido del usuario, se parecía demasiado a
+  *Interstellar*). La Alondra no es rápida: cruzar entre estrellas lleva meses, y el tiempo pasa
+  igual para todos (Alba también envejece). Cerca del Abismo, las **corrientes** de la Marea
+  arrastran la nave y cada visita cuesta más. La Marea llega en el año 6.
 - **El costo:** cada viaje gasta años según la distancia; cada salida, aunque no viajes, gasta
   un poco (nada es gratis). El camino directo de la historia cuesta ~3.8 años en viajes, pero
-  los módulos obligan a explorar para juntar piezas: una campaña simulada termina entre el año
-  4.4 y el 4.9. Explorarlo todo no se puede a tiempo: hay que elegir.
+  los módulos obligan a explorar para juntar piezas: una campaña simulada termina cerca del año
+  4.4 (y en el 5.3 si se juntan pocas piezas). Explorarlo todo no se puede a tiempo: hay que elegir.
 - **La Marea se ve:** un frente rojo avanza desde la izquierda y en el año 6 se traga la Umbral.
   Lo que traga ya no se puede visitar.
-- **Inés envejece:** cada año que pasa manda un mensaje ("para vos fueron unas horas; para mí,
-  un año"). En el año 6, la Umbral cae y ella sigue a Alba con los que pudieron subir a las naves.
+- **Inés cuenta los años:** cada año que pasa manda un mensaje desde la Umbral ("un año desde
+  que saliste"). En el año 6, la Umbral cae y ella sigue a Alba con los que pudieron subir a las
+  naves.
+- **Un viaje largo pregunta antes:** si gasta un año o más (`VIAJE_LARGO_ANIOS`), o si cruza un
+  año en que la historia cambia (`tiempo.HITOS`: el 3, Inés empieza a pedir que te apures; el 6,
+  la Umbral cae), la galaxia dice cuántos años pasan y qué cambia, con QUEDARME elegido por
+  defecto.
 - **La historia reacciona al tiempo** (renglones con `T3`, `!T6`): Inés pide que se apure, y si
   la misión 5 se cumple tarde, el final cambia: "Llegamos tarde para los demás. Pero vamos". La
   pantalla final dice el año y "LLEGASTE TARDE".
@@ -191,23 +196,25 @@ Starfield): las misiones son sistemas marcados y entre ellas hay 16 **sistemas l
 - **Cuanto más lejos, más peligro** (de 1 a 5, por la distancia a la Umbral): escuadrones más
   grandes y más rápidos. Desde peligro 3, el último tramo es un asedio.
 - **Los módulos abren la galaxia** (pedido del usuario: "que las galaxias estén bloqueadas y se
-  desbloqueen a medida que se mejora la nave, y que se vea en la nave"). Muchos sistemas tienen
+  desbloqueen a medida que se mejora la nave, y que se vea en la nave"). **Todos** los sistemas
+  libres tienen
   un **peligro ambiental** con intensidad 1 o 2, y para entrar hace falta el **módulo** de ese
   peligro con ese nivel. Los peligros están **mezclados** por el mapa (casi siempre el del
   bioma, pero con excepciones en todas las zonas): cada módulo abre lugares en varias zonas y el
   orden lo elige el jugador. Es una red, no una escalera.
-  - Un módulo se fabrica en el Hangar (pestaña MÓDULOS) con su **plano** y piezas. Cada plano
-    está en uno o dos sistemas libres (se consigue al despejarlos) y además Inés lo diseña al cumplir
+  - Un módulo se fabrica en el Hangar (pestaña MÓDULOS) con su **plano** y piezas. Al empezar
+    solo la misión 1 está abierta: da el plano del escudo térmico, que abre los primeros
+    sistemas. Los otros planos están en uno o dos sistemas libres (se consiguen al despejarlos) y además Inés lo diseña al cumplir
     la misión anterior a la que lo pide: **la historia nunca se traba** (lo comprueba un test).
   - **Cada nivel se ve en la Alondra** (pixel art encima del sprite, en la grilla de 2 px). En
     el arcade la nave va siempre limpia.
 
   | Módulo | Peligro | Nivel 1 | Nivel 2 | Plano en |
   |---|---|---|---|---|
-  | Escudo térmico | calor (estrellas) | placas naranjas en el borde de las alas | una fila roja más adentro | Kepler, misión 1 |
-  | Filtro de esporas | esporas | cápsulas de metal con luz verde al lado de la cabina | más largas, con dos luces | Vega del Sur, Espora, misión 2 |
-  | Casco de panal | panal (la Colmena) | un panal dorado ralo en las alas | una placa dorada en el borde de atrás | Brasa, Espejo, misión 3 |
-  | Compensador | gravedad (el Abismo) | un anillo violeta abajo del motor | aletas en las puntas de las alas | Oráculo, Panal Viejo, misión 4 |
+  | Escudo térmico | calor (estrellas) | placas naranjas en el borde de las alas | una fila roja más adentro | misión 1 |
+  | Filtro de esporas | esporas | cápsulas de metal con luz verde al lado de la cabina | más largas, con dos luces | Vega del Sur, misión 2 |
+  | Casco de panal | panal (la Colmena) | un panal dorado ralo en las alas | una placa dorada en el borde de atrás | Kepler, Espora, misión 3 |
+  | Compensador | gravedad (el Abismo) | un anillo violeta abajo del motor | aletas en las puntas de las alas | Brasa, Oráculo, misión 4 |
 
   La misión 5 pide el compensador al máximo (la puerta está al lado del agujero negro). El
   Impulsor del hangar también se ve: una tobera más por nivel.
@@ -222,7 +229,7 @@ Starfield): las misiones son sistemas marcados y entre ellas hay 16 **sistemas l
 | Id | Sistema | Nombre | Qué cuenta |
 |---|---|---|---|
 | E01 | Vega del Sur | La sonda | Una sonda de la Umbral grabó el compás hace cuarenta años: siempre estuvo. |
-| E02 | Kepler | La estación Kepler | Quisieron huir de la Marea a la velocidad de la luz: el tiempo los alcanzó. "No se puede escapar huyendo". |
+| E02 | Kepler | La estación Kepler | Quisieron huir de la Marea en naves de carga, lo más lejos posible: la Marea es más ancha que cualquier viaje. "No se puede escapar huyendo". |
 | E03 | Oráculo | El reloj de arena | Un púlsar marcado por los Cantores que cuenta los latidos hasta la Marea. Glifo PRONTO. |
 | E04 | Semillero | El planeta que canta | La fábrica de las monedas. Glifo HOGAR. |
 | E05 | Vigía | El vigía | Una máquina de los Cantores que espera a la Alondra, la mira y se apaga. Glifo LLEGO. |

@@ -21,7 +21,7 @@ class LosRestos(Mision):
     sector = 5
     lugar = (2230, 190)
     ambiente = ("gravedad", 1)
-    gravedad = 0.3
+    corrientes = 0.3
     jefe = False
     oculta = True
     requisitos = ["F02", "F04", "F07"]

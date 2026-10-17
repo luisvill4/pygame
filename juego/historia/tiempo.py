@@ -1,11 +1,12 @@
 """
-El RELOJ DE LA UMBRAL: la relatividad del tiempo en la historia.
+El RELOJ DE LA UMBRAL: el tiempo que se gasta viajando.
 
-Para Alba un viaje dura horas; en la Estacion Umbral pasan años (viaja casi a la velocidad de
-la luz y, cerca del Abismo, la gravedad estira su tiempo todavia mas: galaxia.py). Lo que
-cuenta es el tiempo de la Umbral: progreso.anios. La Marea llega en MAREA_ANIOS.
+La Alondra no es rapida: cruzar entre estrellas lleva meses, y cerca del Abismo las corrientes
+de la Marea la arrastran y lleva mas (galaxia.py). El tiempo pasa igual para todos (Alba
+tambien envejece; sin relatividad: pedido del usuario, se parecia demasiado a Interstellar).
+Lo que cuenta es progreso.anios: la Marea llega en MAREA_ANIOS.
 
-    - Cada año que pasa, Ines manda un mensaje (MENSAJES): ella envejece, Alba no.
+    - Cada año que pasa, Ines manda un mensaje (MENSAJES): asi cuenta la Umbral los dias.
     - El frente de la Marea avanza por el mapa de la galaxia (se ve) y a los MAREA_ANIOS se
       traga la Umbral: desde ahi es TARDE. La historia sigue, pero cambia (los renglones con
       "T6": ver mision.filtrar) y el final tambien.
@@ -16,11 +17,16 @@ Solo reglas chicas sobre el progreso guardado: las usan la galaxia, los pasajes 
 from juego.config import MAREA_ANIOS, MAREA_FRENTE_INICIO, MAREA_FRENTE_POR_ANIO
 from juego.historia.mision import misiones_en_orden
 
+# Los años en que la historia cambia (los renglones con "T3", "T6": mision.filtrar). Si un viaje
+# cruza uno, la galaxia avisa antes de salir (un test vigila que esten todos los que se usan)
+HITOS = [(3, "INES VA A PEDIRTE QUE TE APURES."),
+         (MAREA_ANIOS, "LA UMBRAL CAE. LA HISTORIA CAMBIA.")]
+
 MENSAJES = [        # (años, lo que dice Ines cuando pasan)
-    (1, [("ines", "ALBA, PARA VOS FUERON UNAS HORAS. ACA PASO UN AÑO ENTERO."),
+    (1, [("ines", "UN AÑO DESDE QUE SALISTE, ALBA. LO FESTEJAMOS CON CAFE DE MAQUINA. FALTABAS VOS."),
          ("ines", "LA MAREA YA SE VE DE NOCHE, COMO UNA MANCHA ROJA. LA GENTE SALE A MIRARLA.")]),
     (2, [("ines", "DOS AÑOS. EVACUARON LOS PLANETAS DE AFUERA. NO HAY A DONDE IR, PERO LA GENTE SE MUEVE IGUAL.")]),
-    (3, [("ines", "TRES AÑOS. ME SALIERON CANAS. VOS SEGUIS IGUAL QUE EL DIA QUE TE FUISTE."),
+    (3, [("ines", "TRES AÑOS. ME SALIERON CANAS. A VOS TAMBIEN, SEGURO, AUNQUE NO ME LO DIGAS."),
          ("ines", "NO TE LO DIGO PARA QUE TE APURES. BUENO... UN POCO SI.")]),
     (4, [("ines", "CUATRO AÑOS. LA MAREA YA TAPA MEDIO CIELO. LAS ORBITAS EMPIEZAN A TEMBLAR.")]),
     (5, [("ines", "CINCO AÑOS. LA UMBRAL ES LO UNICO QUE QUEDA EN PIE DE ESTE LADO. ME QUEDO HASTA QUE VUELVAS.")]),
@@ -51,6 +57,14 @@ def mensajes_pendientes(progreso):
     # Los mensajes de Ines de los años que ya pasaron y todavia no se vieron
     return [(anio, renglones) for anio, renglones in MENSAJES
             if anio <= progreso.anios and anio not in progreso.mensajes]
+
+
+def hitos_que_cruza(progreso, anios_de_viaje):
+    # Lo que cambia en la historia si pasan esos años (nada si la historia ya termino)
+    if historia_terminada(progreso):
+        return []
+    llegada = progreso.anios + anios_de_viaje
+    return [texto for anio, texto in HITOS if progreso.anios < anio <= llegada]
 
 
 def frente_de_la_marea(anios):
