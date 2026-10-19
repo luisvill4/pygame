@@ -35,10 +35,13 @@ class ElAcorazado(Mision):
     ]
 
     antes = [
+        ("cuadro", "nebulosa_carmesi"),
         ("ines", "LA NEBULOSA CARMESI QUEMA. LITERALMENTE: LA MAREA ESTA CALENTANDO EL GAS."),
+        ("cuadro", "foto_vieja"),
         ("alba", "INES. ¿CONOCIAS A ALGUIEN DE LA ERRANTE?"),
         ("ines", "AL CAPITAN. MATEO SAAVEDRA."),
         ("ines", "VIVIMOS JUNTOS SIETE AÑOS. SE FUE A SEGUIR EL COMPAS CUANDO NADIE MAS LO OIA. NI YO."),
+        ("cuadro", "alba_sola"),
         ("alba", "...LO SIENTO."),
         ("alba", "YO NO TENGO A NADIE QUE ME ESPERE, INES. POR ESO ME OFRECI."),
         ("ines", "AHORA TIENES. Y NO LO SIENTAS: ENCUENTRA LO QUE EL ENCONTRO. LA ERRANTE PASO POR AQUI."),
@@ -67,14 +70,19 @@ class ElAcorazado(Mision):
     }
 
     despues = [
+        ("cuadro", "metronomos"),
         ("ines", "LOS CAÑONES ERAN METRONOMOS. CON SU RITMO PUDE TRADUCIR LA PRIMERA PALABRA DEL COMPAS."),
         ("alba", "¿CUAL?"),
+        ("cuadro", "sigue"),
         ("ines", "SIGUE."),
         ("alba", "¿SEGUIR QUE?"),
         ("ines", "TODAVIA NO SE. PERO ALGUIEN SE TOMO MUCHO TRABAJO PARA DECIRNOSLO."),
         ("ines", "EN LA UMBRAL YA LES PUSIMOS NOMBRE A LOS QUE MANDAN EL COMPAS: LOS CANTORES."),
-        ("ines", "LA BALIZA QUE ENCONTRASTE PARPADEA CON ESA MISMA PALABRA. MATEO LA HABIA LEIDO HACE TRES AÑOS.", "F12"),
+        ("cuadro", "baliza", "F12"),
+        ("ines", "LA BALIZA QUE ENCONTRASTE PARPADEA CON ESA MISMA PALABRA. MATEO LA HABIA LEIDO ANTES QUE NADIE.", "F12"),
+        ("cuadro", "cuenta_atras", "F04"),
         ("ines", "Y LA BITACORA DE TOMAS DICE QUE LOS CAÑONES SON RELOJES QUE CUENTAN HACIA ATRAS. ¿CUANTO NOS QUEDA?", "F04"),
+        ("cuadro", "rumbo_esmeralda"),
         ("alba", "¿Y AHORA?"),
         ("ines", "EL CAMPO ESMERALDA. ALGO PASA CON LAS MONEDAS AHI: SE MUEVEN SOLAS."),
     ]
@@ -87,7 +95,7 @@ class ElAcorazado(Mision):
                   glifo=escribir("ATRAS"),
                   reaccion=[("alba", "EL ULTIMO CAÑON TENIA ALGO ADENTRO... OTRA BITACORA DE LA ERRANTE.")]),
         Fragmento("F12", "LA BALIZA",
-                  ["LA BALIZA DE EMERGENCIA DE LA ERRANTE. TRES AÑOS ENCENDIDA.",
+                  ["LA BALIZA DE EMERGENCIA DE LA ERRANTE. LLEVA AÑOS ENCENDIDA.",
                    "NO PIDE AYUDA. PARPADEA SIEMPRE LO MISMO, Y TIENE UNA GRABACION DE MATEO:",
                    "AQUI LA ERRANTE. ESTAMOS BIEN. SEGUIMOS. NO NOS ESPEREN."],
                   glifo=escribir("SIGUE"),

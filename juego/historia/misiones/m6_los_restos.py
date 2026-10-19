@@ -40,10 +40,14 @@ class LosRestos(Mision):
     ]
 
     antes = [
-        ("ines", "ALBA. JUNTE LAS TRES BITACORAS Y CALCULE DONDE SE PARTIO LA ERRANTE."),
+        ("cuadro", "calculo"),
+        ("ines", "ALBA. JUNTE TODO LO QUE ENCONTRASTE DE LA ERRANTE Y CALCULE DONDE SE PARTIO."),
         ("ines", "ESTA AL BORDE DEL ABISMO, CERCA DE LA PUERTA. NADIE MAS LO SABE."),
+        ("cuadro", "restos_lejos"),
         ("alba", "¿QUIERES QUE VAYA?"),
-        ("ines", "QUIERO SABER QUE LE PASO. NADA MAS. SIN GUARDIANES, SIN PELEAS. SOLO RESTOS."),
+        ("ines", "QUIERO SABER QUE LE PASO. NADA MAS. SIN GUARDIANES, SIN PELEAS. SOLO RESTOS.", "!M5"),
+        # Despues del final ya se sabe que estan vivos (la mision oculta se puede jugar antes o despues)
+        ("ines", "YA SE QUE ESTA VIVO. PERO QUIERO VER LO QUE QUEDO DE LA ERRANTE. SIN GUARDIANES, SIN PELEAS.", "M5"),
         ("alba", "VOY. Y LO QUE ENCUENTRE, TE LO TRAIGO."),
     ]
 
@@ -57,7 +61,7 @@ class LosRestos(Mision):
             ("mateo", "YO SOLO QUIERO VOLVER A CASA Y CONTARSELO A INES."),
         ],
         "tramo_3": [
-            ("mateo", "DIA 377. LA MAREA NOS ALCANZO. EL CASCO NO AGUANTA. LA PUERTA ESTA AHI MISMO."),
+            ("mateo", "DIA 377. EL ABISMO NOS ATRAPO. EL CASCO NO AGUANTA. LA PUERTA ESTA AHI MISMO."),
             ("alba", "LOS REBOTADORES REPITEN UN SEGUNDO... EL ULTIMO DE LA ERRANTE.", "!F10"),
         ],
         "tramo_4": [
@@ -66,16 +70,24 @@ class LosRestos(Mision):
     }
 
     despues = [
+        ("cuadro", "errante_partida"),
         ("alba", "RECORRI TODO. LA ERRANTE SE PARTIO EN TRES. NO HAY NADIE ADENTRO."),
-        ("ines", "¿NADIE?"),
-        ("alba", "NADIE. FALTA LA CAPSULA DE ESCAPE."),
+        ("ines", "¿NADIE?", "!M5"),
+        ("alba", "NADIE. FALTA LA CAPSULA DE ESCAPE.", "!M5"),
+        ("alba", "FALTA LA CAPSULA DE ESCAPE. LA MISMA QUE VI ABAJO, EN EL REFUGIO.", "M5"),
+        ("cuadro", "caja_negra", "F10"),
         ("ines", "ESCUCHE LA CAJA NEGRA. ENTRARON, ALBA. ENTRARON A LA PUERTA.", "F10"),
-        ("ines", "NO SE SI ESO ES BUENO O MALO. PERO EL DIJO QUE NO ES UN FINAL.", "F10"),
-        ("alba", "INES. SI BAJARON HASTA EL BORDE DEL AGUJERO, PARA ELLOS PASARON MINUTOS. PUEDEN ESTAR VIVOS.", "F10"),
-        ("ines", "ENTONCES SE FUERON. A ALGUN LADO.", "!F10"),
+        ("ines", "NO SE SI ESO ES BUENO O MALO. PERO EL DIJO QUE NO ES UN FINAL.", "F10+!M5"),
+        ("alba", "INES. SI BAJARON HASTA EL BORDE DEL AGUJERO, PARA ELLOS PASARON DIAS, NO AÑOS. PUEDEN ESTAR VIVOS.",
+         "F10+!M5"),
+        ("ines", "Y TENIA RAZON: NO ERA UN FINAL.", "F10+M5"),
+        ("ines", "ENTONCES SE FUERON. A ALGUN LADO.", "!F10+!M5"),
+        ("cuadro", "moneda_mateo", "F13"),
         ("alba", "Y HABIA OTRA MONEDA BLANCA EN LA ESTELA. CON OTRA FIRMA.", "F13"),
-        ("ines", "LA MIRE CON LA CLAVE. DICE... NO. NO PUEDE SER.", "F13+F06"),
+        ("ines", "LA MIRE CON LA CLAVE. DICE... NO. NO PUEDE SER.", "F13+F06+!M5"),
+        ("ines", "LA MIRE CON LA CLAVE. DICE MATEO. LA GRABO EN LA CAPSULA, CAMINO A LA PUERTA.", "F13+F06+M5"),
         ("ines", "NO LA PUEDO LEER. TODAVIA.", "F13+!F06"),
+        ("cuadro", "gracias"),
         ("ines", "GRACIAS, ALBA. DE VERDAD."),
     ]
 

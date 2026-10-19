@@ -11,7 +11,7 @@ import tokenize
 from juego.config import ruta
 
 PROHIBIDAS = ["VOS", "SOS", "ACA", "TENES", "PODES", "QUERES", "SEGUI", "SEGUIS", "SALI", "SALIS",
-              "ELEGI", "CUMPLI", "VENI", "DECI", "DECILE", "ACORDATE", "VOLVE", "VOLVES", "PERDES",
+              "ELEGI", "CUMPLI", "VENI", "DECI", "DECILE", "DECILO", "ACORDATE", "VOLVE", "VOLVES", "PERDES",
               "RENDIS", "APURATE", "APURES", "CORRETE", "PEGALE", "PARTILO", "DESTRUILOS", "ENCONTRA",
               "TITILA", "PRENDE", "PRENDIDA", "AGARRA", "CHIQUITA", "CHIQUITO", "TIRONEA", "TIRONEAR",
               "NOMAS", "CERQUITA"]

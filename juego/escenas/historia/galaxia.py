@@ -23,8 +23,8 @@ el mas cercano en un cono y saltaban a lugares inesperados). Reglas fijas, siemp
     LB / RB (Q / E)         el anterior o siguiente (de izquierda a derecha) al que SE PUEDE VIAJAR
 En el mapa, una flechita arriba de cada vecino dice a donde lleva cada direccion; el cursor no
 titila y lleva el nombre del sistema; el bioma elegido se nombra grande abajo.
-ACEPTAR viaja; OPCIONES abre el Archivo; PAUSA, el Hangar; VOLVER, el inicio. Lo que pasa al
-terminar: pasajes.py.
+ACEPTAR viaja; OPCIONES abre el Archivo; PAUSA, el Hangar; VOLVER, el inicio; F1, el panel del
+desarrollador (escenas/historia/desarrollador.py). Lo que pasa al terminar: pasajes.py.
 """
 import math
 
@@ -34,13 +34,14 @@ from juego import dibujo, interfaz, nave, accesibilidad, recursos
 from juego.dibujo import texto, CHICA, MEDIA, MINI
 from juego.config import (ANCHO, FONDO, SECTORES, ROJO, TEXTO, TEXTO_SUAVE, TEXTO_APAGADO, LINEA_APAGADA, VERDE,
                           CIAN, AMARILLO, VIOLETA, COMPAS_UNIDAD, MAREA_ANIOS, BLANCO, CONTORNO, VIAJE_LARGO_ANIOS,
-                          CENTRO_X)
+                          CENTRO_X, MODO_DESARROLLADOR)
 from juego.entrada import (ACEPTAR, VOLVER, IZQUIERDA, DERECHA, ARRIBA, ABAJO, OPCIONES, PAUSA, PESTANA_ANTERIOR,
-                           PESTANA_SIGUIENTE)
+                           PESTANA_SIGUIENTE, DESARROLLADOR)
 from juego.escenas.base import Escena
 from juego.escenas.historia.dialogo import Dialogo
 from juego.escenas.historia.archivo import Archivo
 from juego.escenas.historia.hangar import Hangar
+from juego.escenas.historia.desarrollador import DesarrolladorGalaxia
 from juego.historia.mision import filtrar
 from juego.historia.modo import ModoHistoria
 from juego.historia.exploracion import ModoExploracion
@@ -81,6 +82,13 @@ class Galaxia(Escena):
         self.viaje = None           # el vuelo en curso: {"desde", "hasta", "paso", "costo", "anios"}
         self.aviso = None           # la pregunta de un viaje largo: {"hasta", "lineas", "viajar"}
         nave.cambiar_equipo(modulos.equipo(self.progreso))     # la Alondra con lo que se le compro
+
+    def refrescar(self):
+        # Despues del panel del desarrollador: la nave con sus modulos y, si el elegido ya no se
+        # ve (la mision oculta, al olvidar un secreto), la ubicacion
+        nave.cambiar_equipo(modulos.equipo(self.progreso))
+        if self.elegida not in [uno.id for uno in self.sistemas()]:
+            self.elegida = self.ubicacion().id
 
     # ---------- Consultas ----------
 
@@ -198,6 +206,8 @@ class Galaxia(Escena):
         elif entrada.pulso(PAUSA):
             self.app.sonidos.reproducir("ui_aceptar")
             self.app.cambiar_escena(Hangar(self.app, volver_a=self))
+        elif MODO_DESARROLLADOR and entrada.pulso(DESARROLLADOR):
+            self.app.cambiar_escena(DesarrolladorGalaxia(self.app, self, self.app.pantalla.copy()), transicion=False)
         elif entrada.pulso(VOLVER):
             from juego.escenas.inicio import Inicio        # (Inicio abre la Galaxia: se importa aqui)
             self.app.sonidos.reproducir("ui_volver")
@@ -273,12 +283,12 @@ class Galaxia(Escena):
         self.progreso.guardar()
         if renglones:
             anio = int(self.progreso.anios)
-            self.app.cambiar_escena(Dialogo(self.app, renglones, lambda: self._despegar(hasta), "ESTACION UMBRAL",
-                                            "AÑO %d" % anio, AMARILLO))
+            self.app.cambiar_escena(Dialogo(self.app, renglones, lambda: self.despegar(hasta), "ESTACION UMBRAL",
+                                            "AÑO %d" % anio, AMARILLO, cuadro="umbral_anio"))
         else:
-            self._despegar(hasta)
+            self.despegar(hasta)
 
-    def _despegar(self, hasta):
+    def despegar(self, hasta):
         # Al bioma del sistema; una mision tiene su dialogo de antes, un sistema libre despega ya
         app = self.app
         app.fondo.ir_a_sector(hasta.bioma, instantaneo=True)
@@ -286,7 +296,7 @@ class Galaxia(Escena):
             app.nueva_partida(modo=ModoExploracion(hasta.id))
             return
         clase = hasta.mision
-        renglones = filtrar(clase.antes, self.progreso.fragmentos, self.progreso.anios)
+        renglones = filtrar(clase.antes, self.progreso.fragmentos, self.progreso.anios, self.progreso.misiones)
         app.cambiar_escena(Dialogo(app, renglones, lambda: app.nueva_partida(modo=ModoHistoria(clase.numero)),
                                    "MISION %d" % clase.numero, clase.titulo, hasta.bioma["color"]))
 

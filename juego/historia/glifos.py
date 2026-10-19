@@ -72,3 +72,12 @@ def dibujar_glifo(pantalla, glifo, izquierda, centro_y, color):
                 x += 24
         x += 14
     return x - izquierda
+
+
+def ancho_glifo(glifo):
+    # Lo que ocupa un glifo dibujado (la misma cuenta que dibujar_glifo): para centrarlo
+    pulsos, _ = ritmo(glifo, 1)
+    letras = glifo.split(" ")
+    cortos = sum(1 for _, _, es_largo in pulsos if not es_largo)
+    largos = len(pulsos) - cortos
+    return cortos * 12 + largos * 24 + len(letras) * 14 - 14

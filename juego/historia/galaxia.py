@@ -90,7 +90,7 @@ SISTEMAS = [
     Sistema("S15", "HORIZONTE", (2000, 110), gravedad=0.3, eco="E07", puerta="S07", ambiente=("gravedad", 1),
             radio={"tramo_1": [("ines", "CERCA DEL ABISMO LOS MENSAJES TARDAN AÑOS EN LLEGAR. A VECES SE QUEDAN.")]}),
     Sistema("S16", "UMBRA", (2330, 480), gravedad=0.6, eco="E08", ambiente=("gravedad", 2),
-            radio={"tramo_1": [("ines", "ALBA, NO DEBERIAS ESTAR TAN CERCA. CADA MINUTO AHI SON SEMANAS AQUI.")]}),
+            radio={"tramo_1": [("ines", "ALBA, NO DEBERIAS ESTAR TAN CERCA. CADA MINUTO AHI SON DIAS AQUI.")]}),
 ]
 
 

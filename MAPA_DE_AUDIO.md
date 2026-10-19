@@ -500,7 +500,8 @@ Más `trueno`, el trueno lejano del relámpago.
 | D22 | El paso se abre (el objetivo no se cumplió en 90 s) | `Director._abrir_el_paso` | — | `anomalia_fin` | P3 |
 | H01 | (Historia) Sale un mensaje de radio | `Partida.actualizar` (cuando la radio empieza uno) | — | `teclear` (provisorio: un clic de radio propio) | P3 |
 | H02 | (Historia) Encontrás un fragmento del Archivo | `ModoHistoria.encontrar` | — | `fragmento`: el compás mismo, A-L-B-A en pulsos cortos y largos (armónico) | P2 |
-| H03 | (Historia) El texto de un diálogo se escribe | `Dialogo.actualizar` | — | `teclear`, cada 3 letras | P3 |
+| H03 | (Historia) El texto de un diálogo o del prólogo se escribe (y pasar, volver o preguntar si saltear) | `Narracion._escribir` (`narracion.py`) | — | `teclear`, cada 3 letras; `ui_mover` al pasar, al volver atrás y al preguntar; `ui_volver` al saltear | P3 |
+| H03b | (Historia) Aparece un cuadro con sonido: el compás del prólogo y El Último que sale de la oscuridad | `Narracion.actualizar` (el `sonido` del `@cuadro`) | — | `fragmento` (A-L-B-A) | P2 |
 | H04 | (Historia) Quieta en la niebla, se oye el compás (secreto F06) | `QuietoEnLaAnomalia.actualizar` | — | `onda_corta` / `onda_larga`, uno por pulso de A-L-B-A, con paneo | P2 |
 | H05 | (Historia) La pantalla final | `Final.musica` | — | `"fin"` en el final de siempre; `"iniciales"` (Do mayor) en el verdadero | P2 |
 | H06 | (Historia) La Alondra sale de viaje en la galaxia | `Galaxia._viajar` | — | `nave_dash_1` (provisorio: un salto propio, largo, con el reloj corriendo) | P3 |

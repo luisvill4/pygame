@@ -18,7 +18,7 @@ from juego.anomalias import TIPOS_ANOMALIA
 from juego.escuadrones import FORMACIONES
 from juego.objetivos import crear_objetivo
 from juego.historia.mision import (misiones_en_orden, todos_los_fragmentos, mision, filtrar, ids_de_la_condicion,
-                                   ids_de_fragmentos, buscar_fragmento)
+                                   ids_de_fragmentos, buscar_fragmento, es_de_mision)
 from juego.historia.modo import ModoHistoria, MIRAR_CADA
 from juego.historia.personajes import PERSONAJES
 from juego.historia.secretos import TIPOS_SECRETO
@@ -32,7 +32,7 @@ from juego.historia.galaxia import ANCHO_GALAXIA, ALTO_GALAXIA
 from juego.escenas.historia.final import Final
 from juego.escenas.juego import Juego
 from juego.escenas.listo import Listo
-from tests.ayudas import avanzar, tecla, jugar, entrar_a_la_historia
+from tests.ayudas import avanzar, tecla, jugar, entrar_a_la_historia, saltear
 
 MOMENTOS_DE_RADIO = {"tramo_1", "tramo_2", "tramo_3", "tramo_4", "jefe"}
 
@@ -127,16 +127,22 @@ def test_los_fragmentos_no_se_repiten_y_cada_secreto_da_uno_de_su_mision():
 
 def test_las_condiciones_nombran_fragmentos_que_existen():
     ids = set(ids_de_fragmentos())
+    numeros = {clase.numero for clase in misiones_en_orden()}
     for clase in misiones_en_orden():
         for renglon in renglones_de(clase):
             if len(renglon) > 2:
                 assert set(ids_de_la_condicion(renglon[2])) <= ids, renglon
+                for parte in renglon[2].split("+"):          # "M5": una mision que existe
+                    if es_de_mision(parte):
+                        assert int(parte.lstrip("!")[1:]) in numeros, renglon
 
 
 def test_quien_habla_existe_y_los_textos_entran(app):
     for clase in misiones_en_orden():
         for renglon in renglones_de(clase):
             personaje, texto = renglon[0], renglon[1]
+            if personaje == "cuadro":       # (el dibujo que se ve desde ahi: tests/test_cuadros.py)
+                continue
             assert personaje in PERSONAJES
             assert not set(texto) & set("ÁÉÍÓÚ"), texto         # (la fuente las dibuja mal)
             assert len(dibujo.partir_lineas(texto, dibujo.CHICA, ANCHO_TEXTO)) <= 4, texto
@@ -198,6 +204,23 @@ def test_los_renglones_se_filtran_con_lo_encontrado():
     assert [texto for _, texto in filtrar(renglones, {"F01", "F06"})] == ["SIEMPRE", "CON F01", "LAS DOS"]
 
 
+def test_los_renglones_se_filtran_con_las_misiones_cumplidas():
+    renglones = [("alba", "ANTES", "!M5"), ("alba", "DESPUES", "M5"), ("alba", "DESPUES CON F01", "M5+F01")]
+    assert [texto for _, texto in filtrar(renglones, set())] == ["ANTES"]
+    assert [texto for _, texto in filtrar(renglones, set(), 0, {5})] == ["DESPUES"]
+    assert [texto for _, texto in filtrar(renglones, {"F01"}, 0, {1, 5})] == ["DESPUES", "DESPUES CON F01"]
+
+
+def test_los_restos_despues_del_final_no_dudan_de_que_esten_vivos():
+    # La mision oculta se puede jugar antes o despues de la 5: despues, Alba ya vio a Mateo vivo
+    restos = mision(6)
+    todo = set(ids_de_fragmentos())
+    antes = " ".join(texto for _, texto in filtrar(restos.antes + restos.despues, todo, 0, {1, 2, 3, 4}))
+    despues = " ".join(texto for _, texto in filtrar(restos.antes + restos.despues, todo, 0, {1, 2, 3, 4, 5}))
+    assert "PUEDEN ESTAR VIVOS" in antes and "NO PUEDE SER" in antes
+    assert "PUEDEN ESTAR VIVOS" not in despues and "NO PUEDE SER" not in despues and "¿NADIE?" not in despues
+
+
 # ---------- El avance guardado ----------
 
 def test_el_avance_se_guarda_y_se_vuelve_a_cargar(tmp_path):
@@ -246,8 +269,7 @@ def test_del_inicio_al_mapa_al_dialogo_y_a_la_mision(app):
     assert mapa.elegida == "M1"                 # (a la derecha, la mas cercana)
     viajar(app, mapa, "M1")
     assert isinstance(app.escena, Dialogo)
-    tecla(pygame.K_ESCAPE)              # saltear el dialogo
-    avanzar(app)
+    saltear(app)
     assert isinstance(app.escena, Listo)
     partida = app.escena.partida
     assert isinstance(partida.modo, ModoHistoria) and partida.modo.mision is mision(1)
@@ -319,8 +341,7 @@ def test_vencer_al_jefe_cumple_la_mision_y_vuelve_al_mapa(app):
     assert isinstance(app.escena, Dialogo)          # el dialogo de despues
     assert 1 in app.progreso.misiones
     assert partida.director.sector is SECTORES[0]   # (no pasa al sector siguiente)
-    tecla(pygame.K_ESCAPE)
-    avanzar(app)
+    saltear(app)
     assert isinstance(app.escena, Galaxia) and app.escena.elegida == "M1"
 
 
@@ -343,8 +364,7 @@ def test_si_la_nave_explota_ines_te_saca_y_no_hay_records(app):
     avanzar(app, 140)
     assert isinstance(app.escena, Dialogo)
     assert app.records.maximo(partida.dificultad) == 0
-    tecla(pygame.K_ESCAPE)
-    avanzar(app)
+    saltear(app)
     assert isinstance(app.escena, Galaxia) and app.escena.elegida == "M1"
 
 
@@ -381,8 +401,7 @@ def test_la_mision_sin_jefe_se_cumple_al_despejar_el_ultimo_tramo(app):
     assert app.escena.musica != "tension"
     avanzar(app, int(AVISO_TRAMO / MS_POR_FRAME) + 10)
     assert isinstance(app.escena, Dialogo) and 6 in app.progreso.misiones
-    tecla(pygame.K_ESCAPE)
-    avanzar(app)
+    saltear(app)
     assert isinstance(app.escena, Galaxia)
 
 
@@ -642,8 +661,7 @@ def test_despues_de_la_ultima_mision_viene_el_final(app, verdadero):
         app.progreso.encontrar_fragmento("F11")
     quienes = terminar_la_ultima(app)
     assert ("voz" in quienes) == verdadero              # la Bitacora sin fecha, solo con la verdad
-    tecla(pygame.K_ESCAPE)
-    avanzar(app)
+    saltear(app)
     assert isinstance(app.escena, Final)
     assert app.escena.musica == ("iniciales" if verdadero else "fin")
     avanzar(app, 300)                       # (se dibuja todo)

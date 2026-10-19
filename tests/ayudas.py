@@ -29,6 +29,14 @@ def boton(numero):
     pygame.event.post(pygame.event.Event(pygame.JOYBUTTONDOWN, button=numero, instance_id=0, joy=0))
 
 
+def saltear(app):
+    # Saltea un dialogo o el prologo: VOLVER pregunta y VOLVER otra vez saltea (Narracion)
+    tecla(pygame.K_ESCAPE)
+    avanzar(app)
+    tecla(pygame.K_ESCAPE)
+    avanzar(app)
+
+
 def ir_al_ajuste(app, nombre):
     # En Opciones recien abierto: pasa a la seccion del ajuste (con E) y baja hasta el.
     # Solo aprieta las teclas (despues hay que avanzar la App)
@@ -57,8 +65,7 @@ def entrar_a_la_historia(app):
     tecla(pygame.K_RETURN)
     avanzar(app)
     if isinstance(app.escena, Prologo):
-        tecla(pygame.K_ESCAPE)
-        avanzar(app)
+        saltear(app)
     return app.escena
 
 

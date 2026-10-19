@@ -6,6 +6,7 @@ Salen de a uno, en una cola (el mismo patron que los avisos de arriba, avisos.py
 mensaje se ve un rato que depende de lo largo que es. Aqui esta solo la logica (cuando
 empieza y termina cada uno, con partida.tiempo); como se ve lo dibuja carteles.radio().
 """
+from juego import accesibilidad
 from juego.config import RADIO_MS_MINIMO, RADIO_MS_POR_LETRA
 
 
@@ -18,7 +19,8 @@ class Mensaje:
         self.hasta = None
 
     def duracion(self):
-        return max(RADIO_MS_MINIMO, len(self.texto) * RADIO_MS_POR_LETRA)
+        # (con TEXTO LENTO dura mas: hay quien lee mas despacio)
+        return max(RADIO_MS_MINIMO, len(self.texto) * RADIO_MS_POR_LETRA) * accesibilidad.factor_lectura()
 
 
 class Radio:

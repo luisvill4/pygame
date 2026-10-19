@@ -65,6 +65,16 @@ class Modo:
         # (una mision tranquila de la historia). Casi siempre hay jefe
         return True
 
+    # ---------- El modo desarrollador ----------
+
+    def secretos_de_prueba(self):
+        # Los secretos que el panel de F1 puede dar ya: [(id, nombre, encontrado), ...].
+        # Por defecto, ninguno (el arcade no tiene)
+        return []
+
+    def revelar_secreto(self, id_secreto):
+        pass
+
     # ---------- Avisos (el Director y la Partida le cuentan lo que pasa) ----------
 
     def al_empezar_tramo(self, numero):

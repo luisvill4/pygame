@@ -206,6 +206,7 @@ GLIFOS = {
     "volver": (["ESC"], ["B"]),
     "elegir": (["ARRIBA", "ABAJO"], ["CRUZ_V"]),
     "cambiar": (["IZQ", "DER"], ["CRUZ_H"]),
+    "anterior": (["IZQ"], ["CRUZ_H"]),
     "pestanas": (["Q", "E"], ["LB", "RB"]),
     "pausa": (["P"], ["MENU"]),
     "opciones": (["O"], ["VISTA"]),

@@ -302,6 +302,23 @@ class Director:
         if self.objetivo is not None:
             self.objetivo.progreso = self.objetivo.meta
 
+    def saltar_tramo(self):
+        # El modo desarrollador: el objetivo cumplido y la zona despejada ya (los enemigos se van
+        # sin premio ni festejo). En el paso siguiente, _revisar_objetivo pasa al tramo que sigue
+        # (o al jefe, o a la zona despejada). Devuelve False si ahora no hay tramo (el jefe, el cierre)
+        partida = self.partida
+        if self.objetivo is None or self.tramo is None or partida.jefe is not None or self.cerrando_sector():
+            return False
+        if self.en_asedio:
+            self.terminar_asedio(superado=False)
+        self.cumplir_objetivo()
+        self.objetivo_festejado = True
+        for enemigo in list(partida.enemigos):
+            partida.quitar_enemigo(enemigo)
+        self.escuadrones = []
+        partida.balas.clear()
+        return True
+
     def lanzar_escuadron(self, pedido=None):
         # El siguiente escuadron del guion (o 'pedido' = (tipo, cantidad, formacion), como el
         # modo desarrollador): cada miembro entra volando desde su lugar de la formacion

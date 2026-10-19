@@ -5,7 +5,7 @@ MAR DE AMBAR (la Madre del Enjambre). La Colmena es una biblioteca. El mensaje s
 entero: SIGUE LAS MONEDAS, y despues una firma.
 
 Secretos: la tercera bitacora (20 monedas seguidas: cantan tan fuerte que la radio capta
-un eco de hace tres años) y las bibliotecarias (vencer a la Colmena sin romper una abeja).
+un eco de la ultima transmision de la Errante) y las bibliotecarias (vencer a la Colmena sin romper una abeja).
 Que cuenta y que esconde: HISTORIA.md. Como se escribe una mision: historia/mision.py.
 """
 from juego.historia.mision import Mision, Fragmento, registrar_mision
@@ -35,10 +35,12 @@ class LaColmena(Mision):
     ]
 
     antes = [
+        ("cuadro", "umbral_caida", "T6"),
         ("ines", "TE HABLO DESDE UNA NAVE: LA UMBRAL YA NO EXISTE. SEGUIMOS, ALBA. SIGUE.", "T6"),
+        ("cuadro", "panal"),
         ("ines", "EL MAR DE AMBAR ES UN PANAL DEL TAMAÑO DE UN SISTEMA SOLAR. CON INSCRIPCIONES. MILLONES."),
         ("alba", "UNA BIBLIOTECA."),
-        ("ines", "ESO CREO. Y SEGUN LAS BITACORAS, LA ERRANTE TAMBIEN LLEGO HASTA AQUI."),
+        ("ines", "ESO CREO. Y LA ERRANTE TAMBIEN LLEGO HASTA AQUI."),
         ("ines", "TRAEME TODO LO QUE SE PUEDA LEER, ALBA. TODO."),
     ]
 
@@ -64,18 +66,22 @@ class LaColmena(Mision):
     }
 
     despues = [
+        ("cuadro", "mensaje_entero"),
         ("ines", "ALBA... CON LO QUE TRAJISTE, EL COMPAS SE LEE ENTERO."),
-        ("alba", "DECILO."),
+        ("alba", "DILO."),
         ("ines", "SIGUE LAS MONEDAS."),
-        ("ines", "Y DESPUES UNA FIRMA EN GLIFOS. NO LA PUEDO LEER.", "!F06"),
+        ("ines", "Y DESPUES UNA FIRMA: UN NOMBRE. LOS NOMBRES NO SE TRADUCEN... NO LA PUEDO LEER.", "!F06"),
         ("ines", "Y DESPUES UNA FIRMA. LA MISMA DE LA MONEDA BLANCA: ALBA.", "F06+F01"),
         ("ines", "Y DESPUES UNA FIRMA. LA LEI CON LA CLAVE DEL COMPAS: DICE ALBA.", "F06+!F01"),
         ("alba", "TODO ESTE VIAJE PARA QUE NOS DIGAN LO QUE YA ESTAMOS HACIENDO."),
+        ("cuadro", "abismo"),
         ("ines", "HAY ALGO MAS. EL COMPAS NO SALE DE LA MAREA. SALE DEL ABISMO AZUL. DE UN AGUJERO NEGRO."),
+        ("cuadro", "eco_mateo", "F07"),
         ("ines", "Y ALBA... LA TRANSMISION QUE CAPTASTE ES LA ULTIMA DE MATEO. DICE TU NOMBRE.", "F07"),
-        ("ines", "Y DICE QUE NO SON MUCHOS. QUE ES UNO SOLO. HACE TRES AÑOS, ANTES DE QUE NOS CONOCIERAMOS.", "F07"),
+        ("ines", "Y DICE QUE NO SON MUCHOS. QUE ES UNO SOLO. LO DIJO ANTES DE QUE NOS CONOCIERAMOS.", "F07"),
         ("alba", "...HABRA LEIDO LA FIRMA DE LAS MONEDAS. NADA MAS.", "F07"),
         ("ines", "SI. SERA ESO.", "F07"),
+        ("cuadro", "poema", "F08"),
         ("ines", "OTRA COSA: EL POEMA DE LA CELDA ESTA EN SINGULAR. NO DICE NOSOTROS. DICE YO.", "F08"),
     ]
 
@@ -87,9 +93,9 @@ class LaColmena(Mision):
                   reaccion=[("mateo", "...LLEGAMOS, INES. ES UNO SOLO. (ESTATICA) ...SE LLAMA ALBA..."),
                             ("alba", "¿QUE FUE ESO? ¿DIJO MI NOMBRE?")]),
         Fragmento("F08", "LAS BIBLIOTECARIAS",
-                  ["LAS ABEJAS VOLVIERON A CASA Y LA CELDA MAS VIEJA SE ABRIO. ADENTRO, UN POEMA. ESTA ESCRITO EN SINGULAR:",
-                   "LA VI LLEGAR UNA VEZ, Y SE LLEVO A TODOS. LA VOY A VER LLEGAR OTRA.",
-                   "ESTA VEZ NO VOY A LLEGAR TARDE."],
+                  ["LAS ABEJAS VOLVIERON A CASA Y LA CELDA MAS NUEVA SE ABRIO. ADENTRO, UN POEMA. ESTA ESCRITO EN SINGULAR:",
+                   "LA VI LLEGAR A MI CIELO Y A OTROS, Y SE LLEVO A TODOS. LA VOY A VER LLEGAR OTRA VEZ.",
+                   "QUE ESTA VEZ ALGUIEN LLEGUE A TIEMPO."],
                   glifo=escribir("OTRA"),
                   reaccion=[("alba", "LAS ABEJAS VOLVIERON A CASA... Y SE ABRIO UNA CELDA. HAY UN TEXTO.")]),
     ]

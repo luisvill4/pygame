@@ -8,11 +8,13 @@ efecto nuevo respeta lo que eligio el jugador con solo usar estas funciones:
     brillo_crt()           que tan oscuras son las lineas CRT (255 = sin lineas)
     fuerza_neon()          cuanto brillan las cosas de neon (0 = nada, 1 = normal)
     escalado_suave()       la ventana agranda con pixeles parejos (ver ORDEN_ESCALADO)
+    letras_por_paso()      que tan rapido se escriben los dialogos (VELOCIDADES_TEXTO)
+    factor_lectura()       cuanto mas dura un mensaje de radio (con TEXTO LENTO)
 
 La App le pasa sus opciones al arrancar (accesibilidad.opciones = ...).
 Sin opciones (por ejemplo, en algunos tests) todo funciona como siempre.
 """
-from juego.config import NIVELES_TEMBLOR, NIVELES_CRT, NIVELES_NEON
+from juego.config import NIVELES_TEMBLOR, NIVELES_CRT, NIVELES_NEON, VELOCIDADES_TEXTO, LECTURA_LENTA
 
 opciones = None         # las opciones del jugador (guardado.Opciones); las pone la App
 
@@ -41,3 +43,13 @@ def fuerza_neon():
 
 def escalado_suave():
     return opciones is not None and opciones.escalado == "SUAVE"
+
+
+def letras_por_paso():
+    if opciones is None:
+        return VELOCIDADES_TEXTO["NORMAL"]
+    return VELOCIDADES_TEXTO[opciones.texto]
+
+
+def factor_lectura():
+    return LECTURA_LENTA if opciones is not None and opciones.texto == "LENTO" else 1

@@ -17,7 +17,7 @@ from juego.config import CENTRO_X, FONDO, VIOLETA, ROJO, AMARILLO, TEXTO, TEXTO_
 from juego.entrada import ACEPTAR
 from juego.escenas.base import Escena
 from juego.historia.mision import misiones_en_orden, ids_de_fragmentos
-from juego.historia.glifos import escribir, dibujar_glifo, ritmo
+from juego.historia.glifos import escribir, dibujar_glifo, ancho_glifo
 from juego.historia import fichas, tiempo
 from juego.sonido import SILENCIO
 
@@ -90,7 +90,7 @@ class Final(Escena):
     def _dibujar_mensaje(self, pantalla, y):
         # El mensaje del compas en glifos, palabra por palabra; en el final verdadero, traducido
         glifos = [escribir(palabra) for palabra in MENSAJE]
-        anchos = [_ancho_glifo(glifo) for glifo in glifos]
+        anchos = [ancho_glifo(glifo) for glifo in glifos]
         x = CENTRO_X - (sum(anchos) + 40 * (len(glifos) - 1)) // 2
         for glifo, ancho in zip(glifos, anchos):
             dibujar_glifo(pantalla, glifo, x, y, VIOLETA)
@@ -110,11 +110,3 @@ class Final(Escena):
             texto(pantalla, nombre, CHICA, TEXTO_SUAVE, centro, y)
             texto(pantalla, "%d/%d" % (tengo, total), MEDIA, VERDE if tengo == total else TEXTO, centro, y + 34)
 
-
-def _ancho_glifo(glifo):
-    # Lo que ocupa un glifo dibujado (la misma cuenta que dibujar_glifo)
-    pulsos, _ = ritmo(glifo, 1)
-    letras = glifo.split(" ")
-    cortos = sum(1 for _, _, es_largo in pulsos if not es_largo)
-    largos = len(pulsos) - cortos
-    return cortos * 12 + largos * 24 + len(letras) * 14 - 14

@@ -1,5 +1,6 @@
 """La Fortaleza y el sistema de partes: la marcha de los cañones, el ritmo y el baile final."""
 import math
+import random
 
 import pytest
 
@@ -84,6 +85,9 @@ def test_romper_un_canon_da_puntos_y_acelera_el_pulso(partida):
 
 
 def test_ataca_de_a_un_canon_y_con_pocas_balas(partida):
+    # El cañon que ataca sale al azar: con la semilla fija no depende de cuantos numeros al azar
+    # usaron los tests de antes (fallaba o no segun el orden en que corrian)
+    random.seed(0)
     jefe = llegar_a_la_fortaleza(partida)
     partida.nave.invulnerable_hasta = math.inf
     atacaron = set()

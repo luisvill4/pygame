@@ -11,7 +11,10 @@ El juego tiene dos modos: **ARCADE** (la ruta infinita de siempre, con récords 
 ## 1. Lo que sabe el jugador al empezar
 
 Lo cuenta el **prólogo** (`escenas/historia/prologo.py`), la primera vez que se entra a la
-HISTORIA: un narrador y un dibujo por cuadro. Pedido del usuario: "ni siquiera sé qué es la
+HISTORIA: un narrador y un dibujo por cuadro. Los diálogos de antes y después de cada misión se
+cuentan igual (pedido del usuario: "quiero lo mismo para cada diálogo"): arriba, un escenario de
+cine con el **cuadro** que va con lo que se dice; abajo, quién habla. Los cuadros están en
+`escenas/historia/cuadros/` (uno por misión, los comunes y los del prólogo). Pedido del usuario: "ni siquiera sé qué es la
 Marea: escribiste la historia pero no hay ningún guion". El guion completo, armado con los
 textos del juego, está en **`GUION.md`** (`python herramientas/guion.py` lo rehace).
 
@@ -20,19 +23,20 @@ contra nada: va a pasar cerca, y su gravedad va a tironear las estrellas y los p
 la Luna tira del mar** hasta desarmar las órbitas. Por eso la llamaron **la Marea**. Faltan seis
 años. No se puede frenar y ninguna nave llega lo bastante lejos para escapar.
 
-En todas las radios aparece un **compás**: pulsos cortos y largos que se repiten, lentos, como
-en cámara lenta. No es ruido: alguien lo manda. Suena más fuerte cerca de unos objetos de metal
+Hace tres meses, en todas las radios apareció un **compás**: pulsos cortos y largos que se
+repiten, lentos, como en cámara lenta. No es ruido: alguien lo manda. Suena más fuerte cerca de unos objetos de metal
 que flotan en el Cinturón Exterior. Por la forma les dicen **monedas**.
 
-Hace tres años, **Mateo Saavedra** salió con su nave, la **Errante**, a buscar de dónde venía el
-compás. Nunca volvió.
+Pero alguien lo había oído antes: hace tres años, **Mateo Saavedra** salió con su nave, la
+**Errante**, a buscar de dónde venía el compás. Nunca volvió.
 
 **La relatividad (decisión del usuario: "es lo que más salsa le da al juego"):** para llegar
 lejos hay que viajar casi a la velocidad de la luz, y eso tiene un precio. Para la piloto un
 viaje dura horas; en la Estación Umbral pasan meses. Cerca de un agujero negro, todavía más.
 Cada viaje acerca la Marea.
 
-**Alba**, piloto de la nave **Alondra**, se ofrece a seguir el compás hasta donde nace. **Inés
+**Alba**, piloto de la **Alondra** (la única nave que le queda a la Umbral capaz de ir tan
+lejos), se ofrece a seguir el compás hasta donde nace. **Inés
 Coria** la guía por radio desde la **Estación Umbral**.
 
 ## 2. La verdad (lo que se revela al final)
@@ -46,26 +50,50 @@ Reemplazó al bucle "los Cantores somos nosotros", que se parecía demasiado a *
    ochenta años; afuera, millones. En cada galaxia que la Marea va a cruzar deja lo mismo: las
    **monedas**, los **guardianes** (sus pruebas: el camino solo lo termina quien aprende el
    ritmo) y el **compás**, un camino hasta su refugio. **Nunca nadie llegó a tiempo.**
-3. Su refugio está pegado al borde del agujero negro del Abismo, adentro del anillo que cuida
-   *El Fin de la Luz*. Ahí abajo el tiempo casi se detiene: **una hora son mil años de afuera**.
-   Por eso el compás suena lento: lo toca desde ahí.
+3. Su refugio está al borde del agujero negro del Abismo, adentro del anillo que cuida *El Fin
+   de la Luz*. Tiene dos alturas: **la estación**, donde recibe a Alba (ahí **un minuto es un día
+   de afuera**), y **el borde mismo**, más abajo, donde vive él (ahí **una hora son mil años de
+   afuera**). Por eso el compás suena lento: lo toca desde ahí abajo.
 4. La salida no es un lugar, es un **cuándo**: la Marea no se puede frenar, **pero se puede
-   dejar pasar**. Las naves bajan unas horas con él y, cuando suben, la Marea ya está lejos y las
+   dejar pasar**. Las naves bajan unas horas con él hasta el borde mismo y, cuando suben, la Marea ya está lejos y las
    estrellas quietas otra vez. Por eso el compás termina diciendo **VENGAN**.
 5. Aprendió nuestro idioma escuchando nuestras radios durante cuarenta años (por eso escribe con
-   Morse, el código más simple que encontró). Su nombre, en nuestro idioma, quiere decir
-   **amanecer**: lo grabó en todas las monedas como **ALBA**. Que la piloto se llame igual es lo
+   Morse, el código más simple que encontró). El compás es más viejo (lo oyeron hace trescientos
+   años, E06, y una sonda lo grabó hace cuarenta, E01), pero **todo lo que está escrito en nuestro
+   idioma tiene menos de cuarenta años**: a medida que aprendía, sus máquinas volvieron a grabar
+   el camino (las monedas en el Semillero, los cañones, las boyas, los carteros) y él escribió en
+   la celda más nueva de la Colmena y rayó su nombre nuevo encima del viejo en su primera nave
+   (E08). Su nombre, en nuestro idioma, quiere decir **amanecer**: lo grabó en todas las monedas
+   como **ALBA**. Que la piloto se llame igual es lo
    que hace que Inés diga "no te lo tomes personal".
-6. **Mateo, Rocío y Tomás están vivos**, abajo, con él: la Errante se partió al borde del Abismo
-   y bajaron en la cápsula. Para ellos pasaron dos días; para Inés, tres años.
+6. **Mateo, Rocío y Tomás están vivos**, en la estación, con él: la gravedad del Abismo partió a
+   la Errante (no la Marea: la Marea viene del lado de la Umbral y es lo último que llega al
+   Abismo) y bajaron en la cápsula, que pasó **por un hueco del anillo** sin vencer al guardián.
+   Por eso El Último dice que "nunca nadie **terminó el camino** a tiempo": Mateo llegó, pero roto
+   y sin poder volver. Para ellos, desde que bajaron, pasaron dos días; afuera, años.
 
 **El final verdadero** (con todo encontrado): El Último le muestra a Alba su primera bitácora,
-de cuando era un piloto joven siguiendo monedas. **A él también le dejaron un camino**, nunca
+de cuando era un piloto joven siguiendo monedas (en su idioma: él se la traduce). **A él también le dejaron un camino**, nunca
 supo quién: siempre hubo alguien adelante. Ya está viejo y no aguanta otro viaje, y alguien tiene
 que ir adelante de la Marea, a la galaxia que sigue. Alba se queda con su nombre y su tarea:
 **ahora las monedas las deja Alba**. No es un bucle en el tiempo: es una **posta**.
 
 **Regla de oro:** ningún secreto contradice esto, y cada uno, mirado después, apunta hacia aquí.
+
+### Las escalas del tiempo (para no contradecirse)
+
+Cuando un texto diga cuánto tiempo pasa, que caiga en esta escala:
+
+| Dónde | Para Alba | En la Umbral |
+|---|---|---|
+| Un viaje (casi a la velocidad de la luz) | horas | meses (un viaje largo, más de un año) |
+| Cerca del borde del Abismo (la pelea con El Fin de la Luz, Umbra) | un minuto | días |
+| La puerta, al golpearla desde el lado de casa (F09) | un segundo | horas |
+| La estación de El Último (donde están Mateo y los suyos) | un minuto | un día |
+| El borde mismo (donde vive El Último y bajan las naves) | una hora | mil años |
+
+La relatividad nunca se siente en el propio reloj: el de Alba anda normal y es **el de la Umbral**
+el que corre (F09 lo dice así).
 
 ## 3. Personajes
 
@@ -73,7 +101,7 @@ que ir adelante de la Marea, a la galaxia que sigue. Alba se queda con su nombre
 |---|---|---|
 | **ALBA** | Piloto de la Alondra. Terca, con humor seco. No cree en señales del destino. No tiene a nadie que la espere: por eso se ofreció. | Frases cortas. Se ríe del peligro. |
 | **INÉS CORIA** | Astrofísica de la Estación Umbral. Es la voz de la radio. Vivió siete años con Mateo. | Precisa, cálida, cansada. Dice "compás" y no "señal". |
-| **MATEO SAAVEDRA** | Capitán de la Errante. Oyó el compás tres años antes que nadie y salió a seguirlo. Está vivo, abajo, con El Último. | Tranquilo, un poco poeta. Hasta la misión 5 solo se oye su voz grabada. |
+| **MATEO SAAVEDRA** | Capitán de la Errante. Oyó el compás casi tres años antes que la Umbral y salió a seguirlo. Está vivo, abajo, con El Último. | Tranquilo, un poco poeta. Hasta la misión 5 solo se oye su voz grabada. |
 | **ROCÍO VEGA** | Ingeniera de la Errante. Fue la primera en notar que las monedas "cantan". | Entusiasta, desconfía de las explicaciones fáciles. |
 | **TOMÁS ILIC** | Navegante de la Errante. Cuenta todo: los disparos, los días, los pulsos. | Metódico. |
 | **EL ÚLTIMO** | El que dejó las monedas. El último de su pueblo. Aparece recién al final de la misión 5: viejo, con la capucha violeta y los ojos que brillan. Hasta ahí, Inés cree que son muchos y les dice "los Cantores". | Pausado, con frases cortas y un castellano aprendido de la radio. "Llegaste." |
@@ -88,11 +116,13 @@ la Luz*.
 | Cuándo | Qué pasa |
 |---|---|
 | Hace millones de años | La Marea arrasa la galaxia de El Último. Él sigue unas monedas que alguien dejó, llega tarde y se salva solo. Empieza a viajar adelante de la Marea. |
-| Hace miles de años (de los nuestros) | Llega a nuestra galaxia. Sus máquinas arman el camino: las monedas (el Semillero), los guardianes, la Colmena (una biblioteca), el anillo del Abismo. |
-| Hace cuarenta años | Una sonda de la Umbral graba el compás sin que nadie lo note (E01). Él empieza a escuchar nuestras radios. |
-| Hace tres años | Mateo oye el compás. Nadie le cree. Sale con la Errante (Rocío y Tomás) a seguir las monedas. En la niebla aprende a leer los glifos. |
-| Hace tres años, día 377 | La Marea alcanza a la Errante al borde del Abismo y la parte en tres. Mateo transmite "...es uno solo... se llama Alba..." y baja con la tripulación en la cápsula. Para ellos, desde entonces, pasaron dos días. |
-| Hace tres meses | La Estación Umbral capta el compás. Inés lo decodifica en parte. |
+| Hace miles de años (de los nuestros) | Llega a nuestra galaxia. Sus máquinas arman el camino: las monedas (el Semillero), los guardianes, la Colmena (una biblioteca), el anillo del Abismo. El compás ya suena, en su idioma. |
+| Hace trescientos años | Una nave generacional oye el compás y da la vuelta para seguirlo. Nunca llega (E06). |
+| Hace cuarenta años | Una sonda de la Umbral graba el compás sin que nadie lo note (E01). Él empieza a escuchar nuestras radios y, mientras aprende, vuelve a grabar el camino en nuestro idioma. |
+| Hace seis años | Los telescopios de la Umbral ven la Marea. Faltan doce años. |
+| Hace tres años | Mateo oye el compás. Nadie le cree. Sale con la Errante (Rocío y Tomás) a seguir las monedas. En la Nebulosa traduce SIGUE con los cañones (como Inés después) y deja la baliza; en la niebla aprende a leer los glifos. |
+| Hace uno o dos años (el día 377 a bordo) | La gravedad del Abismo atrapa a la Errante y la parte en tres. Mateo transmite "...es uno solo... se llama Alba..." y baja con la tripulación en la cápsula, por un hueco del anillo. Para ellos, desde entonces, pasaron dos días. |
+| Hace tres meses | El compás aparece en todas las radios. Inés empieza a descifrarlo. Alba se ofrece. |
 | El juego | Alba sigue el compás, misión por misión. Cada viaje gasta meses en la Umbral. |
 | Al final de la misión 5 | Alba baja y encuentra a El Último (y a Mateo). Su mensaje tarda tres días en llegar a la Umbral. El compás suma una palabra: VENGAN. Las naves se preparan. |
 
@@ -131,12 +161,14 @@ radio en cada tramo y secretos. Las misiones ganadas se rejuegan para buscar lo 
 | 2 | Nebulosa Carmesí | EL ACORAZADO | Inés cuenta quién era Mateo; Alba, por qué se ofreció. Los cañones son metrónomos: Inés traduce la primera palabra, **SIGUE**. |
 | 3 | Campo Esmeralda | LA DEVORADORA | Alguien más junta monedas: los ladrones, que salen todos hacia el Abismo. En la niebla, la radio no pasa: Alba está sola. |
 | 4 | Mar de Ámbar | LA COLMENA | La Colmena es una biblioteca. El mensaje se lee entero: **SIGUE LAS MONEDAS**, con una firma. El compás sale del Abismo, de un agujero negro. |
-| 5 | Abismo Azul | EL FIN DE LA LUZ | El anillo se abre. Alba baja y encuentra a **El Último**, que le cuenta todo, y a Mateo, vivo. Ahí abajo una hora son mil años: se puede dejar pasar la Marea. El compás dice **VENGAN**. |
-| 6 | Al borde del Abismo (oculta) | LOS RESTOS | Aparece con las tres bitácoras (F02, F04, F07). Sin guardián: los restos de la Errante y el diario de Mateo por la radio. La tripulación no está: falta la cápsula. Alba: "si bajaron al borde, para ellos pasaron minutos". |
+| 5 | Abismo Azul | EL FIN DE LA LUZ | El anillo se abre. Alba baja y encuentra a **El Último**, que le cuenta todo, y a Mateo, vivo. En el borde mismo una hora son mil años: se puede dejar pasar la Marea. El compás dice **VENGAN**. |
+| 6 | Al borde del Abismo (oculta) | LOS RESTOS | Aparece con los tres restos de la Errante (F02, F04, F07). Sin guardián: los restos y el diario de Mateo por la radio. La tripulación no está: falta la cápsula. Alba: "si bajaron al borde, para ellos pasaron días, no años". Se puede jugar antes o después de la misión 5: después, Inés y Alba ya saben que están vivos (renglones con `M5`). |
 
 **Los diálogos reaccionan a lo encontrado** (renglones con condición, ver `mision.py`): por
 ejemplo, con la clave del compás (F06) y la moneda grabada (F01), Inés lee la firma: "DICE...
-ALBA". Sin ellas, no la puede leer. Y la radio solo da una pista si todavía falta lo que señala.
+ALBA". Sin la clave no la puede leer: ella traduce el compás por palabras, y los nombres no se
+traducen. La radio solo da una pista si todavía falta lo que señala. Las condiciones también
+miran el tiempo (`T6`: ya pasaron 6 años) y las misiones cumplidas (`M5`).
 
 ## 7. Las capas del misterio
 
@@ -171,8 +203,14 @@ El Último escribe con **ritmos**: cada glifo es una letra hecha de pulsos corto
 | F09 La brújula | CUANDO |
 | F12 La baliza (la parpadea) | SIGUE |
 | F13 La otra firma | MATEO |
+| E03 El reloj de arena (la boya más grande) | PRONTO |
+| E04 El planeta que canta (en el suelo) | HOGAR |
+| E05 El vigía (lo enciende al ver la Alondra) | LLEGO |
 | La ficha EL COMPÁS, el sonido `fragmento` y E08 | ALBA |
 | La pantalla final | SIGUE LAS MONEDAS |
+
+Todo glifo está en nuestro idioma, así que **no puede tener más de cuarenta años** (sección 2,
+punto 5): si un texto dice que algo escrito es antiguo, que sea "lo nuevo encima de lo viejo".
 
 En el código, los glifos se escriben con `glifos.escribir("ALBA")` y el ritmo en el tiempo sale
 de `glifos.ritmo` (lo usan la baliza, los pulsos de la niebla y el planeta del Abismo, que late
@@ -185,19 +223,19 @@ Cada secreto: **dónde**, **cómo se encuentra** (nunca a simple vista), **la pi
 
 | Id | Misión | Nombre | Cómo se encuentra | Pista antes | Qué cuenta | Pista que deja | Estado |
 |---|---|---|---|---|---|---|---|
-| F01 | 1 | La moneda grabada | Desde el tramo 2, después de 15 monedas aparece una moneda blanca que gira lento. Si no la agarrás en 6 s, se apaga. | Radio T2: "todas tienen un símbolo grabado". Al aparecer, Alba: "¿Y esa moneda blanca?" | Un glifo grande: una firma. | Hay glifos para traducir. | 🟨 |
-| F02 | 1 | La Errante 1/3 | En el tramo 3, unos restos cruzan el fondo, apagados como el fondo. Solo el dash los abre. | Radio T3: "hay algo en el fondo, entre las rocas... no, nada". | Rocío: las monedas cantan cuando las juntás rápido. | La Errante existió. Las monedas cantan (el combo). | 🟨 |
+| F01 | 1 | La moneda grabada | Desde el tramo 2, después de 15 monedas aparece una moneda blanca que gira lento. Si no la tomas en 6 s, se apaga. | Radio T2: "todas tienen un símbolo grabado". Al aparecer, Alba: "¿Y esa moneda blanca?" | Un glifo grande: una firma. | Hay glifos para traducir. | 🟨 |
+| F02 | 1 | La Errante 1/3 | En el tramo 3, unos restos cruzan el fondo, apagados como el fondo. Solo el dash los abre. | Radio T3: "hay algo en el fondo, entre las rocas... no, nada". | Rocío: las monedas cantan cuando las juntas rápido. | La Errante existió. Las monedas cantan (el combo). | 🟨 |
 | F03 | 1 | La mirada del Ojo | Vencer al Ojo sin recibir un golpe en todo el sector. | Radio jefe: "si sales sin un rasguño, puedo medir a dónde apunta". | La lente apuntaba al Abismo, como una brújula. | Algo importante está en el Abismo (y es la clave de F09). | 🟨 |
 | F04 | 2 | La Errante 2/3 | Romper los cuatro cañones del Acorazado **de izquierda a derecha** (se puede: el que no toca, no se le pega). | Radio jefe: "Mateo decía que un reloj se lee como un libro. En orden". | Tomás: los cañones son relojes y cuentan hacia atrás, como una cuenta regresiva. Glifo ATRAS. | Alguien sabe cuánto falta. | 🟨 |
-| F12 | 2 | La baliza | En la tormenta solar (tramo 3) cruza una baliza apagada que parpadea con un glifo. Dash. | Radio T3: "entre la estática me llega una baliza. ¿La ves?" | La grabación de Mateo: "Estamos bien. Seguimos. No nos esperen". Parpadea SIGUE. | Mateo leyó la primera palabra hace tres años. | 🟨 |
+| F12 | 2 | La baliza | En la tormenta solar (tramo 3) cruza una baliza apagada que parpadea con un glifo. Dash. | Radio T3: "entre la estática me llega una baliza. ¿La ves?" | La grabación de Mateo: "Estamos bien. Seguimos. No nos esperen". Parpadea SIGUE. | Mateo leyó la primera palabra antes que nadie. | 🟨 |
 | F05 | 3 | El cartero | Dejar que un ladrón se lleve la moneda y **seguirlo de cerca** sin alcanzarlo hasta que salga (sigue las monedas, al pie de la letra). | Radio T2: "quiero saber a dónde llevan las monedas". Ficha del ladrón. | No la robó: la llevó al Abismo, como quien vuelve a casa. Glifo CASA. | Las monedas vuelven al Abismo: alguien vive ahí. | 🟨 |
 | F06 | 3 | La clave del compás | En la niebla (tramo 3), quedarse **quieta** (sin tocar nada) hasta oír la palabra entera: 12 pulsos, ~8 s. Cada pulso suena y la nave lo siente. Moverse vuelve a empezar. | Antes: "Mateo decía que en el silencio se escucha mejor el compás". Ficha de la niebla. | Los glifos son ritmos. El Archivo los traduce desde ahora. | La firma dice ALBA ("o como el amanecer"). | 🟨 |
-| F07 | 4 | La Errante 3/3 | Juntar **20 monedas seguidas** (en la fiebre del oro es posible): cantan tan fuerte que la radio capta un eco de hace tres años. | Radio T3: "si las juntás sin parar, la radio se acopla". Ficha de la fiebre. | La última transmisión de Mateo: "...es uno solo... se llama Alba...". | No son muchos, y se llama como ella. | 🟨 |
-| F08 | 4 | Las bibliotecarias | Vencer a la Colmena **sin romper ninguna abeja**. | Radio jefe: "las abejas son bibliotecarias. No son soldados". Ficha de la abeja. | Un poema en singular: "La vi llegar una vez, y se llevó a todos. La voy a ver llegar otra. Esta vez no voy a llegar tarde". Glifo OTRA. | Es uno solo, y ya vivió esto. | 🟨 |
-| F09 | 5 | La brújula | Con F03: pegarle al núcleo de la puerta **desde la izquierda** (el lado de casa, hacia donde miraba el Ojo). | Radio jefe (solo con F03): "la lente del Ojo apuntaba aquí. Desde el Cinturón... desde casa". | El reloj de la Alondra casi se detiene. "No lleva a otro lugar. Lleva a otro cuándo". | Ahí abajo el tiempo casi no pasa. | 🟨 |
+| F07 | 4 | La Errante 3/3 | Juntar **20 monedas seguidas** (en la fiebre del oro es posible): cantan tan fuerte que la radio capta un eco de la última transmisión de la Errante. | Radio T3: "si las juntas sin parar, el compás suena tan fuerte que la radio se acopla". Ficha de la fiebre. | La última transmisión de Mateo: "...es uno solo... se llama Alba...". | No son muchos, y se llama como ella. | 🟨 |
+| F08 | 4 | Las bibliotecarias | Vencer a la Colmena **sin romper ninguna abeja**. | Radio jefe: "las abejas son bibliotecarias. No son soldados". Ficha de la abeja. | Un poema en singular, en la celda más nueva: "La vi llegar a mi cielo y a otros, y se llevó a todos. La voy a ver llegar otra vez. Que esta vez alguien llegue a tiempo". Glifo OTRA. | Es uno solo, y ya vivió esto. | 🟨 |
+| F09 | 5 | La brújula | Con F03: pegarle al núcleo de la puerta **desde la izquierda** (el lado de casa, hacia donde miraba el Ojo). | Radio jefe (solo con F03): "la lente del Ojo apuntaba aquí. Desde el Cinturón... desde casa". | Por cada segundo de la Alondra, en la Umbral pasan horas. "No lleva a otro lugar. Lleva a otro cuándo". | Ahí abajo el tiempo casi no pasa. | 🟨 |
 | F10 | 6 | El último registro | En el tramo 3 de LOS RESTOS cruza un pedazo del casco: la caja negra. Dash. | Al aparecer, Alba: "la caja negra tiene que estar ahí". | Mateo: la nave no aguanta, entran a la puerta. "No es un final". | La tripulación bajó: puede estar viva. | 🟨 |
 | F13 | 6 | La otra firma | En el tramo 4 de LOS RESTOS (la estela de la cápsula), después de 6 monedas aparece otra moneda blanca. | Al aparecer, Alba: "¿Otra moneda blanca? ¿Aquí?". Radio T4: "algo salió de la Errante hacia la puerta". | Una firma torpe, hecha a mano, en metal nuevo. Glifo MATEO. | Mateo está vivo. | 🟨 |
-| F11 | 5 | Bitácora sin fecha | Con **todos** los demás encontrados: vencer a la Singularidad. Es *oculto*: no aparece en el Archivo hasta encontrarlo. | La pantalla final: "El Último todavía tiene algo para contarte" (si solo falta este). | La primera bitácora de El Último, joven: "En mi cielo aparecieron monedas. Voy a seguirlas". | A él también le dejaron un camino (el final verdadero). | 🟨 |
+| F11 | 5 | Bitácora sin fecha | Con **todos** los demás encontrados: vencer a la Singularidad. Es *oculto*: no aparece en el Archivo hasta encontrarlo. | La pantalla final: "El Último todavía tiene algo para contarte" (si solo falta este). | La primera bitácora de El Último, joven, en su idioma y traducida en glifos: "En mi cielo aparecieron monedas. Voy a seguirlas". | A él también le dejaron un camino (el final verdadero). | 🟨 |
 
 Los fragmentos de la misión oculta tampoco aparecen en el Archivo hasta que aparece la misión
 (la cuenta de arriba sí los suma: hay más de lo que se ve).
@@ -208,8 +246,8 @@ El mapa de la historia es una **galaxia que se recorre libre**: las misiones son
 marcados y entre ellas hay 16 **sistemas libres**.
 
 - **La relatividad** (el usuario la probó sin ella y la quiso de vuelta: "es lo que más salsa
-  le da al juego"): para Alba un viaje dura horas; en la Estación Umbral pasan **años** (viaja
-  casi a la velocidad de la luz, y cerca del Abismo la gravedad estira su tiempo todavía más:
+  le da al juego"): para Alba un viaje dura horas; en la Estación Umbral pasan **meses** (y en
+  un viaje largo, más de un año: viaja casi a la velocidad de la luz, y cerca del Abismo la gravedad estira su tiempo todavía más:
   cada visita ahí suma años de **dilatación**). Lo que cuenta es el reloj de la Umbral. La
   Marea llega en el año 6.
 - **El costo:** cada viaje gasta años según la distancia; cada salida, aunque no viajes, gasta
@@ -264,13 +302,13 @@ marcados y entre ellas hay 16 **sistemas libres**.
 | Id | Sistema | Nombre | Qué cuenta |
 |---|---|---|---|
 | E01 | Vega del Sur | La sonda | Una sonda de la Umbral grabó el compás hace cuarenta años: siempre estuvo. |
-| E02 | Kepler | La estación Kepler | Quisieron huir de la Marea a la velocidad de la luz: el tiempo los alcanzó. "No se puede escapar huyendo". |
-| E03 | Oráculo | El reloj de arena | Un púlsar marcado por El Último que cuenta los latidos hasta la Marea. Glifo PRONTO. |
+| E02 | Kepler | La estación Kepler | Quisieron huir de la Marea a la velocidad de la luz. Sus mensajes siguen llegando: para ellos, semanas; afuera, años, y ningún lugar queda lo bastante lejos. "No se puede escapar huyendo". |
+| E03 | Oráculo | El reloj de arena | Un púlsar marcado por El Último (boyas con glifos) que cuenta los latidos hasta la Marea. Glifo PRONTO. |
 | E04 | Semillero | El planeta que canta | La fábrica de las monedas. Glifo HOGAR. |
 | E05 | Vigía | El vigía | Una máquina de El Último que espera a la Alondra, la mira y se apaga. Glifo LLEGO. |
 | E06 | Miel | Los que escaparon | Una nave generacional de hace 300 años que oyó el compás y dio la vuelta para seguirlo. El diario termina a mitad de camino: nunca llegaron (nadie llegó a tiempo). |
 | E07 | Horizonte | La carta | Un mensaje de Inés a Mateo ("vuelve") que tardó tres años en llegar y nunca lo recibió. |
-| E08 | Umbra (peligro 5) | La otra Alondra | Los restos de **la nave de El Último**, de cuando era piloto: no es humana, pero se parece a la Alondra como una hermana. Millones de años de polvo y ALBA rayado en la cabina. Lo más hondo para quien llega más lejos: él también fue piloto. |
+| E08 | Umbra (peligro 5) | La otra Alondra | Los restos de **la nave de El Último**, de cuando era piloto: no es humana, pero se parece a la Alondra como una hermana. Tiene millones de años, y en la cabina ALBA está rayado encima de un nombre más viejo: volvió a ponerse nombre en nuestro idioma. Lo más hondo para quien llega más lejos: él también fue piloto. |
 
 ## 11. Los finales
 
@@ -280,7 +318,8 @@ Después del diálogo de la misión 5 viene la **pantalla final** (`escenas/hist
   naves. Nos vamos" (tarde: "Llegamos tarde para los demás. Pero vamos"). La pantalla dice "LA
   MAREA — FIN" en rojo, con la música del Game Over: el mensaje del compás en glifos (sin
   traducir), lo encontrado (misiones, fragmentos, fichas) y "Todavía hay cosas que no
-  encontraste" (o "El Último todavía tiene algo para contarte" si solo falta la Bitácora).
+  encontraste" (o "El Último todavía tiene algo para contarte" si solo falta la Bitácora; y si
+  se llegó tarde, "La Marea llegó primero. Pero algunos bajaron a tiempo").
 - **El verdadero** (con F11): El Último le hace oír su primera bitácora (SIN FECHA), le cuenta que
   a él también le dejaron un camino y que ya no aguanta otro viaje. Alba no baja con los demás:
   va a ir adelante de la Marea. "Mi nombre quiere decir amanecer... ahora es tuyo de verdad". La
@@ -319,9 +358,11 @@ En la historia no hay récords ni logros (miden el avance del arcade).
 |---|---|
 | **El prólogo** (la cinemática del principio: cuadros con su dibujo y el narrador) | `juego/escenas/historia/prologo.py` |
 | **El guion** (todo lo que se dice, en orden; se arma solo) | `GUION.md`, con `python herramientas/guion.py` (un test avisa si quedó viejo) |
+| **Los cuadros** (las escenas animadas de los diálogos y del prólogo: `@cuadro("nombre", "LUGAR")`) | `juego/escenas/historia/cuadros/` (`kit.py` tiene las piezas; un archivo por misión) |
+| Lo que comparten el prólogo y los diálogos (pasar, volver atrás, saltear con confirmación, la velocidad del texto) | `juego/escenas/historia/narracion.py` (`Narracion`) |
 | **Cada misión** (ruta, diálogos, radio, fragmentos y secretos) | `juego/historia/misiones/m1_la_senal.py`... (un archivo por misión) |
 | La clase base de las misiones, los renglones con condición y el registro | `juego/historia/mision.py` (`Mision`, `Fragmento`, `filtrar`) |
-| Las reglas de una misión y la historia mientras jugás | `juego/historia/modo.py` (`ModoHistoria`) |
+| Las reglas de una misión y la historia mientras juegas | `juego/historia/modo.py` (`ModoHistoria`) |
 | Los tipos de secreto (cómo se encuentra un fragmento) | `juego/historia/secretos.py` |
 | Los objetos secretos (moneda grabada, restos, baliza) | `juego/historia/reliquias.py` |
 | Las fichas del Archivo (el porqué de cada cosa) | `juego/historia/fichas.py` |
@@ -340,7 +381,9 @@ En la historia no hay récords ni logros (miden el avance del arcade).
 
 **Para escribir una misión:** copiar un archivo de `historia/misiones/`, cambiar el número, el
 título, el sector, el `lugar` en el mapa y los textos, e importarlo en
-`historia/misiones/__init__.py`. Aparece sola en el mapa y en el Archivo. Una misión puede traer
+`historia/misiones/__init__.py`. Sus escenas: `("cuadro", "nombre")` entre los renglones de
+`antes` y `despues` (cada diálogo empieza con uno: lo exige `tests/test_cuadros.py`), y los
+dibujos nuevos en `escenas/historia/cuadros/mision_<n>.py`. Aparece sola en el mapa y en el Archivo. Una misión puede traer
 su ruta (`tramos`, con `"anomalia"` por tramo), no tener jefe (`jefe = False`: termina con el
 último tramo) o ser oculta (`oculta`, `requisitos`, `rama_de`). `tests/test_historia.py` revisa
 el estándar: números seguidos, rutas con las reglas del arcade, momentos de radio que existen,

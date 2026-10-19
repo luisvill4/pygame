@@ -9,7 +9,8 @@ guion queda al dia (nunca dice algo distinto de lo que dice el juego).
     python herramientas/guion.py          # escribe GUION.md en la carpeta del juego
 
 Los renglones con condicion (mision.filtrar) llevan una nota: [CON F06: LA CLAVE DEL COMPAS],
-[SI LLEGAS TARDE]... Asi se lee tambien lo que solo ve quien encontro los secretos.
+[SI LLEGAS TARDE]... Asi se lee tambien lo que solo ve quien encontro los secretos. Los cuadros
+(los dibujos animados de arriba: escenas/historia/cuadros/) salen como acotaciones: (SE VE: ...).
 """
 import os
 import sys
@@ -18,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from juego.config import MAREA_ANIOS, ruta                               # noqa: E402
 from juego.escenas.historia.prologo import CUADROS                       # noqa: E402
+from juego.escenas.historia import cuadros                               # noqa: E402
 from juego.historia.mision import misiones_en_orden, buscar_fragmento    # noqa: E402
 from juego.historia.personajes import PERSONAJES                         # noqa: E402
 from juego.historia import tiempo, ecos, misiones                        # noqa: E402,F401  (misiones: las registra)
@@ -27,7 +29,7 @@ MOMENTOS = [("tramo_1", "TRAMO 1"), ("tramo_2", "TRAMO 2"), ("tramo_3", "TRAMO 3
 
 
 def nota(condicion):
-    # "F06+!T6" -> "[CON F06: LA CLAVE DEL COMPAS · A TIEMPO]"
+    # "F06+!T6+M5" -> "[CON F06: LA CLAVE DEL COMPAS · A TIEMPO · DESPUES DE LA MISION 5]"
     if not condicion:
         return ""
     partes = []
@@ -40,6 +42,8 @@ def nota(condicion):
                 partes.append("A TIEMPO" if sin else "SI LLEGAS TARDE")
             else:
                 partes.append(("ANTES DEL AÑO %d" if sin else "DESDE EL AÑO %d") % anio)
+        elif clave.startswith("M") and clave[1:].isdigit():
+            partes.append(("ANTES DE CUMPLIR LA MISION %s" if sin else "DESPUES DE LA MISION %s") % clave[1:])
         elif sin:
             partes.append("SIN " + clave)
         else:
@@ -52,6 +56,11 @@ def renglones(lista):
     for renglon in lista:
         quien, texto = renglon[0], renglon[1]
         condicion = renglon[2] if len(renglon) > 2 else None
+        if quien == "cuadro":           # la acotacion: que dibujo se ve desde aqui
+            lugar = cuadros.rotulo(texto)
+            lineas.append("- _(SE VE: %s%s)_%s" % (texto.upper().replace("_", " "), " · " + lugar if lugar else "",
+                                                   nota(condicion)))
+            continue
         lineas.append("- **%s:** %s%s" % (PERSONAJES[quien][0], texto, nota(condicion)))
     return lineas
 

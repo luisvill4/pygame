@@ -25,7 +25,7 @@ import pygame
 from juego import dibujo, interfaz, recursos
 from juego.dibujo import texto, CHICA, MEDIA
 from juego.config import (ANCHO, CIAN, AMARILLO, BLANCO, GRIS, VERDE, VOLUMEN_MAX, FRECUENCIAS, ORDEN_VIBRACION,
-                          ORDEN_TEMBLOR, ORDEN_DESTELLOS, ORDEN_CRT, ORDEN_NEON, ORDEN_ESCALADO,
+                          ORDEN_TEMBLOR, ORDEN_DESTELLOS, ORDEN_CRT, ORDEN_NEON, ORDEN_ESCALADO, ORDEN_TEXTO,
                           TEXTO_SUAVE, LINEA_APAGADA, FILA_ELEGIDA)
 from juego.entrada import (ACEPTAR, VOLVER, ARRIBA, ABAJO, IZQUIERDA, DERECHA, PESTANA_ANTERIOR,
                            PESTANA_SIGUIENTE)
@@ -232,16 +232,19 @@ AJUSTES = [
     Volumen("MUSICA", "SONIDO", "volumen_musica", "LA MUSICA DE FONDO. EN 0 NO SUENA."),
     Volumen("EFECTOS", "SONIDO", "volumen_efectos", "LOS SONIDOS DEL JUEGO: MONEDAS, GOLPES, MENUS..."),
     Interruptor("LATIDO", "SONIDO", "latido", "UN LATIDO SUAVE CUANDO TE QUEDA UNA SOLA VIDA."),
+    # (AUDIO MONO es de accesibilidad, pero alli ya no entraba: vive con el resto del sonido)
+    Interruptor("AUDIO MONO", "SONIDO", "audio_mono",
+                "TODO SUENA IGUAL POR LOS DOS LADOS (PARA UN SOLO AURICULAR U OIDO)."),
     Lista("TEMBLOR", "ACCESIBILIDAD", "temblor", ORDEN_TEMBLOR,
           "CUANTO SE SACUDE LA PANTALLA. EL MARCADOR NUNCA TIEMBLA."),
     Lista("DESTELLOS", "ACCESIBILIDAD", "destellos", ORDEN_DESTELLOS,
           "REDUCIDOS: NADA DESTELLA NI PARPADEA RAPIDO (FOTOSENSIBILIDAD)."),
+    Lista("TEXTO", "ACCESIBILIDAD", "texto", ORDEN_TEXTO,
+          "QUE TAN RAPIDO SE ESCRIBEN LOS DIALOGOS DE LA HISTORIA."),
     Interruptor("AVISO JEFE", "ACCESIBILIDAD", "aviso_jefe",
                 "LOS JEFES MARCAN HACIA DONDE VAN A DISPARAR ANTES DE HACERLO."),
     Lista("VIBRACION", "ACCESIBILIDAD", "vibracion", ORDEN_VIBRACION,
           "CUANTO VIBRA EL MANDO.", al_cambiar=_probar_vibracion),
-    Interruptor("AUDIO MONO", "ACCESIBILIDAD", "audio_mono",
-                "TODO SUENA IGUAL POR LOS DOS LADOS (PARA UN SOLO AURICULAR U OIDO)."),
 ]
 
 

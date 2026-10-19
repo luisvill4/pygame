@@ -147,6 +147,15 @@ class ModoHistoria(Modo):
     def objetos_que_se_mueven(self):
         return self.reliquias
 
+    # ---------- El modo desarrollador: los secretos de esta mision, ya ----------
+
+    def secretos_de_prueba(self):
+        return [(fragmento.id, fragmento.nombre, self.ya_encontrado(fragmento.id))
+                for fragmento in self.mision.fragmentos]
+
+    def revelar_secreto(self, id_fragmento):
+        self.encontrar(id_fragmento)        # (suena y la radio lo cuenta, como jugando)
+
     # ---------- Lo que usan los secretos ----------
 
     def ya_encontrado(self, id_fragmento):
@@ -166,12 +175,18 @@ class ModoHistoria(Modo):
         partida.estadisticas.fragmentos += 1
         partida.sonidos.reproducir("fragmento")
         fragmento = ecos.POR_ID.get(id_fragmento) or buscar_fragmento(id_fragmento)
-        partida.radio.decir(filtrar(fragmento.reaccion, self.lo_encontrado(), self.anios()), partida.tiempo)
+        renglones = filtrar(fragmento.reaccion, self.lo_encontrado(), self.anios(), self.misiones_cumplidas())
+        partida.radio.decir(renglones, partida.tiempo)
 
     def anios(self):
         # Los años de la Umbral (para los renglones con "T6")
         progreso = self.partida.progreso
         return progreso.anios if progreso is not None else 0
+
+    def misiones_cumplidas(self):
+        # Las misiones ya cumplidas (para los renglones con "M5")
+        progreso = self.partida.progreso
+        return progreso.misiones if progreso is not None else set()
 
     def anotar(self, id_ficha):
         progreso = self.partida.progreso
@@ -179,5 +194,6 @@ class ModoHistoria(Modo):
             progreso.anotar_ficha(id_ficha)
 
     def decir(self, momento, demora=0):
-        renglones = filtrar(self.mision.radio.get(momento, []), self.lo_encontrado(), self.anios())
+        renglones = filtrar(self.mision.radio.get(momento, []), self.lo_encontrado(), self.anios(),
+                            self.misiones_cumplidas())
         self.partida.radio.decir(renglones, self.partida.tiempo, demora)

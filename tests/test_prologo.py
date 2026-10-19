@@ -5,9 +5,10 @@ import pytest
 from juego import dibujo
 from juego.config import PIXEL_ARTE
 from juego.escenas.historia.galaxia import Galaxia
-from juego.escenas.historia.prologo import Prologo, CUADROS, ESCENARIO, NOCHE, ANCHO_TEXTO, RENGLONES
+from juego.escenas.historia import cuadros
+from juego.escenas.historia.prologo import Prologo, CUADROS, ESCENARIO, ANCHO_TEXTO, RENGLONES
 from juego.sonido import SILENCIO
-from tests.ayudas import avanzar, tecla
+from tests.ayudas import avanzar, tecla, saltear
 
 
 def elegir_historia(app):
@@ -21,8 +22,7 @@ def test_la_primera_vez_sale_el_prologo_y_despues_no(app):
     elegir_historia(app)
     assert isinstance(app.escena, Prologo)
     assert app.escena.musica == SILENCIO
-    tecla(pygame.K_ESCAPE)              # saltear
-    avanzar(app)
+    saltear(app)
     assert isinstance(app.escena, Galaxia)
     assert app.progreso.prologo                         # (queda guardado)
     from juego.escenas.inicio import Inicio
@@ -60,15 +60,10 @@ def test_la_marea_y_la_relatividad_se_explican(app):
 @pytest.mark.parametrize("nombre", [nombre for nombre, _ in CUADROS if nombre != "titulo"])
 def test_cada_dibujo_calza_en_la_grilla_de_pixeles_de_arte(app, nombre):
     app.opciones.neon = "NORMAL"
-    prologo = Prologo(app, al_terminar=lambda: None)
-    prologo.cuadro = [n for n, _ in CUADROS].index(nombre)
-    prologo.pagina = len(CUADROS[prologo.cuadro][1]) - 1     # (la ultima pagina: con todos sus rotulos)
+    paginas = [paginas for n, paginas in CUADROS if n == nombre][0]
     pantalla = pygame.Surface(app.pantalla.get_size())
     for t in (1, 137, 501):             # en distintos momentos de la animacion
-        pantalla.fill(NOCHE)
-        pantalla.set_clip(ESCENARIO)
-        getattr(prologo, "_dibujo_" + nombre)(pantalla, t)
-        pantalla.set_clip(None)
+        cuadros.dibujar(pantalla, nombre, ESCENARIO, t, len(paginas) - 1)     # (la ultima pagina: con sus rotulos)
         for y in range(ESCENARIO.top, ESCENARIO.bottom, 3):
             for x in range(ESCENARIO.left + 1, ESCENARIO.right):
                 if pantalla.get_at((x, y)) != pantalla.get_at((x - 1, y)):
@@ -77,8 +72,8 @@ def test_cada_dibujo_calza_en_la_grilla_de_pixeles_de_arte(app, nombre):
 
 def test_todos_los_cuadros_se_dibujan(app):
     prologo = Prologo(app, al_terminar=lambda: None)
-    for i, (_, paginas) in enumerate(CUADROS):
-        prologo.cuadro, prologo.pagina, prologo.letras = i, 0, 999
+    for i in range(len(prologo.paginas)):
+        prologo.indice, prologo.letras = i, 999
         for t in (1, 300):
             prologo.pasos_en_cuadro = t
             prologo.dibujar(app.pantalla)

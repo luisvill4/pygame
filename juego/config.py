@@ -127,6 +127,11 @@ ORDEN_TEMBLOR = ["NO", "SUAVE", "NORMAL"]
 # DESTELLOS REDUCIDOS: sin destellos de pantalla completa y nada parpadea mas de 3 veces
 # por segundo (lo que recomiendan las guias para personas con fotosensibilidad)
 ORDEN_DESTELLOS = ["NORMALES", "REDUCIDOS"]
+# TEXTO: que tan rapido se escriben los dialogos y el narrador de la historia (letras por paso).
+# AL INSTANTE muestra el renglon entero de una vez (para leer a su ritmo, o con un lector de pantalla)
+VELOCIDADES_TEXTO = {"LENTO": 0.4, "NORMAL": 0.75, "RAPIDO": 1.5, "AL INSTANTE": 1000}
+ORDEN_TEXTO = ["LENTO", "NORMAL", "RAPIDO", "AL INSTANTE"]
+LECTURA_LENTA = 1.6             # con TEXTO LENTO, la radio de la historia dura esto mas
 PARPADEO_MINIMO = 170           # ms: el parpadeo mas rapido con DESTELLOS REDUCIDOS
 ARCOIRIS_REDUCIDO = 400         # ms por color del arcoiris con DESTELLOS REDUCIDOS
 # CRT: brillo de las lineas horizontales (255 = sin lineas; mas bajo = mas oscuras)
@@ -296,7 +301,10 @@ ESCUDERO_PUNTOS = 6             # por romperlo con el dash
 
 # Modo historia (ver HISTORIA.md y juego/historia/): cada mision es la ruta de un sector
 MEJORA_TRAMO_HISTORIA = 3       # en cada mision, el Taller (una carta gratis) abre en este tramo
-DIALOGO_LETRAS_POR_PASO = 0.75  # que tan rapido se escribe el texto de un dialogo (letras por paso)
+# (que tan rapido se escriben los dialogos: VELOCIDADES_TEXTO, una opcion de accesibilidad)
+SALTEAR_CONFIRMA = 180          # pasos (3 s) para apretar VOLVER otra vez y saltear una escena (no se pierde sin querer)
+ESCENA_TITULO = 170             # pasos que se ve el titulo de la mision al abrir un dialogo con cuadros
+ESCENA_CORTE = 14               # pasos del corte de camara entre dos cuadros (la cortina se abre)
 RADIO_MS_MINIMO = 2400          # lo minimo que se ve un mensaje de radio...
 RADIO_MS_POR_LETRA = 60         # ...o esto por cada letra, si es mas largo
 RADIO_DEMORA_TRAMO = 2600       # ms despues de empezar un tramo (que no pise su cartel)

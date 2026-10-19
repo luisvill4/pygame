@@ -1,7 +1,7 @@
 """
 El RELOJ DE LA UMBRAL: la relatividad del tiempo en la historia.
 
-Para Alba un viaje dura horas; en la Estacion Umbral pasan años (viaja casi a la velocidad de
+Para Alba un viaje dura horas; en la Estacion Umbral pasan meses (viaja casi a la velocidad de
 la luz y, cerca del Abismo, la gravedad estira su tiempo todavia mas: galaxia.py). Lo que
 cuenta es el tiempo de la Umbral: progreso.anios. La Marea llega en MAREA_ANIOS.
 

@@ -34,12 +34,15 @@ class LaSenal(Mision):
     ]
 
     antes = [
+        ("cuadro", "umbral_muelle"),
         ("ines", "ALBA, ¿ME ESCUCHAS? AQUI ESTACION UMBRAL. EL COMPAS VOLVIO A SONAR ESTA MAÑANA. MAS FUERTE QUE NUNCA."),
         ("alba", "BUENOS DIAS PARA TI TAMBIEN, INES."),
         ("ines", "LA MAREA SIGUE EN CAMINO. SEIS AÑOS. NO LA PODEMOS FRENAR Y NO HAY A DONDE ESCAPAR."),
+        ("cuadro", "cinturon"),
         ("ines", "PERO EL COMPAS NO ES RUIDO: ALGUIEN LO PUSO AHI. Y TODO EMPIEZA EN EL CINTURON EXTERIOR."),
         ("ines", "AHI ESTAN LAS MONEDAS. JUNTA TODAS LAS QUE PUEDAS: CADA UNA SUENA CON UN PEDAZO DEL COMPAS."),
         ("ines", "Y RECUERDA: CADA VIAJE TUYO SON MESES AQUI. ELIGE BIEN A DONDE VAS."),
+        ("cuadro", "despegue"),
         ("alba", "PERSEGUIR MONEDAS EN EL FIN DEL MUNDO. ME ENCANTA. ALONDRA LISTA, DESPEGO."),
     ]
 
@@ -68,12 +71,17 @@ class LaSenal(Mision):
     }
 
     despues = [
+        ("cuadro", "ojo_vencido"),
         ("ines", "LO LOGRASTE. Y ESCUCHA ESTO: EL COMPAS CAMBIO. TIENE UNA NOTA NUEVA."),
         ("alba", "¿Y QUE DICE?"),
+        ("cuadro", "rumbo_nebulosa"),
         ("ines", "TODAVIA NADA QUE PUEDA LEER. PERO APUNTA A LA NEBULOSA CARMESI."),
+        ("cuadro", "moneda_alba", "F01"),
         ("ines", "ESA MONEDA BLANCA QUE TRAJISTE TIENE EL SIMBOLO DE TODAS, PERO GRANDE. COMO UNA FIRMA.", "F01"),
+        ("cuadro", "bitacora", "F02"),
         ("alba", "Y ENCONTRE RESTOS DE UNA NAVE. TENIAN UNA BITACORA.", "F02"),
         ("ines", "...ES DE LA ERRANTE. LA ESCRIBIO ROCIO, SU INGENIERA.", "F02"),
+        ("cuadro", "rastro_errante"),
         ("ines", "LA ERRANTE PASO POR AHI HACE TRES AÑOS. SIGUIENDO EL COMPAS, IGUAL QUE TU."),
         ("alba", "LA ERRANTE NO VOLVIO, INES."),
         ("ines", "YA SE. POR ESO VAS TU."),

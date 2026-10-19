@@ -22,7 +22,7 @@ Al abrir, primero sale una advertencia de fotosensibilidad (con cómo reducir lo
 | Cambiar de pestaña o sección (menús) | Q / E | LB / RB |
 | Silenciar / activar el sonido | M | |
 | Pantalla completa / ventana | F11 | |
-| Modo desarrollador (en la partida) | F1 | |
+| Modo desarrollador (en la partida y en la galaxia) | F1 | |
 
 **Vibración del mando.** Es suave y solo aparece en los momentos importantes: subir el combo, romper enemigos con el dash, power-ups, golpes, subir de nivel, logros y jefes (llega con un latido, cuando le pegas y cuando explota). Lo que pasa todo el tiempo, como recoger cada moneda o hacer un dash, no vibra. Los dos motores del mando suben y bajan poco a poco, y los gatillos no vibran. La intensidad se elige en **Opciones → ACCESIBILIDAD → VIBRACION** (NO, SUAVE, NORMAL, FUERTE).
 
@@ -37,9 +37,11 @@ Al elegir **JUGAR** se elige la dificultad (FÁCIL, NORMAL, DIFÍCIL o PESADILLA
   pero su gravedad va a arrancar los planetas de sus órbitas, como la Luna tira del mar. Faltan
   seis años y no hay forma de salvarse, hasta que aparece un compás que se cuela en todas las
   radios. La piloto **Alba** sale a seguirlo, sector por sector. La primera vez, un **prólogo**
-  lo cuenta todo. Cada sector es una **misión** con su diálogo antes y después, y durante el
-  juego te habla la radio (Inés, desde la base) sin pausar nada. El guion completo está en
-  `GUION.md`.
+  lo cuenta todo. Cada sector es una **misión** con su diálogo antes y después, contado como
+  en el cine: arriba, una escena animada que cambia con lo que se dice (el Ojo vencido, el radar
+  de los ladrones, el agujero negro, El Último...). Durante el juego te habla la radio (Inés,
+  desde la base) sin pausar nada. En las escenas, **IZQ** vuelve al renglón anterior y **ESC**
+  pregunta antes de saltear (otra vez ESC saltea). El guion completo está en `GUION.md`.
   - La **galaxia** se recorre libre: las misiones están marcadas y entre ellas hay sistemas
     para explorar. Cuanto más lejos de casa, más peligro (y más piezas). Las flechas eligen el
     sistema más cercano hacia ese lado (una flechita amarilla muestra adónde lleva cada una) y
@@ -203,13 +205,17 @@ Las peleas son un **baile**: cada jefe avisa antes de atacar, ataca al ritmo de 
 - **SONIDO:** tres barras: VOLUMEN (el de todo), MUSICA y EFECTOS (en 0 no suenan). La tecla **M** calla todo y lo vuelve a encender sin tocar las barras. Y LATIDO: un latido suave cuando te queda una sola vida.
 
 **Música:** cada pantalla tiene su tema y al cambiar se cruzan con un fundido: uno tranquilo en los menús, el de siempre al jugar, uno rápido contra los jefes y uno con swing en la gasolinera. Toda la música y los efectos están hechos con código, en el estudio: `python herramientas/componer.py` los vuelve a generar (las melodías están escritas como una grilla de notas, fáciles de cambiar). Los premios, los power-ups y la interfaz **siguen al acorde** de la música (cada uno está compuesto en 11 versiones, una por color de acorde), y el mezclador cuida que la suma de todo nunca sature. CLAUDE.md (sección "Sonido y música") explica la notación, los instrumentos y cómo agregar un tema o un efecto al juego.
-- **ACCESIBILIDAD:** TEMBLOR (cuánto se sacude la pantalla con los golpes: NO, SUAVE o NORMAL; el marcador nunca tiembla), DESTELLOS (REDUCIDOS: sin destellos de pantalla completa y nada parpadea más de 3 veces por segundo, para personas con fotosensibilidad), AVISO JEFE, VIBRACION y AUDIO MONO (todo suena igual por los dos lados, para quien usa un solo auricular u oye de un solo oído; sin esto, los sonidos salen del lado donde pasan las cosas).
+- **ACCESIBILIDAD:** TEMBLOR (cuánto se sacude la pantalla con los golpes: NO, SUAVE o NORMAL; el marcador nunca tiembla), DESTELLOS (REDUCIDOS: sin destellos de pantalla completa y nada parpadea más de 3 veces por segundo, para personas con fotosensibilidad), TEXTO (qué tan rápido se escriben los diálogos de la historia: LENTO, NORMAL, RAPIDO o AL INSTANTE; en LENTO la radio también dura más), AVISO JEFE y VIBRACION. En **SONIDO** está además AUDIO MONO (todo suena igual por los dos lados, para quien usa un solo auricular u oye de un solo oído; sin esto, los sonidos salen del lado donde pasan las cosas).
 
 El juego es panorámico (16:9): se dibuja en 1066x600 y se agranda a la ventana sin perder los píxeles. En **Opciones → VIDEO → RESOLUCION** se elige el tamaño de la ventana o la pantalla completa (también con **F11**).
 
 En **Opciones → VIDEO → FPS** se elige cuántas veces por segundo se dibuja: 30, 60, 90, 120, 144 o SIN LIMITE. El juego va siempre a la misma velocidad: la lógica avanza 60 veces por segundo y, por encima de 60 FPS, el movimiento se dibuja interpolado (más suave en monitores de alta frecuencia).
 
-**Modo desarrollador.** En plena partida, **F1** abre un panel para probar cosas sin llegar jugando: traer cualquier **jefe** (si ya hay uno, lo cambia), traer un **enemigo** de cualquier tipo, darte un **power-up** al instante, traer una **anomalía**, ponerte **invencible**, **limpiar** la pantalla de enemigos y balas, o abrir la **gasolinera** con 200 créditos de regalo. ARRIBA/ABAJO elige la fila, IZQ/DER cambia el valor y ENTER lo hace y vuelve al juego; F1 o Esc vuelven sin hacer nada. Una partida en la que se usó el panel dice **MODO DEV** abajo y **no guarda récord ni logros**. Para apagarlo (por ejemplo, si le pasas el juego a otros), pon `MODO_DESARROLLADOR = False` en `juego/config.py`.
+**Modo desarrollador.** En plena partida, **F1** abre un panel para probar cosas sin llegar jugando: traer cualquier **jefe** (si ya hay uno, lo cambia), traer un **enemigo** de cualquier tipo, darte un **power-up** al instante, traer una **anomalía**, ponerte **invencible**, **limpiar** la pantalla de enemigos y balas, o abrir la **gasolinera** con 200 créditos de regalo. ARRIBA/ABAJO elige la fila, IZQ/DER cambia el valor y ENTER lo hace y vuelve al juego; F1 o Esc vuelven sin hacer nada. Una partida en la que se usó el panel dice **MODO DEV** abajo y **no guarda récord ni logros**. Con **Q/E** (LB/RB) se pasa a la pestaña **AVANZAR**, para leer la historia sin jugarla entera: **SALTAR TRAMO** (lo da por cumplido y pasa al siguiente; en el último, llega el jefe), **VENCER JEFE** (el golpe final, ya) y **SECRETO** (encuentra al instante uno de los secretos de la misión, y la radio lo cuenta). El panel recuerda la última fila, así que saltar varios tramos es **F1 + ENTER** cada vez.
+
+En la **galaxia** del modo historia, **F1** abre otro panel: **MISION** (vas directo al diálogo de antes de cualquier misión, incluso la oculta, sin viajar ni gastar años), **SECRETO** (ENTER lo encuentra o lo olvida, para ver cómo cambian los diálogos), **AÑO** (IZQ/DER mueven el reloj de la Umbral; al ir atrás, los mensajes de Inés de esos años se pueden volver a ver), **MODULOS** (todos los planos y módulos al máximo) y **PIEZAS** (+500). Ojo: todo esto se guarda en `progreso.json` como si lo hubieras jugado.
+
+Para apagarlo (por ejemplo, si le pasas el juego a otros), pon `MODO_DESARROLLADOR = False` en `juego/config.py`.
 
 ## Cómo correr los tests
 
@@ -344,6 +350,7 @@ Una formación nueva es una función en `juego/escuadrones.py` con `@formacion("
 ### Una misión de la historia
 Copia un archivo de `juego/historia/misiones/` (por ejemplo `m1_la_senal.py`), cámbiale el `numero`, el `titulo`, el `sector`, el `lugar` (dónde va en el mapa) y los textos, e importalo en `juego/historia/misiones/__init__.py`. Aparece sola en la galaxia y en el Archivo. Todo es datos:
 - `antes` y `despues`: el diálogo, como `[("ines", "TEXTO"), ("alba", "TEXTO")]` (los personajes están en `juego/historia/personajes.py`). Un renglón puede llevar una condición: `("ines", "TEXTO", "F01")` solo sale si encontraste F01, y con `"!F01"` solo si no.
+- Las escenas animadas de arriba: `("cuadro", "cinturon")` entre los renglones dice qué dibujo se ve desde ahí (también con condición). Cada dibujo es una función con `@cuadro("nombre", "LUGAR")` en `juego/escenas/historia/cuadros/` (uno por misión), armada con las piezas del kit (`kit.py`: estrellas, planetas, el agujero negro, la Alondra, la Umbral, monedas, glifos...).
 - `radio`: lo que se dice durante la misión, en los momentos `"tramo_1"` a `"tramo_4"` y `"jefe"`.
 - `fragmentos`: lo que se guarda en el Archivo, `Fragmento("F14", "NOMBRE", ["PARRAFO", ...], reaccion=[...])`.
 - `secretos`: cómo se encuentra cada fragmento, `("racha", "F14", {"monedas": 20})`. Los tipos que hay están en la tabla de `HISTORIA.md`.

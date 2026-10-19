@@ -25,7 +25,7 @@ from juego.escenas.historia.hangar import Hangar
 from juego.escenas.historia.dialogo import Dialogo, ANCHO_TEXTO
 from juego.escenas.historia.archivo import Archivo, DETALLE, LISTA, PESTANAS, ALTO_GLIFO, acomodar
 from juego.escenas.historia.final import Final
-from tests.ayudas import avanzar, tecla, jugar, entrar_a_la_historia
+from tests.ayudas import avanzar, tecla, jugar, entrar_a_la_historia, saltear
 
 
 # ---------- El mapa ----------
@@ -173,8 +173,7 @@ def test_al_pasar_un_año_ines_manda_su_mensaje(app):
     viajar(app, escena, "M1")
     assert isinstance(app.escena, Dialogo) and app.escena.titulo == "AÑO 1"
     assert 1 in app.progreso.mensajes
-    tecla(pygame.K_ESCAPE)
-    avanzar(app)
+    saltear(app)
     assert isinstance(app.escena, Dialogo) and app.escena.titulo == mision(1).titulo     # y despues, la mision
 
 
@@ -265,8 +264,7 @@ def test_despejar_un_sistema_da_piezas_su_eco_y_su_puerta(app):
     primera = round(200 * PIEZAS_POR_CREDITO) + PIEZAS_POR_PELIGRO * peligro(sistema("S04"))
     assert app.progreso.piezas == primera
     assert "S04" in app.progreso.sistemas and "S04" in app.progreso.puertas
-    tecla(pygame.K_ESCAPE)
-    avanzar(app)
+    saltear(app)
     assert isinstance(app.escena, Galaxia) and app.escena.elegida == "S04"
     partida = explorar(app, "S04")          # repetirlo: solo lo de las monedas
     partida.creditos = 200
@@ -285,8 +283,7 @@ def test_si_explota_ines_rescata_la_mitad(app):
     partida.danar_jugador(*partida.nave.centro())
     avanzar(app, 140)
     assert isinstance(app.escena, Dialogo) and app.progreso.piezas == round(310 * PIEZAS_POR_CREDITO) // 2
-    tecla(pygame.K_ESCAPE)
-    avanzar(app)
+    saltear(app)
     assert isinstance(app.escena, Galaxia) and app.escena.elegida == "S02"
 
 

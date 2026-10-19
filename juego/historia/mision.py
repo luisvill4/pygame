@@ -31,10 +31,15 @@ Una mision es casi todo DATOS (atributos de la clase):
                         (los tipos estan en secretos.py; las opciones, en cada tipo)
     final               True: es el final de la historia (despues de su dialogo, la pantalla final)
 
+Un CUADRO es la escena animada que se ve arriba del dialogo: ("cuadro", "nombre") entre los
+renglones dice que dibujo se ve desde ahi (los dibujos: escenas/historia/cuadros/). Puede llevar
+condicion como cualquier renglon: ("cuadro", "moneda_alba", "F01").
+
 Un RENGLON es (quien, texto) o (quien, texto, condicion): la condicion dice que fragmentos
 tienen que estar encontrados ("F01"), cuales no ("!F02") o varios a la vez ("F01+!F06"). "T3"
-pide que en la Umbral hayan pasado 3 años o mas (tiempo.py), y "!T6" que todavia no.
-Asi un dialogo cambia segun lo que encontraste y segun cuanto tardaste.
+pide que en la Umbral hayan pasado 3 años o mas (tiempo.py), y "!T6" que todavia no. "M5" pide
+que la mision 5 ya este cumplida (una mision oculta se puede jugar antes o despues del final).
+Asi un dialogo cambia segun lo que encontraste, segun cuanto tardaste y segun lo que ya viste.
 Los textos van en MAYUSCULAS y sin vocales con tilde (la fuente las dibuja mal).
 """
 
@@ -60,33 +65,44 @@ def es_de_tiempo(parte):
     return nombre.startswith("T") and nombre[1:].isdigit()
 
 
-def _vale(parte, encontrados, anios):
+def es_de_mision(parte):
+    # "M5" (o "!M5"): habla de una mision cumplida, no de un fragmento
+    nombre = parte.lstrip("!")
+    return nombre.startswith("M") and nombre[1:].isdigit()
+
+
+def _vale(parte, encontrados, anios, misiones):
     # Una parte de la condicion, sin el "!"
     if es_de_tiempo(parte):
         return anios >= int(parte[1:])
+    if es_de_mision(parte):
+        return int(parte[1:]) in misiones
     return parte in encontrados
 
 
-def se_cumple(condicion, encontrados, anios=0):
-    # "F01+!F06+T3": F01 encontrado, F06 no y ya pasaron 3 años. None = siempre
+def se_cumple(condicion, encontrados, anios=0, misiones=()):
+    # "F01+!F06+T3+M5": F01 encontrado, F06 no, ya pasaron 3 años y la mision 5 esta cumplida.
+    # None = siempre
     if not condicion:
         return True
     for parte in condicion.split("+"):
         negada = parte.startswith("!")
-        if _vale(parte.lstrip("!"), encontrados, anios) == negada:
+        if _vale(parte.lstrip("!"), encontrados, anios, misiones) == negada:
             return False
     return True
 
 
 def ids_de_la_condicion(condicion):
-    # Los fragmentos que nombra una condicion (para los tests; sin las de tiempo)
-    return [parte.lstrip("!") for parte in condicion.split("+") if not es_de_tiempo(parte)] if condicion else []
+    # Los fragmentos que nombra una condicion (para los tests; sin las de tiempo ni las de mision)
+    return [parte.lstrip("!") for parte in condicion.split("+")
+            if not es_de_tiempo(parte) and not es_de_mision(parte)] if condicion else []
 
 
-def filtrar(renglones, encontrados, anios=0):
-    # Los renglones que corresponden a lo encontrado (y a los años), como (quien, texto)
+def filtrar(renglones, encontrados, anios=0, misiones=()):
+    # Los renglones que corresponden a lo encontrado (y a los años y las misiones cumplidas),
+    # como (quien, texto)
     return [(renglon[0], renglon[1]) for renglon in renglones
-            if se_cumple(renglon[2] if len(renglon) > 2 else None, encontrados, anios)]
+            if se_cumple(renglon[2] if len(renglon) > 2 else None, encontrados, anios, misiones)]
 
 
 # ---------- El registro ----------

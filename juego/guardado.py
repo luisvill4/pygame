@@ -9,7 +9,8 @@ Nunca hacen caer el juego:
 import json
 
 from juego.config import (VOLUMEN_MAX, FILAS_RECORDS, FRECUENCIAS, ORDEN_DIFICULTADES, NAVES, ORDEN_VIBRACION,
-                          ORDEN_TEMBLOR, ORDEN_DESTELLOS, ORDEN_CRT, ORDEN_NEON, ORDEN_ESCALADO)
+                          ORDEN_TEMBLOR, ORDEN_DESTELLOS, ORDEN_CRT, ORDEN_NEON, ORDEN_ESCALADO,
+                          ORDEN_TEXTO)
 
 
 def _escribir_json(archivo, datos):
@@ -212,6 +213,7 @@ class Opciones:
         self.escalado = "NITIDO"    # como se agranda a la ventana (ORDEN_ESCALADO)
         self.temblor = "NORMAL"     # cuanto tiembla la pantalla en los golpes (ORDEN_TEMBLOR)
         self.destellos = "NORMALES"  # "REDUCIDOS": sin destellos ni parpadeos rapidos (ORDEN_DESTELLOS)
+        self.texto = "NORMAL"       # que tan rapido se escriben los dialogos (ORDEN_TEXTO)
         self.dificultad = "NORMAL"   # la ultima elegida (el selector arranca en esa)
         self.cargar()
 
@@ -246,6 +248,8 @@ class Opciones:
                 self.temblor = datos["temblor"]
             if datos.get("destellos") in ORDEN_DESTELLOS:
                 self.destellos = datos["destellos"]
+            if datos.get("texto") in ORDEN_TEXTO:
+                self.texto = datos["texto"]
             if datos.get("dificultad") in ORDEN_DIFICULTADES:
                 self.dificultad = datos["dificultad"]
         except FileNotFoundError:
@@ -270,5 +274,6 @@ class Opciones:
             "escalado": self.escalado,
             "temblor": self.temblor,
             "destellos": self.destellos,
+            "texto": self.texto,
             "dificultad": self.dificultad,
         })
