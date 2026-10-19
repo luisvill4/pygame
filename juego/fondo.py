@@ -14,6 +14,10 @@ Ambientes (SECTORES en config.py):
     panal       un panal de abejas gigante y tenue detras de todo, y polen
     abismo      polvo que gira hacia el centro y ondas de gravedad
 
+Y detras de todo, el PAISAJE del sector (paisajes.py): una pieza grande y lenta que le da
+personalidad (el gigante anillado, el sol moribundo, la aurora, el latido del panal, el ojo
+del abismo).
+
 mover() va en la logica (60 veces por segundo) y dibujar() en cada cuadro, interpolado.
 """
 import math
@@ -21,7 +25,7 @@ import random
 
 import pygame
 
-from juego import recursos, accesibilidad
+from juego import recursos, accesibilidad, paisajes
 from juego.dibujo import en_grilla
 from juego.config import (ANCHO, ALTO, ANCHO_MENU, PROFUNDIDAD, TRANSICION_SECTOR, SECTORES, PIXEL_ARTE,
                           BRILLO_FONDO_JUGANDO)
@@ -33,6 +37,8 @@ HIPERESPACIO_VELOCIDAD = 14 # cuanto se aceleran las estrellas en lo mas rapido 
 ACELERON_PASOS = 50         # el aceleron al pasar de tramo: un salto cortito (se siente que avanzas)
 ACELERON_VELOCIDAD = 3
 TITILAR_MS, TITILAR_CADA = 90, 61   # cada estrella titila un instante cada TITILAR_CADA * TITILAR_MS ms
+DERIVA_PAISAJE = 0.5        # cuanto se corre el paisaje con el paralaje (muy lejos: poco)...
+VUELVE_PAISAJE = 0.97       # ...y como vuelve a su lugar cuando la nave se queda quieta
 
 
 class ObjetoFondo:
@@ -105,6 +111,9 @@ class Fondo:
         self.salto_velocidad = HIPERESPACIO_VELOCIDAD   # ...y que tan rapido va en lo mas rapido
         self.desplazamiento_panal = 0
         self._panal = None
+        # El paisaje se corre un poco con el paralaje (y vuelve solo): ahora y en el paso anterior
+        self.deriva = (0.0, 0.0)
+        self.deriva_antes = (0.0, 0.0)
 
     @property
     def tinte(self):
@@ -235,6 +244,9 @@ class Fondo:
         if self.relampago > 0:
             self.relampago -= 1
         self.ondas = [radio + 3 for radio in self.ondas if radio < ANCHO]
+        self.deriva_antes = self.deriva
+        self.deriva = (self.deriva[0] * VUELVE_PAISAJE + empuje_x * DERIVA_PAISAJE,
+                       self.deriva[1] * VUELVE_PAISAJE + empuje_y * DERIVA_PAISAJE)
         self.desplazamiento_panal = (self.desplazamiento_panal + 0.3 + empuje_y * 0.3) % 84
 
     def _de_otro_ambiente(self, mota, ambiente):
@@ -296,6 +308,7 @@ class Fondo:
             self._dibujar_panal(pantalla)
         for radio in self.ondas:
             pygame.draw.circle(pantalla, (22, 30, 64), (ANCHO // 2, ALTO // 2), int(radio), 2)
+        self._dibujar_paisaje(pantalla, fraccion, etapa, apagado)
         with self.interpolador.aplicar(self.objetos + self.estrellas + self.motas, fraccion):
             for objeto in self.objetos:
                 posicion = (en_grilla(objeto.x), en_grilla(objeto.y))      # (grilla de pixeles de arte)
@@ -311,6 +324,16 @@ class Fondo:
             self._dibujar_estrellas(pantalla)
             for mota in self.motas:
                 self._dibujar_mota(pantalla, mota)
+
+    def _dibujar_paisaje(self, pantalla, fraccion, etapa, apagado):
+        # El del sector (en la primera mitad del cambio de colores, todavia el del anterior).
+        # El tiempo son los pasos del fondo mas la fraccion: se ve suave a cualquier FPS
+        sector = self.sector if etapa >= 0.5 else self.sector_anterior
+        t = self.pasos - 1 + fraccion
+        dx = self.deriva_antes[0] + (self.deriva[0] - self.deriva_antes[0]) * fraccion
+        dy = self.deriva_antes[1] + (self.deriva[1] - self.deriva_antes[1]) * fraccion
+        luz = BRILLO_FONDO_JUGANDO if apagado else 1.0
+        paisajes.dibujar_paisaje(sector["ambiente"], pantalla, t, luz, dx, dy, self.desplazamiento_panal)
 
     def _dibujar_estrellas(self, pantalla):
         # Un pixel de arte cada una (mas oscuras las lejanas). Cada tanto una titila (una

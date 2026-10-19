@@ -61,6 +61,7 @@ juego/
                        base = registro, kit = las piezas, prologo, comunes, mision_1 ... mision_6)
   entrada.py  haptica.py  sonido.py  ventana.py  guardado.py  recursos.py
   dibujo.py  efectos.py  fondo.py  hud.py
+  paisajes.py           # la animacion grande del fondo de cada bioma (registro @paisaje): anillos, sol, aurora...
   accesibilidad.py      # temblor, destellos y CRT: los efectos le preguntan aca
   interfaz.py           # el kit de interfaz (panel, titulo, menu, ayudas, pestanas, carta...)
   transicion.py         # el barrido de rombos entre pantallas
@@ -257,6 +258,7 @@ Las variantes (congelado, golpe, brillo) se generan solas: no hace falta dibujar
 - **Opciones:** cada fila es un `Ajuste` (Template Method) de la lista `AJUSTES` (`Lista`, `Interruptor`, `Volumen`). **Para agregar una opción:** sumarla a `guardado.Opciones` (fábrica, cargar, guardar) y una línea en `AJUSTES`. Nada más. LB/RB (Q/E) cambian de sección. `test_opciones.py` comprueba que todo entre.
 - **Guardado:** si el archivo no existe, se crea; si está dañado, valores de fábrica; si no se puede escribir, el juego sigue.
 - **Fondo:** estrellas y objetos con paralaje, salto al hiperespacio, ambiente propio de cada bioma (motas). Los tintes no pasan de ~110 por canal.
+- **Paisajes** (`paisajes.py`, pedido del usuario: "darle vida a cada nivel con animaciones de fondo como la galaxia del prólogo, sin sobresaturar"): la pieza grande y lenta de cada bioma, detrás de nebulosas y estrellas. Cinturón: **gigante anillado** (los granos de adentro giran más rápido y una luna pasa por delante y por detrás). Carmesí: **sol moribundo** en la esquina (la corona respira y salen arcos de plasma). Esmeralda: **aurora** en dos cortinas y, cada 50 s, la **sombra** de algo enorme que nada al fondo (el lema). Ámbar: el panal **late** (ondas dobles que prenden celdas). Abismo: **el ojo del abismo** (un agujero negro con su disco; el polvo cae ahí). Patrón Registry: `@paisaje("ambiente")`; el `Fondo` llama a `dibujar_paisaje(ambiente, pantalla, t, luz, dx, dy, desplazamiento)`. **Todo sale de `t`** (los pasos del fondo + la fracción): `dibujar` no cambia nada y lo que parece azar usa `random.Random(vuelta)`. Jugando se ve a `BRILLO_FONDO_JUGANDO`; el paralaje lo corre poco (`DERIVA_PAISAJE`, vuelve solo). Nada parpadea. Cada uno cuesta menos de 1.5 ms. `test_paisajes.py`: cada sector tiene el suyo, calza en la grilla, ningún canal pasa de 110, el mismo `t` da el mismo dibujo y con el tiempo cambia.
 - **Logros** (`logros.py`): `Logro(id, nombre ≤16, descripcion ≤36, condicion)`. Algunos regalan una nave (`NAVES` en config). La pantalla tiene lugar para 16: con más hay que paginar.
 
 ## Sonido y música

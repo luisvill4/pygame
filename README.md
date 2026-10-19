@@ -261,6 +261,7 @@ juego/
   haptica.py            # la vibracion del mando: patrones (en config.VIBRACIONES) y prioridades
   sonido.py  ventana.py  guardado.py  recursos.py
   dibujo.py  efectos.py  fondo.py  hud.py
+  paisajes.py           # la animacion del fondo de cada sector (el gigante anillado, el sol, la aurora...)
   accesibilidad.py      # temblor, destellos y CRT: todos los efectos le preguntan a este modulo
 tests/                  # pytest
 herramientas/componer.py          # el estudio: compone toda la musica y los efectos (y efectos/fichas.json)
